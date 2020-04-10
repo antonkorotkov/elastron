@@ -3,6 +3,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import replace from 'rollup-plugin-replace';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -23,6 +24,10 @@ export default {
 			css: css => {
 				css.write('public/build/bundle.css');
 			}
+		}),
+
+		replace({
+				'process.env.NODE_ENV': JSON.stringify( 'production' )
 		}),
 
 		// If you have external dependencies installed from

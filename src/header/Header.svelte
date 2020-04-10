@@ -5,23 +5,9 @@
 
 	const { open } = getContext('modal-window');
 
-	const onCancel = (text) => {
-		name = '';
-		status = -1;
-	}
-	
-	const onOkay = (text) => {
-		name = text;
-		status = 1;
-	}
-
   const showConnectionDialog = () => {
 		open(
-			ConnectionDialog,
-			{
-				onCancel,
-				onOkay
-			}
+			ConnectionDialog
 		);
 	};
 </script>
@@ -35,7 +21,7 @@
 			Dashboard
 		</a>
 		<a class="item right" on:click={showConnectionDialog} href="javascript:void(0);">
-			+ Connect
+			Connection
 		</a>
 	</div>
 </header>
