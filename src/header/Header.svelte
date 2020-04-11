@@ -16,9 +16,15 @@
 	const { [routerKey]: route } = useStoreon(routerKey)
 </script>
 
+<style>
+	.logo {
+		border-radius: 0 !important;
+	}
+</style>
+
 <header>
   <div class="ui menu inverted attached">
-		<div class="header active item yellow">
+		<div class="active logo item yellow">
 			<b>Elastron</b>
 		</div>
 		<a class="item" href="/" class:active={$route.match.page == 'dashboard'}>
