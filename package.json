@@ -17,6 +17,7 @@
     "svelte": "^3.0.0"
   },
   "dependencies": {
+    "@storeon/router": "^1.0.1",
     "@storeon/svelte": "^0.6.2",
     "axios": "^0.19.2",
     "sirv-cli": "^0.4.4",

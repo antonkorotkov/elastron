@@ -1,5 +1,5 @@
 <script>
-  import { useStoreon } from "@storeon/svelte/index"
+  import { useStoreon } from '@storeon/svelte'
   import { getContext } from 'svelte'
   import API from '../../../api/elasticsearch'
 
