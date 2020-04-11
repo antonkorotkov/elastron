@@ -46,6 +46,15 @@ export default class API {
       throw new ConnectionError(err.message)
     }
   }
+
+  async getShards() {
+    try {
+      const response = await this.client.get('/_cat/shards?v')
+      return this.parseCatResponse(response.data)
+    } catch (err) {
+      throw new ConnectionError(err.message)
+    }
+  }
 }
 
 class ConnectionError extends Error {

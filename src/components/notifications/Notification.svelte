@@ -9,6 +9,13 @@
   const { dispatch } = useStoreon()
 
   export let notification
+  let timeout
+
+  onMount(() => {
+    timeout = setTimeout(() => {
+      dispatch('notification/delete', notification.id)
+    }, 5000)
+  })
 </script>
 
 <style>

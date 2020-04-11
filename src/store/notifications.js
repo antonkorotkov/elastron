@@ -21,11 +21,19 @@ export const notifications = store => {
     })
   })
 
-  store.on('notification/add', (state, { type, message }) => (
-    {
+  store.on('notification/add', (state, { type, message }) => {
+    if (state.notifications.find(n => {
+      return n.type === type && n.message === message
+    })) {
+      return {
+        notifications: [...state.notifications]
+      }
+    }
+
+    return {
       notifications: [...state.notifications, { id: randomId(), type, message }]
     }
-  ))
+  })
 
   store.on('notification/delete', (state, id) => (
     {

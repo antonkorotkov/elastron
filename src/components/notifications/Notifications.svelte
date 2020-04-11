@@ -1,21 +1,14 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
-  import { onMount } from 'svelte'
 
   import Notification from './Notification.svelte'
 
   const { dispatch, notifications } = useStoreon('notifications')
-
-  onMount(() => {
-    setInterval(() => {
-      dispatch('notification/shift')
-    }, 3000)
-  })
 </script>
 
 <style>
   .notifications {
-    position: absolute;
+    position: fixed;
     top: 4rem;
     right: 1rem;
     width: 30rem;
