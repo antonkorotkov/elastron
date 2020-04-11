@@ -52,5 +52,6 @@ class ConnectionError extends Error {
   constructor(message) {
     super(message)
     this.type = 'ConnectionError'
+    this.message = `Could not connect to the server: ${this.message}`
   }
 }

@@ -20,9 +20,8 @@
       dispatch('notification/add', {
         type: 'error', message: error.message
       })
-      console.log(error.message)
     }
-	});
+	})
 </script>
 
 <div class="ui segments">

@@ -1,14 +1,14 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { getContext } from 'svelte'
+  
   import API from '../../../api/elasticsearch'
 
   const { dispatch, connection } = useStoreon('connection')
 
-  let host = $connection.host;
-  let port = $connection.port;
-  let test = null;
-  
+  let host = $connection.host
+  let port = $connection.port
+
 	export let onCancel = () => {}
 	export let onOkay = () => {}
 
@@ -20,18 +20,22 @@
 	}
 	
 	const _onOkay = () => {
-		onOkay(value);
-		close();
+		onOkay(value)
+		close()
   }
   
   const testConnection = async () => {
     try {
       const api = new API(`${host}:${port}`)
-      test = await api.test();
+      const { success, message } = await api.test();
+
+      dispatch('notification/add', {
+        type: success ? 'success' : 'error', message
+      })
     } catch (e) {
-      test = {
-        success: false, message: e.message
-      }
+      dispatch('notification/add', {
+        type: 'error', message: e.message
+      })
     }
   }
 
@@ -55,11 +59,6 @@
       <label for="port">Port</label>
       <input type="text" id="port" on:change={e => port = e.target.value} value={$connection.port} />
     </div>
-    {#if test}
-    <div class="field">
-      <div class="ui label" class:red={!test.success} class:green={test.success}>{test.message}</div>
-    </div>
-    {/if}
   </div>
 </div>
 

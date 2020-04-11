@@ -1,42 +1,43 @@
 <script>
-  import { setContext as baseSetContext } from 'svelte';
+  import { setContext as baseSetContext } from 'svelte'
+  import { fly, fade } from 'svelte/transition'
 
-  export let key = 'modal-window';
-  export let closeOnEsc = true;
-  export let closeOnOuterClick = true;
-  export let setContext = baseSetContext;
+  export let key = 'modal-window'
+  export let closeOnEsc = true
+  export let closeOnOuterClick = true
+  export let setContext = baseSetContext
 
   const defaultState = {
     closeOnEsc,
-    closeOnOuterClick,
-  };
+    closeOnOuterClick
+  }
 
-  let state = { ...defaultState };
+  let state = { ...defaultState }
 
-  let Component = null;
-  let props = null;
+  let Component = null
+  let props = null
 
-  let background;
+  let background
 
   const open = (
     NewComponent,
     newProps = {},
     options = {}
   ) => {
-    Component = NewComponent;
-    props = newProps;
-    state = { ...defaultState, ...options };
-  };
+    Component = NewComponent
+    props = newProps
+    state = { ...defaultState, ...options }
+  }
 
   const close = () => {
-    Component = null;
-    props = null;
-  };
+    Component = null
+    props = null
+  }
 
   const handleKeyup = ({ key }) => {
     if (state.closeOnEsc && Component && key === 'Escape') {
-      event.preventDefault();
-      close();
+      event.preventDefault()
+      close()
     }
   };
 
@@ -46,19 +47,19 @@
         event.target === background
       )
     ) {
-      event.preventDefault();
-      close();
+      event.preventDefault()
+      close()
     }
   };
 
-  setContext(key, { open, close });
+  setContext(key, { open, close })
 </script>
 
 <svelte:window on:keyup={handleKeyup}/>
 
 {#if Component}
-  <div on:click={handleOuterClick} bind:this={background} class="ui dimmer modals page hidden flex active">
-    <div class="ui tiny modal hidden active">
+  <div transition:fade="{{duration: 300}}" on:click={handleOuterClick} bind:this={background} class="ui dimmer modals page hidden flex active">
+    <div class="ui tiny modal hidden active" transition:fly="{{ y: -500, duration: 300 }}">
       <Component {...props} />
     </div>
   </div>
