@@ -1,7 +1,7 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { getContext } from 'svelte'
-  
+
   import API from '../../../api/elasticsearch'
 
   const { dispatch, connection } = useStoreon('connection')
@@ -40,7 +40,7 @@
   }
 
   const save = () => {
-    dispatch('connection/update', {host, port})
+    dispatch('connection/save', {host, port})
     close()
   }
 </script>

@@ -7,20 +7,7 @@
   const { dispatch, allocation, connection } = useStoreon('allocation', 'connection')
 
   onMount(async () => {
-		try {
-      const { host, port} = $connection
-      const api = new API(`${host}:${port}`)
-      const { columns, data } = await api.getAllocation()
-      if (data !== false) {
-        dispatch('elasticsearch/allocation/update', {
-          columns, data
-        })
-      }
-    } catch (error) {
-      dispatch('notification/add', {
-        type: 'error', message: error.message
-      })
-    }
+		dispatch('elasticsearch/allocation/fetch')
 	})
 </script>
 

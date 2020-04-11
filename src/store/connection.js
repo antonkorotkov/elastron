@@ -1,3 +1,5 @@
+import API from '../api/elasticsearch'
+
 export const connection = store => {
   store.on('@init', () => (
     { 
@@ -7,11 +9,26 @@ export const connection = store => {
     }
   ))
 
-  store.on('connection/update', (_state, { host, port }) => (
-    {
+  store.on('connection/save', async (_state, { host, port }) => {
+    store.dispatch('connection/update', { host, port })
+    try {
+      const api = new API(`${host}:${port}`)
+      const test = await api.test()
+      if (test.success) {
+        store.dispatch('connected')
+      } else {
+        store.dispatch('disconnected')
+      }
+    } catch (error) {
+      store.dispatch('disconnected')
+    }
+  })
+
+  store.on('connection/update', (_state, { host, port }) => {
+    return {
       connection: {
         host, port
       }
     }
-  ))
+  })
 }

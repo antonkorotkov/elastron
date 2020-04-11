@@ -9,18 +9,6 @@
   const { dispatch } = useStoreon()
 
   export let notification
-
-  let timeout = null
-
-  onMount(() => {
-		timeout = setTimeout(() => {
-      dispatch('notification/delete', notification.id)
-    }, 5000)
-  })
-  
-  onDestroy(() => {
-		clearInterval(timeout);
-	});
 </script>
 
 <style>

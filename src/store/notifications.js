@@ -9,6 +9,18 @@ export const notifications = store => {
     }
   ))
 
+  store.on('connected', () => {
+    store.dispatch('notification/add', {
+      type: 'success', message: 'Connected to the server'
+    })
+  })
+
+  store.on('disconnected', () => {
+    store.dispatch('notification/add', {
+      type: 'error', message: 'Disconnected from the server'
+    })
+  })
+
   store.on('notification/add', (state, { type, message }) => (
     {
       notifications: [...state.notifications, { id: randomId(), type, message }]
@@ -20,4 +32,12 @@ export const notifications = store => {
       notifications: state.notifications.filter(notification => notification.id !== id)
     }
   ))
+
+  store.on('notification/shift', (state) => {
+    const notifications = [...state.notifications]
+    notifications.shift()
+    return {
+      notifications
+    }
+  })
 }

@@ -1,9 +1,16 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
+  import { onMount } from 'svelte'
 
   import Notification from './Notification.svelte'
 
   const { dispatch, notifications } = useStoreon('notifications')
+
+  onMount(() => {
+    setInterval(() => {
+      dispatch('notification/shift')
+    }, 3000)
+  })
 </script>
 
 <style>

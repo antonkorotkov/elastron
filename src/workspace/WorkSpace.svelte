@@ -12,5 +12,5 @@
 {:else if $route.match.page === 'health'}
   health
 {:else}
-  dashboard
+  <Dashboard />
 {/if}
