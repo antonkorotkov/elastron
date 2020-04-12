@@ -9,8 +9,10 @@
 
 {#if $route.match.page === 'dashboard'}
   <Dashboard />
-{:else if $route.match.page === 'health'}
-  health
+{:else if $route.match.page === 'mapping'}
+  <div class="ui segment">Mapping comming soon</div>
+{:else if $route.match.page === 'search'}
+  <div class="ui segment">Search comming soon</div>
 {:else}
   <Dashboard />
 {/if}

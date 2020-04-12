@@ -4,15 +4,19 @@ export const connection = store => {
   store.on('@init', () => (
     { 
       connection: {
-        host: 'https://search-udx-io-zosdec3doe2ojdyfvckcrvjbtm.us-east-1.es.amazonaws.com', port: 1
+        host: 'https://search-udx-io-zosdec3doe2ojdyfvckcrvjbtm.us-east-1.es.amazonaws.com', 
+        port: '',
+        useAuth: false,
+        user: '',
+        password: '',
       }
     }
   ))
 
-  store.on('connection/save', async (_state, { host, port }) => {
-    store.dispatch('connection/update', { host, port })
+  store.on('connection/save', async (_state, connection) => {
+    store.dispatch('connection/update', connection)
     try {
-      const api = new API(`${host}:${port}`)
+      const api = new API(connection)
       const test = await api.test()
       if (test.success) {
         store.dispatch('connected')
@@ -24,11 +28,9 @@ export const connection = store => {
     }
   })
 
-  store.on('connection/update', (_state, { host, port }) => {
+  store.on('connection/update', (_state, connection) => {
     return {
-      connection: {
-        host, port
-      }
+      connection
     }
   })
 }

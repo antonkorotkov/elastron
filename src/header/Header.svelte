@@ -30,8 +30,11 @@
 		<a class="item" href="/" class:active={$route.match.page == 'dashboard'}>
 			Dashboard
 		</a>
-		<a class="item" href="/health" class:active={$route.match.page == 'health'}>
-			Health
+		<a class="item" href="/mapping" class:active={$route.match.page == 'mapping'}>
+			Mapping
+		</a>
+		<a class="item" href="/search" class:active={$route.match.page == 'search'}>
+			Search
 		</a>
 		<a class="item right" on:click={showConnectionDialog} href="javascript:void(0);">
 			Connection

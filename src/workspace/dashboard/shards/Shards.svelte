@@ -4,7 +4,7 @@
 
   import API from '../../../api/elasticsearch'
 
-  const { dispatch, shards, connection } = useStoreon('shards', 'connection')
+  const { dispatch, shards } = useStoreon('shards')
 
   onMount(async () => {
 		dispatch('elasticsearch/shards/fetch')

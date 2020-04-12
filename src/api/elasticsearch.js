@@ -3,10 +3,25 @@ import axios from 'axios'
 export default class API {
 
   // todo: refactore URL building
-  constructor(url) {
+  constructor(connection) {
     this.client = axios.create({
-      baseURL: url
+      baseURL: this.buildConnectionUrl(connection),
+      headers: this.buildConnectionHeaders(connection)
     })
+  }
+
+  buildConnectionHeaders(connection) {
+    const { useAuth, user, password } = connection
+    if (useAuth) {
+      return {
+        'Authorization': `Basic ${btoa(`${user}:${password}`)}`
+      }
+    }
+  }
+
+  buildConnectionUrl(connection) {
+    const { host, port } = connection
+    return `${host.replace(/\/+$/, "")}${Number(port)>0?`:${port}`:''}`
   }
 
   parseCatResponse(data) {

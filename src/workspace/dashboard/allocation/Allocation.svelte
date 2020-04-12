@@ -4,7 +4,7 @@
 
   import API from '../../../api/elasticsearch'
 
-  const { dispatch, allocation, connection } = useStoreon('allocation', 'connection')
+  const { dispatch, allocation } = useStoreon('allocation')
 
   onMount(async () => {
 		dispatch('elasticsearch/allocation/fetch')

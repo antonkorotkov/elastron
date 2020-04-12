@@ -22,7 +22,7 @@ export const allocation = store => {
   
   store.on('elasticsearch/allocation/fetch', async (state) => {
     try {
-      const api = new API(`${state.connection.host}:${state.connection.port}`)
+      const api = new API(state.connection)
       const allocation = await api.getAllocation()
       if (allocation) {
         const { columns, data } = allocation

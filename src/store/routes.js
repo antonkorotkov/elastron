@@ -2,5 +2,6 @@ import { createRouter } from '@storeon/router'
 
 export const routes = createRouter([
   ['/', () => ({page: 'dashboard'})],
-  ['/health', () => ({page: 'health'})]
+  ['/mapping', () => ({page: 'mapping'})],
+  ['/search', () => ({page: 'search'})]
 ])

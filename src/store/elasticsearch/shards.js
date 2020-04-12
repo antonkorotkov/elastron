@@ -22,7 +22,7 @@ export const shards = store => {
   
   store.on('elasticsearch/shards/fetch', async (state) => {
     try {
-      const api = new API(`${state.connection.host}:${state.connection.port}`)
+      const api = new API(state.connection)
       const shards = await api.getShards()
       if (shards) {
         const { columns, data } = shards
