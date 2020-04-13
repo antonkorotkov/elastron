@@ -35,14 +35,14 @@
           {/each}
         {:else}
           <tr>
-            <td colspan={$shards.columns.length}>No data</td>
+            <td colspan={$shards.columns.length}>No shards</td>
           </tr>
         {/if}
       </tbody>
     </table>
   {:else}
     <div class="ui segment">
-      <p>No <code>shards</code> data</p>
+      <p>No <code>shards</code> data yet</p>
     </div>
   {/if}
 </div>

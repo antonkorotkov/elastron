@@ -20,10 +20,13 @@
 	.logo {
 		border-radius: 0 !important;
 	}
+	header {
+		height: 4rem;
+	}
 </style>
 
 <header>
-  <div class="ui menu inverted attached">
+  <div class="ui menu inverted fixed">
 		<div class="active logo item yellow">
 			<b>Elastron</b>
 		</div>

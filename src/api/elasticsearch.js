@@ -38,7 +38,9 @@ export default class API {
 
   async test() {
     try {
-      const response = await this.client.get('/')
+      const response = await this.client.get('/', {
+        timeout: 3000
+      })
       if (response.data && response.data.tagline) 
         return {
           success: true, message: response.data.tagline
@@ -50,6 +52,15 @@ export default class API {
       return {
         success: false, message: err.message
       }
+    }
+  }
+
+  async getIndices() {
+    try {
+      const response = await this.client.get('/_cat/indices?v')
+      return this.parseCatResponse(response.data)
+    } catch (err) {
+      throw new ConnectionError(err.message)
     }
   }
 

@@ -35,14 +35,14 @@
           {/each}
         {:else}
           <tr>
-            <td colspan={$allocation.columns.length}>No data</td>
+            <td colspan={$allocation.columns.length}>No allocation</td>
           </tr>
         {/if}
       </tbody>
     </table>
   {:else}
     <div class="ui segment">
-      <p>No <code>allocation</code> data</p>
+      <p>No <code>allocation</code> data yet</p>
     </div>
   {/if}
 </div>
