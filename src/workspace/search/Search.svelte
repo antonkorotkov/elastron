@@ -1,18 +1,19 @@
 <script>
+  import isEqual from 'lodash/isEqual'
   import JSONEditor from 'jsoneditor'
   import { useStoreon } from '@storeon/svelte'
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount, onDestroy, afterUpdate } from 'svelte'
 
   import 'jsoneditor/dist/jsoneditor.min.css'
 
   const { dispatch, search, indices } = useStoreon('search', 'indices')
 
-  let requestBodyEditor
+  let requestBodyEditor, resultsEditor
   let type = $search.type
   let index = $search.index
   let useDocType = $search.useDocType
   let uriQuery = $search.uriQuery
-  let editor
+  let qEditor, rEditor
 
   $:  docType = $search.docType
   $:  size = $search.size
@@ -37,18 +38,38 @@
     dispatch('search/change/docType', value ? value : '_doc')
   }
 
+  const onSearchRun = e => {
+    dispatch('search/run')
+  }
+
   onMount(() => {
     if (requestBodyEditor) {
-      editor = new JSONEditor(requestBodyEditor, {
+      qEditor = new JSONEditor(requestBodyEditor, {
         mode: 'code',
         onChange: onEditorChange
       }, $search.requestBody)
     }
+
+    if (resultsEditor) {
+      rEditor = new JSONEditor(resultsEditor, {
+        mode: 'tree'
+      }, $search.results)
+    }
+  })
+
+  afterUpdate(() => {
+    if (rEditor && !isEqual(rEditor.get(), $search.results)) {
+      console.log('updated')
+      rEditor.set($search.results)
+    }
   })
 
   onDestroy(() => {
-    if (editor) {
-      editor.destroy()
+    if (qEditor) {
+      qEditor.destroy()
+    }
+    if (rEditor) {
+      rEditor.destroy()
     }
   })
 </script>
@@ -134,7 +155,12 @@
           </div>
         {/if}
         <div class="field">
-          <div class="ui green button">Run</div>
+          <button class="ui green button" 
+            class:loading={$search.loading} 
+            disabled={$search.loading} 
+            on:click={onSearchRun}>
+            Run
+          </button>
         </div>
       </div>
       <div class="field" class:hidden={$search.type !== 'body'}>
@@ -145,5 +171,9 @@
         <input id="uri" type="text" on:change={e => dispatch('search/change/uri-query', e.target.value)} bind:value={uriQuery} />
       </div>
     </div>
+  </div>
+
+  <div class="ui segment">
+    <div id="results-editor" bind:this={resultsEditor}></div>
   </div>
 </div>

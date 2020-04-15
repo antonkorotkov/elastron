@@ -1,7 +1,10 @@
+import API from '../api/elasticsearch'
+
 export const search = store => {
   store.on('@init', () => (
     { 
       search: {
+        loading: false,
         type: 'uri',
         index: '',
         useDocType: false,
@@ -95,7 +98,55 @@ export const search = store => {
     }
   })
 
-  store.on('search/run', state => {
+  store.on('search/loading', (state, loading) => (
+    {
+      search: {
+        ...state.search,
+        loading: !!loading
+      }
+    }
+  ))
 
+  store.on('search/change/results', (state, results) => (
+    {
+      search: {
+        ...state.search,
+        results
+      }
+    }
+  ))
+
+  store.on('search/run', async state => {
+    try {
+      store.dispatch('search/loading', true)
+
+      const buildSearchParams = () => ({
+        index: state.search.index,
+        type: state.search.useDocType ? state.search.docType : false,
+        query: state.search.type === 'uri' ? state.search.uriQuery : state.search.requestBody,
+        size: state.search.size,
+        from: state.search.from
+      })
+
+      const api = new API(state.connection)
+      let results;
+
+      switch(state.search.type) {
+        case 'uri':
+          results = await api.uriSearch(buildSearchParams())
+          break;
+        case 'body':
+          break;
+      }
+
+      store.dispatch('search/change/results', results)
+
+      store.dispatch('search/loading', false)
+    } catch (error) {
+      store.dispatch('search/loading', false)
+      store.dispatch('notification/add', {
+        type: 'error', message: error.message
+      })
+    }
   })
 }

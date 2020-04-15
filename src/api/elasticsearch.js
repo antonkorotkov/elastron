@@ -81,6 +81,23 @@ export default class API {
       throw new ConnectionError(err.message)
     }
   }
+
+  async uriSearch(params) {
+    try {
+      const { index, type, query, size, from } = params
+      const response = await this.client.get(
+        `${index?`/${index}`:''}${type?`/${type}`:''}/_search`,
+        {
+          params: {
+            q: query, size, from
+          }
+        }
+      )
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err.message)
+    }
+  }
 }
 
 class ConnectionError extends Error {
