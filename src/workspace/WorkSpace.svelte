@@ -3,6 +3,7 @@
   import { routerKey } from '@storeon/router'
 
   import Dashboard from './dashboard/Dashboard.svelte'
+  import Search from './search/Search.svelte'
 
   const { [routerKey]: route } = useStoreon(routerKey)
 </script>
@@ -20,7 +21,7 @@
   {:else if $route.match.page === 'mapping'}
     <div class="ui segment">Mapping comming soon</div>
   {:else if $route.match.page === 'search'}
-    <div class="ui segment">Search comming soon</div>
+    <Search />
   {:else}
     <Dashboard />
   {/if}
