@@ -52,7 +52,31 @@
 
     if (resultsEditor) {
       rEditor = new JSONEditor(resultsEditor, {
-        mode: 'tree'
+        mode: 'tree',
+        onEditable: () => false,
+        onCreateMenu: (items, node) => {
+          if (node.type === 'single' && node.path.length === 1) {
+            return [
+              {
+                text: 'Edit',
+                title: 'Edit the document and commit updates to the server',
+                className: 'jsoneditor-type-object',
+                click: () => {
+                  console.log(node)
+                }
+              },
+              {
+                text: 'Delete',
+                title: 'Delete the document from the server',
+                className: 'jsoneditor-remove',
+                click: () => {
+                  console.log(node)
+                }
+              }
+            ]
+          }
+          return []
+        }
       }, $search.results)
     }
   })

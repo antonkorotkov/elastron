@@ -1,4 +1,5 @@
 import API from '../api/elasticsearch'
+import get from 'lodash/get'
 
 export const search = store => {
   store.on('@init', () => (
@@ -139,7 +140,7 @@ export const search = store => {
           break;
       }
 
-      store.dispatch('search/change/results', results)
+      store.dispatch('search/change/results', get(results, 'hits.hits', []))
 
       store.dispatch('search/loading', false)
     } catch (error) {
