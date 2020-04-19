@@ -7,7 +7,7 @@ export const search = store => {
       search: {
         loading: false,
         type: 'uri',
-        index: '',
+        index: '_all',
         useDocType: false,
         docType: '_doc',
         requestBody: {
@@ -160,7 +160,7 @@ export const search = store => {
 
       store.dispatch('search/change/results', get(results, 'hits.hits', []))
       store.dispatch('search/change/stats', {
-        total_results: get(results, 'hits.total', 0),
+        total_results: get(results, 'hits.total.value', get(results, 'hits.total', 0)),
         time: get(results, 'took', 0),
         total_shards: get(results, '_shards.total', 0),
         successful_shards: get(results, '_shards.successful', 0),

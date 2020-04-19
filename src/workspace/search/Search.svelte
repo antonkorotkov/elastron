@@ -64,7 +64,7 @@
                 title: 'Edit the document and commit updates to the server',
                 className: 'jsoneditor-type-object',
                 click: () => {
-                  console.log(node)
+                  alert('Comming soon')
                 }
               },
               {
@@ -72,7 +72,7 @@
                 title: 'Delete the document from the server',
                 className: 'jsoneditor-remove',
                 click: () => {
-                  console.log(node)
+                  alert('Comming soon')
                 }
               }
             ]
@@ -132,7 +132,7 @@
         <div class="field">
           <label for="index">Index</label>
           <select id="index" class="ui dropdown" on:change={e => dispatch('search/change/index', e.target.value)} bind:value={index}>
-            <option value="">All</option>
+            <option value="_all">All</option>
             {#if _indices.length}
               {#each _indices as index}
                 <option value="{index}">{index}</option>
@@ -179,7 +179,6 @@
           <div class="field">
             <label for="type-value">Document Type</label>
             <input type="text" id="type-value" 
-              on:keyup={onDocTypeKeyup}
               on:change={onDocTypeKeyup}
               value={docType} />
           </div>
