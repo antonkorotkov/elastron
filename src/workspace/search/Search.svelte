@@ -26,11 +26,13 @@
 
   const onEditorChange = () => {
     try {
-      if (editor) {
-        const json = editor.get()
+      if (qEditor) {
+        const json = qEditor.get()
         dispatch('search/change/request-body', json)
       }
-    } catch (error) {}
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   const onDocTypeKeyup = e => {
@@ -109,6 +111,10 @@
 
   .search-options input[type="number"] {
     width: 6rem !important;
+  }
+
+  .stats {
+    margin-bottom: 7px;
   }
 </style>
 
@@ -198,6 +204,14 @@
   </div>
 
   <div class="ui segment">
+    <div class="ui circular labels stats">
+      Documents found: &nbsp;<span class="ui label">{$search.stats.total_results}</span>
+      Time: &nbsp;<span class="ui label">{$search.stats.time/1000}s</span>
+      Shards: &nbsp;<span class="ui blue label" title="Total">{$search.stats.total_shards}</span>
+      <span class="ui green label" title="Successful">{$search.stats.successful_shards}</span>
+      <span class="ui yellow label" title="Skipped">{$search.stats.skipped_shards}</span>
+      <span class="ui red label" title="Failed">{$search.stats.failed_shards}</span>
+    </div>
     <div id="results-editor" bind:this={resultsEditor}></div>
   </div>
 </div>

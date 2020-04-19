@@ -16,7 +16,15 @@ export const search = store => {
         uriQuery: 'user:kimchy',
         size: 10,
         from: 0,
-        results: []
+        results: [],
+        stats: {
+          total_results: 0,
+          time: 0,
+          total_shards: 0,
+          successful_shards: 0,
+          skipped_shards: 0,
+          failed_shards: 0
+        }
       }
     }
   ))
@@ -117,6 +125,15 @@ export const search = store => {
     }
   ))
 
+  store.on('search/change/stats', (state, stats) => (
+    {
+      search: {
+        ...state.search,
+        stats
+      }
+    }
+  ))
+
   store.on('search/run', async state => {
     try {
       store.dispatch('search/loading', true)
@@ -137,16 +154,25 @@ export const search = store => {
           results = await api.uriSearch(buildSearchParams())
           break;
         case 'body':
+          results = await api.bodySearch(buildSearchParams())
           break;
       }
 
       store.dispatch('search/change/results', get(results, 'hits.hits', []))
+      store.dispatch('search/change/stats', {
+        total_results: get(results, 'hits.total', 0),
+        time: get(results, 'took', 0),
+        total_shards: get(results, '_shards.total', 0),
+        successful_shards: get(results, '_shards.successful', 0),
+        skipped_shards: get(results, '_shards.skipped', 0),
+        failed_shards: get(results, '_shards.failed', 0)
+      })
 
       store.dispatch('search/loading', false)
     } catch (error) {
       store.dispatch('search/loading', false)
       store.dispatch('notification/add', {
-        type: 'error', message: error.message
+        type: 'error', message: get(error, 'response.data.error.reason', error.message)
       })
     }
   })

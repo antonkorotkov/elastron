@@ -19,6 +19,11 @@
 <style>
 	.logo {
 		border-radius: 0 !important;
+		padding-left: 6rem !important;
+		background-color: #fff000 !important;
+	}
+	.logo b {
+		color: #000;
 	}
 	header {
 		height: 4rem;
@@ -26,8 +31,8 @@
 </style>
 
 <header>
-  <div class="ui menu inverted fixed">
-		<div class="active logo item yellow">
+  <div style="-webkit-app-region: drag" class="ui menu inverted fixed">
+		<div class="logo item">
 			<b>Elastron</b>
 		</div>
 		<a class="item" href="/" class:active={$route.match.page == 'dashboard'}>

@@ -98,6 +98,17 @@ export default class API {
       throw new ConnectionError(err.message)
     }
   }
+
+  async bodySearch(params) {
+    const { index, type, query : { query } } = params
+    const response = await this.client.post(
+      `${index?`/${index}`:''}${type?`/${type}`:''}/_search`,
+      {
+        query
+      }
+    )
+    return response.data
+  }
 }
 
 class ConnectionError extends Error {
