@@ -9,15 +9,8 @@
   const { dispatch, search, indices } = useStoreon('search', 'indices')
 
   let requestBodyEditor, resultsEditor
-  let type = $search.type
-  let index = $search.index
-  let useDocType = $search.useDocType
-  let uriQuery = $search.uriQuery
   let qEditor, rEditor
 
-  $:  docType = $search.docType
-  $:  size = $search.size
-  $:  from = $search.from
   $:  _indices = $indices.data.map(item => 
         item[$indices.columns.reduce((i, item, index) => 
           item === 'index' ? index : i, 0
@@ -27,21 +20,34 @@
   const onEditorChange = () => {
     try {
       if (qEditor) {
-        const json = qEditor.get()
-        dispatch('search/change/request-body', json)
+        const requestBody = qEditor.get()
+        dispatch('search/update', {requestBody})
       }
-    } catch (error) {
-      console.log(error)
-    }
+    } catch (err) {}
   }
 
-  const onDocTypeKeyup = e => {
-    const value = e.target.value.trim()
-    dispatch('search/change/docType', value ? value : '_doc')
+  const onDocTypeChange = e => {
+    const docType = e.target.value.trim() || '_doc'
+    dispatch('search/update', {docType})
+    e.target.value = docType
   }
 
   const onSearchRun = e => {
     dispatch('search/run')
+  }
+
+  const onStateFieldChange = data => dispatch('search/update', data)
+
+  const onSizeChange = e => {
+    const size = !e.target.value.trim() || Number(e.target.value.trim()) < 0 ? 10 : Number(e.target.value.trim())
+    dispatch('search/update', {size})
+    e.target.value = size
+  }
+
+  const onFromChange = e => {
+    const from = !e.target.value.trim() || Number(e.target.value.trim()) < 0 ? 0 : Number(e.target.value.trim())
+    dispatch('search/update', {from})
+    e.target.value = from
   }
 
   onMount(() => {
@@ -85,7 +91,6 @@
 
   afterUpdate(() => {
     if (rEditor && !isEqual(rEditor.get(), $search.results)) {
-      console.log('updated')
       rEditor.set($search.results)
     }
   })
@@ -123,15 +128,15 @@
     <div class="ui form">
       <div class="inline fields search-options">
         <div class="field">
-          <label for="index">Search Type</label>
-          <select id="index" class="ui dropdown" on:change={e => dispatch('search/change/type', e.target.value)} bind:value={type}>
+          <label for="type">Search Type</label>
+          <select id="type" class="ui dropdown" on:change={e => onStateFieldChange({type:e.target.value})} value={$search.type}>
             <option value="uri">URI Search</option>
             <option value="body">Request Body</option>
           </select>
         </div>
         <div class="field">
           <label for="index">Index</label>
-          <select id="index" class="ui dropdown" on:change={e => dispatch('search/change/index', e.target.value)} bind:value={index}>
+          <select id="index" class="ui dropdown" on:change={e => onStateFieldChange({index:e.target.value})} value={$search.index}>
             <option value="_all">All</option>
             {#if _indices.length}
               {#each _indices as index}
@@ -143,30 +148,32 @@
 
         {#if $search.type === 'uri'}
           <div class="field">
+            <label for="sort">Sort</label>
+            <input type="text" id="sort" 
+              on:change={e => onStateFieldChange({sort: e.target.value.trim()})} 
+              value={$search.sort} />
+          </div>
+          <div class="field">
             <label for="size">Size</label>
             <input type="number" id="size" 
-              on:change={e => {
-                if (!e.target.value.trim()) e.target.value = size
-                dispatch('search/change/size', e.target.value)
-              }} 
-              value={size} />
+              on:change={onSizeChange} 
+              value={$search.size} />
           </div>
           <div class="field">
             <label for="from">From</label>
             <input type="number" id="from" 
-              on:change={e => {
-                if (!e.target.value.trim()) e.target.value = from
-                dispatch('search/change/from', e.target.value)
-              }} 
-              value={from} />
+              on:change={onFromChange} 
+              value={$search.from} />
           </div>
         {/if} 
 
         <div class="field">
           <div class="ui checkbox">
-            <input id="type" type="checkbox" on:change={e => dispatch('search/change/useDocType', e.target.checked)} bind:checked={useDocType} />
-            <label for="type" class:checked={useDocType}>
-              {#if !useDocType}
+            <input id="type" type="checkbox" 
+              on:change={e => onStateFieldChange({useDocType: e.target.checked})} 
+              checked={$search.useDocType} />
+            <label for="type" class:checked={$search.useDocType}>
+              {#if !$search.useDocType}
                 Use document type
               {:else}
                 &nbsp;
@@ -175,12 +182,12 @@
           </div>
         </div>
 
-        {#if useDocType}
+        {#if $search.useDocType}
           <div class="field">
             <label for="type-value">Document Type</label>
             <input type="text" id="type-value" 
-              on:change={onDocTypeKeyup}
-              value={docType} />
+              on:change={onDocTypeChange}
+              value={$search.docType} />
           </div>
         {/if}
         <div class="field">
@@ -197,7 +204,7 @@
       </div>
       <div class="field" class:hidden={$search.type !== 'uri'}>
         <label for="uri">URI Query</label>
-        <input id="uri" type="text" on:change={e => dispatch('search/change/uri-query', e.target.value)} bind:value={uriQuery} />
+        <input id="uri" type="text" on:change={e => onStateFieldChange({uriQuery:e.target.value})} value={$search.uriQuery} />
       </div>
     </div>
   </div>

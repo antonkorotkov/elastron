@@ -83,28 +83,24 @@ export default class API {
   }
 
   async uriSearch(params) {
-    try {
-      const { index, type, query, size, from } = params
-      const response = await this.client.get(
-        `${index?`/${index}`:''}${type?`/${type}`:''}/_search`,
-        {
-          params: {
-            q: query, size, from
-          }
+    const { index, type, query, size, from, sort } = params
+    const response = await this.client.get(
+      `${index?`/${index}`:''}${type?`/${type}`:''}/_search`,
+      {
+        params: {
+          q: query, size, from, sort
         }
-      )
-      return response.data
-    } catch (err) {
-      throw new ConnectionError(err.message)
-    }
+      }
+    )
+    return response.data
   }
 
   async bodySearch(params) {
-    const { index, type, query : { query } } = params
+    const { index, type, query } = params
     const response = await this.client.post(
       `${index?`/${index}`:''}${type?`/${type}`:''}/_search`,
       {
-        query
+        ...query
       }
     )
     return response.data
