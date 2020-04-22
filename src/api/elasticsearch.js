@@ -83,12 +83,12 @@ export default class API {
   }
 
   async uriSearch(params) {
-    const { index, type, query, size, from, sort } = params
+    const { index, type, query, size, from, sort, _source } = params
     const response = await this.client.get(
       `${index?`/${index}`:''}${type?`/${type}`:''}/_search`,
       {
         params: {
-          q: query, size, from, sort
+          q: query, size, from, sort, _source
         }
       }
     )

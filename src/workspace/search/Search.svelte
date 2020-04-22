@@ -56,6 +56,7 @@
         mode: 'code',
         onChange: onEditorChange
       }, $search.requestBody)
+      qEditor.aceEditor.setOptions({maxLines: 32})
     }
 
     if (resultsEditor) {
@@ -126,7 +127,7 @@
 <div class="ui segments">
   <div class="ui segment">
     <div class="ui form">
-      <div class="inline fields search-options">
+      <div class="fields search-options">
         <div class="field">
           <label for="type">Search Type</label>
           <select id="type" class="ui dropdown" on:change={e => onStateFieldChange({type:e.target.value})} value={$search.type}>
@@ -148,12 +149,6 @@
 
         {#if $search.type === 'uri'}
           <div class="field">
-            <label for="sort">Sort</label>
-            <input type="text" id="sort" 
-              on:change={e => onStateFieldChange({sort: e.target.value.trim()})} 
-              value={$search.sort} />
-          </div>
-          <div class="field">
             <label for="size">Size</label>
             <input type="number" id="size" 
               on:change={onSizeChange} 
@@ -165,32 +160,67 @@
               on:change={onFromChange} 
               value={$search.from} />
           </div>
+          <div class="field">
+            <label for="sort">Sort</label>
+            <input type="text" id="sort" 
+              on:change={e => onStateFieldChange({sort: e.target.value.trim()})} 
+              value={$search.sort} />
+          </div>
+
+          <div class="field">
+            <label>_Source</label>
+            <div class="ui checkbox">
+              <input id="source" type="checkbox" 
+                on:change={e => onStateFieldChange({useSource: e.target.checked})} 
+                checked={$search.useSource} />
+              <label for="source">Enable</label>
+            </div>
+          </div>
+
+          {#if $search.useSource}
+            <div class="field">
+              <label for="source-value">&nbsp;</label>
+              <input type="text" id="source-value" 
+                on:change={e => onStateFieldChange({_source: e.target.value})}
+                value={$search._source} />
+            </div>
+          {/if}
         {/if} 
 
         <div class="field">
+          <label>Doc Type</label>
           <div class="ui checkbox">
-            <input id="type" type="checkbox" 
+            <input id="use-doc-type" type="checkbox" 
               on:change={e => onStateFieldChange({useDocType: e.target.checked})} 
               checked={$search.useDocType} />
-            <label for="type" class:checked={$search.useDocType}>
-              {#if !$search.useDocType}
-                Use document type
-              {:else}
-                &nbsp;
-              {/if}
-            </label>
+            <label for="use-doc-type">Enable</label>
           </div>
         </div>
 
         {#if $search.useDocType}
           <div class="field">
-            <label for="type-value">Document Type</label>
+            <label for="type-value">&nbsp;</label>
             <input type="text" id="type-value" 
               on:change={onDocTypeChange}
               value={$search.docType} />
           </div>
         {/if}
-        <div class="field">
+      </div>
+      <div class="field" class:hidden={$search.type !== 'body'}>
+        <div id="request-body-editor" bind:this={requestBodyEditor}></div>
+      </div>
+      {#if $search.type === 'body'}
+        <button class="ui green button" 
+          class:loading={$search.loading} 
+          disabled={$search.loading} 
+          on:click={onSearchRun}>
+          Run
+        </button>
+      {/if}
+      <div class="field" class:hidden={$search.type !== 'uri'}>
+        <label for="uri">URI Query</label>
+        <div class="ui fluid action input">
+          <input id="uri" type="text" on:change={e => onStateFieldChange({uriQuery:e.target.value})} value={$search.uriQuery} />
           <button class="ui green button" 
             class:loading={$search.loading} 
             disabled={$search.loading} 
@@ -198,13 +228,6 @@
             Run
           </button>
         </div>
-      </div>
-      <div class="field" class:hidden={$search.type !== 'body'}>
-        <div id="request-body-editor" bind:this={requestBodyEditor}></div>
-      </div>
-      <div class="field" class:hidden={$search.type !== 'uri'}>
-        <label for="uri">URI Query</label>
-        <input id="uri" type="text" on:change={e => onStateFieldChange({uriQuery:e.target.value})} value={$search.uriQuery} />
       </div>
     </div>
   </div>

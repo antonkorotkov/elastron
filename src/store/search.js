@@ -10,8 +10,13 @@ export const search = store => {
         index: '_all',
         useDocType: false,
         docType: '_doc',
+        useSource: false,
+        _source: '',
         requestBody: {
-          query: ''
+          query: '',
+          size: 10,
+          from: 0,
+          _source: true
         },
         uriQuery: 'user:kimchy',
         sort: '',
@@ -62,7 +67,8 @@ export const search = store => {
         query: state.search.type === 'uri' ? state.search.uriQuery : state.search.requestBody,
         size: state.search.size,
         from: state.search.from,
-        sort: state.search.sort
+        sort: state.search.sort,
+        _source: state.search.useSource ? state.search._source : true
       })
 
       const api = new API(state.connection)
