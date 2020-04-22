@@ -8,29 +8,45 @@ export const connection = store => {
         port: '9200',
         useAuth: false,
         user: '',
-        password: '',
+        password: ''
       }
     }
   ))
 
-  store.on('connection/save', async (_state, connection) => {
-    store.dispatch('connection/update', connection)
+  store.on('connection/clear', _state => {
+    return {
+      connection: {
+        host: '', 
+        port: '',
+        useAuth: false,
+        user: '',
+        password: ''
+      }
+    }
+  })
+
+  store.on('connection/save', async (state, callback = () => {}) => {
     try {
-      const api = new API(connection)
+      const api = new API(state.connection)
       const test = await api.test()
       if (test.success) {
         store.dispatch('connected')
+        store.dispatch('history/connection/add', state.connection)
       } else {
         store.dispatch('disconnected')
       }
     } catch (error) {
       store.dispatch('disconnected')
     }
+    callback()
   })
 
-  store.on('connection/update', (_state, connection) => {
+  store.on('connection/update', (state, data) => {
     return {
-      connection
+      connection: {
+        ...state.connection,
+        ...data
+      }
     }
   })
 }

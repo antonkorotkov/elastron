@@ -60,7 +60,7 @@
 {#if Component}
   <div transition:fade="{{duration: 300}}" on:click={handleOuterClick} bind:this={background} class="ui dimmer modals page hidden flex active">
     <div class="ui tiny modal hidden active" transition:fly="{{ y: -500, duration: 300 }}">
-      <Component {...props} />
+      <svelte:component this={Component}/>
     </div>
   </div>
 {/if}

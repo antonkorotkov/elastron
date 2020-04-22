@@ -8,8 +8,10 @@ import { search } from './search'
 import { indices } from './elasticsearch/indices'
 import { allocation } from './elasticsearch/allocation'
 import { shards } from './elasticsearch/shards'
+import { history } from './history'
 
 export const store = createStoreon([
+  history,
   connection,
   routes,
   notifications,
