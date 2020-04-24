@@ -24,13 +24,16 @@
   }
 </style>
 
-<div 
-  on:click={() => dispatch('notification/delete', notification.id)} 
-  class="ui message" 
+<div
+  on:click={() => dispatch('notification/delete', notification.id)}
+  class="ui message"
   class:negative={notification.type === 'error'}
   class:positive={notification.type === 'success'}
-  transition:fly="{{ x: 500, duration: 500 }}"
-  >
-  {#if notification.type === 'error'}<Error notification={notification} />{/if}
-  {#if notification.type === 'success'}<Success notification={notification} />{/if}
+  transition:fly={{ x: 500, duration: 500 }}>
+  {#if notification.type === 'error'}
+    <Error {notification} />
+  {/if}
+  {#if notification.type === 'success'}
+    <Success {notification} />
+  {/if}
 </div>

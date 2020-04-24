@@ -111,10 +111,6 @@
     display: none;
   }
 
-  label.checked {
-    padding-left: 0;
-  }
-
   .search-options input[type="number"] {
     width: 6rem !important;
   }

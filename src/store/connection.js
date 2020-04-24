@@ -1,27 +1,25 @@
 import API from '../api/elasticsearch'
 
 export const connection = store => {
-  store.on('@init', () => (
-    { 
-      connection: {
-        host: 'http://localhost', 
-        port: '9200',
-        useAuth: false,
-        user: '',
-        password: ''
-      }
-    }
-  ))
+  store.on('@init', () => ({
+    connection: {
+      host: 'http://localhost',
+      port: '9200',
+      useAuth: false,
+      user: '',
+      password: '',
+    },
+  }))
 
   store.on('connection/clear', _state => {
     return {
       connection: {
-        host: '', 
+        host: '',
         port: '',
         useAuth: false,
         user: '',
-        password: ''
-      }
+        password: '',
+      },
     }
   })
 
@@ -45,8 +43,8 @@ export const connection = store => {
     return {
       connection: {
         ...state.connection,
-        ...data
-      }
+        ...data,
+      },
     }
   })
 }

@@ -7,8 +7,8 @@
   const { dispatch, allocation } = useStoreon('allocation')
 
   onMount(async () => {
-		dispatch('elasticsearch/allocation/fetch')
-	})
+    dispatch('elasticsearch/allocation/fetch')
+  })
 </script>
 
 <div class="ui segments">
@@ -20,7 +20,7 @@
       <thead>
         <tr>
           {#each $allocation.columns as column}
-          <th>{column.toUpperCase()}</th>
+            <th>{column.toUpperCase()}</th>
           {/each}
         </tr>
       </thead>
@@ -42,7 +42,11 @@
     </table>
   {:else}
     <div class="ui segment">
-      <p>No <code>allocation</code> data yet</p>
+      <p>
+        No
+        <code>allocation</code>
+        data yet
+      </p>
     </div>
   {/if}
 </div>

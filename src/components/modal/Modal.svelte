@@ -9,7 +9,7 @@
 
   const defaultState = {
     closeOnEsc,
-    closeOnOuterClick
+    closeOnOuterClick,
   }
 
   let state = { ...defaultState }
@@ -19,11 +19,7 @@
 
   let background
 
-  const open = (
-    NewComponent,
-    newProps = {},
-    options = {}
-  ) => {
+  const open = (NewComponent, newProps = {}, options = {}) => {
     Component = NewComponent
     props = newProps
     state = { ...defaultState, ...options }
@@ -39,30 +35,32 @@
       event.preventDefault()
       close()
     }
-  };
+  }
 
-  const handleOuterClick = (event) => {
-    if (
-      state.closeOnOuterClick && (
-        event.target === background
-      )
-    ) {
+  const handleOuterClick = event => {
+    if (state.closeOnOuterClick && event.target === background) {
       event.preventDefault()
       close()
     }
-  };
+  }
 
   setContext(key, { open, close })
 </script>
 
-<svelte:window on:keyup={handleKeyup}/>
+<svelte:window on:keyup={handleKeyup} />
 
 {#if Component}
-  <div transition:fade="{{duration: 300}}" on:click={handleOuterClick} bind:this={background} class="ui dimmer modals page hidden flex active">
-    <div class="ui tiny modal hidden active" transition:fly="{{ y: -500, duration: 300 }}">
-      <svelte:component this={Component}/>
+  <div
+    transition:fade={{ duration: 300 }}
+    on:click={handleOuterClick}
+    bind:this={background}
+    class="ui dimmer modals page hidden flex active">
+    <div
+      class="ui tiny modal hidden active"
+      transition:fly={{ y: -500, duration: 300 }}>
+      <svelte:component this={Component} />
     </div>
   </div>
 {/if}
 
-<slot></slot>
+<slot />

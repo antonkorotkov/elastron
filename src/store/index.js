@@ -19,5 +19,5 @@ export const store = createStoreon([
   indices,
   allocation,
   shards,
-  storeonDevtools
+  storeonDevtools,
 ])

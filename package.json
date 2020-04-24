@@ -6,6 +6,13 @@
     "dev": "rollup -c -w",
     "start": "sirv public"
   },
+  "prettier": {
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "arrowParens": "avoid",
+    "semi": false,
+    "singleQuote": true
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.0.0",
     "@rollup/plugin-node-resolve": "^7.0.0",

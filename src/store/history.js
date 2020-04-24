@@ -3,26 +3,24 @@ import some from 'lodash/some'
 import isEqual from 'lodash/isEqual'
 
 export const history = store => {
-  store.on('@init', () => (
-    { 
-      history: {
-        connection: ls('connection') || []
-      }
-    }
-  ))
+  store.on('@init', () => ({
+    history: {
+      connection: ls('connection') || [],
+    },
+  }))
 
   store.on('history/connection/clear', state => {
     ls('connection', [])
     return {
       history: {
         ...state.history,
-        connection: []
-      }
+        connection: [],
+      },
     }
   })
 
   store.on('history/connection/add', (state, connection) => {
-    if (some(state.history.connection, item => isEqual(item, connection))) 
+    if (some(state.history.connection, item => isEqual(item, connection)))
       return state
 
     const savedConnections = ls('connection') || []
@@ -35,8 +33,8 @@ export const history = store => {
     return {
       history: {
         ...state.history,
-        connection: [...savedConnections]
-      }
+        connection: [...savedConnections],
+      },
     }
   })
 }

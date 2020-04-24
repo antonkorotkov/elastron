@@ -9,5 +9,10 @@
 </style>
 
 <footer class="ui segment">
-  <p>Created with 🖤 by <a href="https://github.com/antonkorotkov" target="_blank">@antonkorotkov</a></p>
+  <p>
+    Created with 🖤 by
+    <a href="https://github.com/antonkorotkov" target="_blank">
+      @antonkorotkov
+    </a>
+  </p>
 </footer>

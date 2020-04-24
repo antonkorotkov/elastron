@@ -7,8 +7,8 @@
   const { dispatch, shards } = useStoreon('shards')
 
   onMount(async () => {
-		dispatch('elasticsearch/shards/fetch')
-	})
+    dispatch('elasticsearch/shards/fetch')
+  })
 </script>
 
 <div class="ui segments">
@@ -20,7 +20,7 @@
       <thead>
         <tr>
           {#each $shards.columns as column}
-          <th>{column.toUpperCase()}</th>
+            <th>{column.toUpperCase()}</th>
           {/each}
         </tr>
       </thead>
@@ -42,7 +42,11 @@
     </table>
   {:else}
     <div class="ui segment">
-      <p>No <code>shards</code> data yet</p>
+      <p>
+        No
+        <code>shards</code>
+        data yet
+      </p>
     </div>
   {/if}
 </div>

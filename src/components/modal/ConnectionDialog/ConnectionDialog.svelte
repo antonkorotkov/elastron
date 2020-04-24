@@ -7,34 +7,36 @@
 
   const { dispatch, connection, history } = useStoreon('connection', 'history')
 
-  let form;
+  let form
 
-	export let onCancel = () => {}
-	export let onOkay = () => {}
+  export let onCancel = () => {}
+  export let onOkay = () => {}
 
   const { close } = getContext('modal-window')
-	
-	const _onCancel = () => {
-		onCancel();
-		close();
-	}
-	
-	const _onOkay = () => {
-		onOkay(value)
-		close()
+
+  const _onCancel = () => {
+    onCancel()
+    close()
   }
-  
+
+  const _onOkay = () => {
+    onOkay(value)
+    close()
+  }
+
   const testConnection = async () => {
     try {
       const api = new API($connection)
       const { success, message } = await api.test()
 
       dispatch('notification/add', {
-        type: success ? 'success' : 'error', message
+        type: success ? 'success' : 'error',
+        message,
       })
     } catch (e) {
       dispatch('notification/add', {
-        type: 'error', message: e.message
+        type: 'error',
+        message: e.message,
       })
     }
   }
@@ -42,7 +44,8 @@
   const save = () => {
     if (!$connection.useAuth) {
       dispatch('connection/update', {
-        user: '', password: ''
+        user: '',
+        password: '',
       })
     }
     dispatch('connection/save', close)
@@ -53,7 +56,7 @@
   }
 
   const onPreviousChange = e => {
-    const index = e.target.value;
+    const index = e.target.value
     if (index >= 0) {
       dispatch('connection/update', $history.connection[index])
     } else {
@@ -68,9 +71,7 @@
   }
 </style>
 
-<div class="header">
-  Connection Settings
-</div>
+<div class="header">Connection Settings</div>
 
 <div class="content">
   {#if $history.connection.length}
@@ -79,11 +80,16 @@
         <div class="sixteen wide field">
           <label for="previous">Previous</label>
           <div class="ui input">
-            <select id="previous" class="ui dropdown" on:change={onPreviousChange}>
+            <select
+              id="previous"
+              class="ui dropdown"
+              on:change={onPreviousChange}>
               <option value="-1">New Connection</option>
               {#if $history.connection.length}
                 {#each $history.connection as connection, i}
-                  <option value="{i}">{connection.host}{connection.port?`:${connection.port}`:''}</option>
+                  <option value={i}>
+                    {connection.host}{connection.port ? `:${connection.port}` : ''}
+                  </option>
                 {/each}
               {/if}
             </select>
@@ -97,16 +103,34 @@
     <div class="fields">
       <div class="twelve wide field">
         <label for="host">Host</label>
-        <input type="url" id="host" on:change={e => dispatch('connection/update', {host: e.target.value})} value={$connection.host} />
+        <input
+          type="url"
+          id="host"
+          on:change={e => dispatch('connection/update', {
+              host: e.target.value,
+            })}
+          value={$connection.host} />
       </div>
       <div class="four wide field">
         <label for="port">Port</label>
-        <input type="number" id="port" on:change={e => dispatch('connection/update', {port: e.target.value})} value={$connection.port} />
+        <input
+          type="number"
+          id="port"
+          on:change={e => dispatch('connection/update', {
+              port: e.target.value,
+            })}
+          value={$connection.port} />
       </div>
     </div>
     <div class="field">
       <div class="ui checkbox">
-        <input id="auth" type="checkbox" checked={$connection.useAuth} on:change={e => dispatch('connection/update', {useAuth: e.target.checked})} />
+        <input
+          id="auth"
+          type="checkbox"
+          checked={$connection.useAuth}
+          on:change={e => dispatch('connection/update', {
+              useAuth: e.target.checked,
+            })} />
         <label for="auth">Authentication</label>
       </div>
     </div>
@@ -114,11 +138,25 @@
       <div transition:blur class="fields">
         <div class="eight wide field">
           <label for="user">User</label>
-          <input required={$connection.useAuth} type="text" id="user" on:change={e => dispatch('connection/update', {user: e.target.value})} value={$connection.user} />
+          <input
+            required={$connection.useAuth}
+            type="text"
+            id="user"
+            on:change={e => dispatch('connection/update', {
+                user: e.target.value,
+              })}
+            value={$connection.user} />
         </div>
         <div class="eight wide field">
           <label for="password">Password</label>
-          <input required={$connection.useAuth} type="text" id="password" on:change={e => dispatch('connection/update', {password: e.target.value})} value={$connection.password} />
+          <input
+            required={$connection.useAuth}
+            type="text"
+            id="password"
+            on:change={e => dispatch('connection/update', {
+                password: e.target.value,
+              })}
+            value={$connection.password} />
         </div>
       </div>
     {/if}
@@ -126,12 +164,8 @@
 </div>
 
 <div class="actions">
-  <div class="ui black deny button right" on:click={_onCancel}>
-    Cancel
-  </div>
-  <div class="ui right button" on:click={testConnection}>
-    Test
-  </div>
+  <div class="ui black deny button right" on:click={_onCancel}>Cancel</div>
+  <div class="ui right button" on:click={testConnection}>Test</div>
   <button type="submit" class="ui positive right button" form="connection-form">
     Save
   </button>

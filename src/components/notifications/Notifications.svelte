@@ -19,7 +19,7 @@
 {#if $notifications.length}
   <div class="notifications">
     {#each $notifications as notification}
-      <Notification notification={notification} />
+      <Notification {notification} />
     {/each}
   </div>
 {/if}

@@ -7,8 +7,8 @@
   const { dispatch, indices } = useStoreon('indices')
 
   onMount(async () => {
-		dispatch('elasticsearch/indices/fetch')
-	})
+    dispatch('elasticsearch/indices/fetch')
+  })
 </script>
 
 <div class="ui segments">
@@ -20,7 +20,7 @@
       <thead>
         <tr>
           {#each $indices.columns as column}
-          <th>{column.toUpperCase()}</th>
+            <th>{column.toUpperCase()}</th>
           {/each}
         </tr>
       </thead>
@@ -48,7 +48,11 @@
     </table>
   {:else}
     <div class="ui segment">
-      <p>No <code>indices</code> data yet</p>
+      <p>
+        No
+        <code>indices</code>
+        data yet
+      </p>
     </div>
   {/if}
 </div>
