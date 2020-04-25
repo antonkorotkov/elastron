@@ -10,7 +10,7 @@
 
 <footer class="ui segment">
   <p>
-    Created with 🖤 by
+    Made with 🖤 by
     <a href="https://github.com/antonkorotkov" target="_blank">
       @antonkorotkov
     </a>

@@ -3,6 +3,7 @@
   import JSONEditor from 'jsoneditor'
   import { useStoreon } from '@storeon/svelte'
   import { onMount, onDestroy, afterUpdate } from 'svelte'
+  import get from 'lodash/get'
 
   import Pagination from '../../components/pagination/Pagination.svelte'
 
@@ -22,6 +23,20 @@
         )
       ]
   )
+
+  $: uriPaginationCurrentPage = () => Math.round($search.from / $search.size)
+
+  $: bodyPaginationCurrentPage = () => {
+    const body = $search.requestBody
+    const from = get(body, 'from', 0)
+    const size = get(body, 'size', 10)
+
+    return Math.round(from / size)
+  }
+
+  $: bodyPaginationOffset = () => get($search.requestBody, 'from', 0)
+
+  $: bodyPaginationItemsPerPage = () => get($search.requestBody, 'size', 10)
 
   const onEditorChange = () => {
     try {
@@ -125,9 +140,25 @@
     }
   })
 
-  const onPaginationChanged = ({ detail }) => {
+  const onUriPaginationChanged = ({ detail }) => {
     dispatch('search/update', { from: $search.size * detail })
     dispatch('search/run')
+  }
+
+  const onBodyPaginationChanged = ({ detail }) => {
+    try {
+      const requestBody = qEditor.get()
+      const size = get(requestBody, 'size', 10)
+      requestBody.from = size * detail
+      qEditor.set(requestBody)
+      dispatch('search/update', { requestBody })
+      dispatch('search/run')
+    } catch (error) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: error.message,
+      })
+    }
   }
 </script>
 
@@ -315,15 +346,27 @@
         </div>
       </div>
       <div class="four wide column pagination">
-        <Pagination
-          className="mini"
-          disable={$search.loading}
-          current_page={Math.round($search.from / $search.size)}
-          offset={$search.from}
-          items_per_page={$search.size}
-          total_items={$search.stats.total_results}
-          on:prev={onPaginationChanged}
-          on:next={onPaginationChanged} />
+        {#if $search.type === 'uri'}
+          <Pagination
+            className="mini"
+            disable={$search.loading}
+            current_page={uriPaginationCurrentPage()}
+            offset={$search.from}
+            items_per_page={$search.size}
+            total_items={$search.stats.total_results}
+            on:change={onUriPaginationChanged} />
+        {/if}
+
+        {#if $search.type === 'body'}
+          <Pagination
+            className="mini"
+            disable={$search.loading}
+            current_page={bodyPaginationCurrentPage()}
+            offset={bodyPaginationOffset()}
+            items_per_page={bodyPaginationItemsPerPage()}
+            total_items={$search.stats.total_results}
+            on:change={onBodyPaginationChanged} />
+        {/if}
       </div>
     </div>
 

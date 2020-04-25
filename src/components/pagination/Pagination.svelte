@@ -23,13 +23,25 @@
   const onClickPrev = event => {
     if (prevDisabled) return
     trigger('prev', --current_page)
+    trigger('change', current_page)
   }
 
   const onClickNext = event => {
     if (nextDisabled) return
     trigger('next', ++current_page)
+    trigger('change', current_page)
   }
 </script>
+
+<style>
+  .pagination {
+    margin-left: 1rem !important;
+  }
+
+  .menu.mini {
+    font-size: 0.6rem;
+  }
+</style>
 
 {#if shouldDisplay}
   Page {page} of {total_pages}

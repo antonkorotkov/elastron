@@ -12,7 +12,13 @@ export const search = store => {
       useSource: false,
       _source: '',
       requestBody: {
-        query: '',
+        query: {
+          bool: {
+            must: {
+              match_all: {},
+            },
+          },
+        },
         size: 10,
         from: 0,
         _source: true,
