@@ -11,8 +11,12 @@
 
   $: page = current_page + 1
   $: total_pages = total_items > 0 ? Math.ceil(total_items / items_per_page) : 0
+
   $: prevDisabled = disable || current_page == 0
   $: nextDisabled = disable || current_page == total_pages - 1
+
+  $: firstDisabled = prevDisabled
+  $: lastDisabled = nextDisabled
 
   $: shouldDisplay =
     total_items > items_per_page &&
@@ -29,6 +33,18 @@
   const onClickNext = event => {
     if (nextDisabled) return
     trigger('next', ++current_page)
+    trigger('change', current_page)
+  }
+
+  const onClickFirst = event => {
+    if (prevDisabled) return
+    trigger('first', (current_page = 0))
+    trigger('change', current_page)
+  }
+
+  const onClickLast = event => {
+    if (nextDisabled) return
+    trigger('last', (current_page = total_pages - 1))
     trigger('change', current_page)
   }
 </script>
@@ -48,6 +64,13 @@
   <div class="ui pagination menu {className}">
     <a
       class="icon item"
+      class:disabled={firstDisabled}
+      on:click={onClickFirst}
+      href="javascript:;">
+      <i class="angle double left icon" />
+    </a>
+    <a
+      class="icon item"
       class:disabled={prevDisabled}
       on:click={onClickPrev}
       href="javascript:;">
@@ -59,6 +82,13 @@
       on:click={onClickNext}
       href="javascript:;">
       <i class="right chevron icon" />
+    </a>
+    <a
+      class="icon item"
+      class:disabled={lastDisabled}
+      on:click={onClickLast}
+      href="javascript:;">
+      <i class="angle double right icon" />
     </a>
   </div>
 {/if}

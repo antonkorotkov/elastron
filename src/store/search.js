@@ -110,7 +110,11 @@ export const search = store => {
       store.dispatch('search/loading', false)
       store.dispatch('notification/add', {
         type: 'error',
-        message: get(error, 'response.data.error.reason', error.message),
+        message: get(
+          error,
+          'response.data.error.root_cause[0].reason',
+          get(error, 'response.data.error.reason', error.message)
+        ),
       })
     }
   })
