@@ -1,19 +1,54 @@
 {
-  "name": "svelte-app",
-  "version": "1.0.0",
+  "name": "Elastron",
+  "version": "1.0.3",
+  "description": "Full featured elasticsearch client",
+  "main": "main.js",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "start": "sirv public"
+    "start-local": "sirv public",
+    "start": "electron .",
+    "dist": "electron-builder",
+    "release": "electron-builder --publish=onTagOrDraft"
   },
-  "prettier": {
-    "trailingComma": "es5",
-    "tabWidth": 2,
-    "arrowParens": "avoid",
-    "semi": false,
-    "singleQuote": true
+  "repository": "https://github.com/antonkorotkov/elastron-electron",
+  "keywords": [
+    "Electron",
+    "quick",
+    "start",
+    "tutorial",
+    "demo"
+  ],
+  "author": "Anton Korotkov",
+  "license": "MIT",
+  "build": {
+    "appId": "com.elastron.www",
+    "mac": {
+      "category": "db.development.tools",
+      "icon": "public/icon.icns",
+      "publish": {
+        "provider": "github",
+        "repo": "elastron",
+        "owner": "antonkorotkov",
+        "private": true
+      }
+    }
+  },
+  "dependencies": {
+    "electron-log": "^4.1.1",
+    "electron-updater": "^4.2.5",
+    "@storeon/router": "^1.0.1",
+    "@storeon/svelte": "^0.6.2",
+    "axios": "^0.19.2",
+    "jsoneditor": "^8.6.4",
+    "local-storage": "^2.0.0",
+    "lodash": "^4.17.15",
+    "sirv-cli": "^0.4.4",
+    "storeon": "^2.0.2"
   },
   "devDependencies": {
+    "electron": "^8.2.3",
+    "electron-builder": "^22.5.1",
     "@rollup/plugin-commonjs": "^11.0.0",
     "@rollup/plugin-node-resolve": "^7.0.0",
     "node-sass": "^4.13.1",
@@ -26,14 +61,11 @@
     "svelte": "^3.0.0",
     "svelte-preprocess": "^3.7.1"
   },
-  "dependencies": {
-    "@storeon/router": "^1.0.1",
-    "@storeon/svelte": "^0.6.2",
-    "axios": "^0.19.2",
-    "jsoneditor": "^8.6.4",
-    "local-storage": "^2.0.0",
-    "lodash": "^4.17.15",
-    "sirv-cli": "^0.4.4",
-    "storeon": "^2.0.2"
+  "prettier": {
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "arrowParens": "avoid",
+    "semi": false,
+    "singleQuote": true
   }
 }
