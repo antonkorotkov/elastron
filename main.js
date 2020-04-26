@@ -9,10 +9,10 @@ autoUpdater.setFeedURL({
   repo: 'elastron',
 })
 
-autoUpdater.on('error', error => {
+autoUpdater.on('error', e => {
   dialog.showErrorBox(
-    'Error: ',
-    error == null ? 'unknown' : (error.stack || error).toString()
+    'Update Error',
+    'Could not update application. Please contact me at antonkorotkoff@gmail.com'
   )
 })
 
