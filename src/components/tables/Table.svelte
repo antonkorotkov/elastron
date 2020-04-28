@@ -8,15 +8,34 @@
   export let selectable = false
   export let emptyMessage = 'No data'
   export let Cell = null
+  export let sorter = () => {}
+
+  let sorted = {}
 
   let CellRenderer = Cell ? Cell : RowCell
+
+  const onColumnClick = (column, index) => {
+    if (!sortable) return
+
+    sorted = sorted[index]
+      ? { [index]: sorted[index] === 'asc' ? 'desc' : 'asc' }
+      : { [index]: 'asc' }
+
+    if (typeof sorter === 'function') {
+      sorter(column, index, sorted[index])
+    }
+  }
 </script>
 
 <table class="ui attached table" class:selectable class:sortable>
   <thead>
     <tr>
-      {#each columns as column}
-        <th>
+      {#each columns as column, i}
+        <th
+          on:click={e => onColumnClick.call(e, column, i)}
+          class:sorted={sorted[i]}
+          class:ascending={sorted[i] === 'asc'}
+          class:descending={sorted[i] === 'desc'}>
           <Column {column} />
         </th>
       {/each}

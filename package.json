@@ -8,8 +8,11 @@
     "dev": "rollup -c -w",
     "start-local": "sirv public",
     "start": "electron .",
-    "dist": "electron-builder",
-    "release": "electron-builder --publish=onTagOrDraft"
+    "dist-mac": "electron-builder -m",
+    "dist-win": "electron-builder -w",
+    "dist": "electron-builder -mw",
+    "release-mac": "electron-builder -m --publish=onTagOrDraft",
+    "release-win": "electron-builder -w --publish=onTagOrDraft"
   },
   "repository": "https://github.com/antonkorotkov/elastron-electron",
   "keywords": [
@@ -26,6 +29,23 @@
     "mac": {
       "category": "db.development.tools",
       "icon": "public/icon.icns",
+      "publish": {
+        "provider": "github",
+        "repo": "elastron",
+        "owner": "antonkorotkov",
+        "private": true
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
       "publish": {
         "provider": "github",
         "repo": "elastron",

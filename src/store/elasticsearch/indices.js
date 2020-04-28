@@ -5,6 +5,7 @@ export const indices = store => {
     indices: {
       columns: [],
       data: [],
+      loading: false,
     },
   }))
 
@@ -16,11 +17,15 @@ export const indices = store => {
     store.dispatch('elasticsearch/indices/update', {
       columns: [],
       data: [],
+      loading: false,
     })
   })
 
   store.on('elasticsearch/indices/fetch', async state => {
     try {
+      store.dispatch('elasticsearch/indices/update', {
+        loading: true,
+      })
       const api = new API(state.connection)
       const indices = await api.getIndices()
       if (indices) {
@@ -28,11 +33,15 @@ export const indices = store => {
         store.dispatch('elasticsearch/indices/update', {
           columns,
           data,
+          loading: false,
         })
       } else {
         store.dispatch('notification/add', {
           type: 'error',
           message: 'Could not get indices data',
+        })
+        store.dispatch('elasticsearch/indices/update', {
+          loading: false,
         })
       }
     } catch (error) {
@@ -40,8 +49,13 @@ export const indices = store => {
         type: 'error',
         message: error.message,
       })
+      store.dispatch('elasticsearch/indices/update', {
+        loading: false,
+      })
     }
   })
 
-  store.on('elasticsearch/indices/update', (_state, indices) => ({ indices }))
+  store.on('elasticsearch/indices/update', (state, indices) => ({
+    indices: { ...state.indices, ...indices },
+  }))
 }
