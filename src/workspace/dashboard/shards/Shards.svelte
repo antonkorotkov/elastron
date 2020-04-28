@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
 
   import API from '../../../api/elasticsearch'
+  import Table from '../../../components/tables/Table.svelte'
 
   const { dispatch, shards } = useStoreon('shards')
 
@@ -16,30 +17,11 @@
     <h4>Shards</h4>
   </div>
   {#if $shards.columns.length}
-    <table class="ui selectable attached table">
-      <thead>
-        <tr>
-          {#each $shards.columns as column}
-            <th>{column.toUpperCase()}</th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#if $shards.data.length}
-          {#each $shards.data as row}
-            <tr>
-              {#each row as entry}
-                <td>{entry}</td>
-              {/each}
-            </tr>
-          {/each}
-        {:else}
-          <tr>
-            <td colspan={$shards.columns.length}>No shards</td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    <Table
+      columns={$shards.columns}
+      rows={$shards.data}
+      emptyMessage="No shards found"
+      selectable />
   {:else}
     <div class="ui segment">
       <p>

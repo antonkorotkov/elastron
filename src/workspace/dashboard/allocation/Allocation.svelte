@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
 
   import API from '../../../api/elasticsearch'
+  import Table from '../../../components/tables/Table.svelte'
 
   const { dispatch, allocation } = useStoreon('allocation')
 
@@ -16,30 +17,11 @@
     <h4>Allocation</h4>
   </div>
   {#if $allocation.columns.length}
-    <table class="ui selectable attached table">
-      <thead>
-        <tr>
-          {#each $allocation.columns as column}
-            <th>{column.toUpperCase()}</th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#if $allocation.data.length}
-          {#each $allocation.data as row}
-            <tr>
-              {#each row as entry}
-                <td>{entry}</td>
-              {/each}
-            </tr>
-          {/each}
-        {:else}
-          <tr>
-            <td colspan={$allocation.columns.length}>No allocation</td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    <Table
+      columns={$allocation.columns}
+      rows={$allocation.data}
+      emptyMessage="No allocations found"
+      selectable />
   {:else}
     <div class="ui segment">
       <p>

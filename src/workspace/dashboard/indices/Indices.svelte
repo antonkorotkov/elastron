@@ -3,6 +3,8 @@
   import { onMount } from 'svelte'
 
   import API from '../../../api/elasticsearch'
+  import Table from '../../../components/tables/Table.svelte'
+  import Cell from './Cell.svelte'
 
   const { dispatch, indices } = useStoreon('indices')
 
@@ -16,36 +18,13 @@
     <h4>Indices</h4>
   </div>
   {#if $indices.columns.length}
-    <table class="ui selectable attached table">
-      <thead>
-        <tr>
-          {#each $indices.columns as column}
-            <th>{column.toUpperCase()}</th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#if $indices.data.length}
-          {#each $indices.data as row}
-            <tr>
-              {#each row as entry, i}
-                {#if $indices.columns[i] === 'health'}
-                  <td>
-                    <div class="ui label {entry}">{entry}</div>
-                  </td>
-                {:else}
-                  <td>{entry}</td>
-                {/if}
-              {/each}
-            </tr>
-          {/each}
-        {:else}
-          <tr>
-            <td colspan={$indices.columns.length}>No indices</td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    <Table
+      columns={$indices.columns}
+      rows={$indices.data}
+      {Cell}
+      emptyMessage="No indices found"
+      selectable
+      sortable />
   {:else}
     <div class="ui segment">
       <p>
