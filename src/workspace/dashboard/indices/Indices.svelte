@@ -31,7 +31,7 @@
   }
 
   onMount(async () => {
-    if (!$indices.data) dispatch('elasticsearch/indices/fetch')
+    if (!$indices.data.length) dispatch('elasticsearch/indices/fetch')
   })
 </script>
 

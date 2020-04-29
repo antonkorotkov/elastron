@@ -1,6 +1,7 @@
 import { createStoreon } from 'storeon'
 import { storeonDevtools } from 'storeon/devtools'
 
+import { internet } from './internet'
 import { connection } from './connection'
 import { routes } from './routes'
 import { notifications } from './notifications'
@@ -11,6 +12,7 @@ import { shards } from './elasticsearch/shards'
 import { history } from './history'
 
 export const store = createStoreon([
+  internet,
   history,
   connection,
   routes,

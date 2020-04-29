@@ -55,11 +55,11 @@
     }
   },
   "dependencies": {
-    "electron-log": "^4.1.1",
-    "electron-updater": "^4.2.5",
     "@storeon/router": "^1.0.1",
     "@storeon/svelte": "^0.6.2",
     "axios": "^0.19.2",
+    "electron-log": "^4.1.1",
+    "electron-updater": "^4.2.5",
     "jsoneditor": "^8.6.4",
     "local-storage": "^2.0.0",
     "lodash": "^4.17.15",

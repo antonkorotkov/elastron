@@ -1,6 +1,10 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, Menu, dialog } = require('electron')
+const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
+
+ipcMain.on('online-status-changed', (event, status) => {
+  console.log(status)
+})
 
 autoUpdater.setFeedURL({
   provider: 'github',
@@ -25,7 +29,8 @@ function createWindow() {
     minHeight: 768,
     titleBarStyle: 'hiddenInset',
     webPreferences: {
-      devTools: false,
+      nodeIntegration: true,
+      devTools: true,
     },
   })
 
