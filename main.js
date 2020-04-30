@@ -1,9 +1,10 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
+let mainWindow
 
-ipcMain.on('online-status-changed', (event, status) => {
-  console.log(status)
+autoUpdater.on('error', e => {
+  console.log('Error', e)
 })
 
 autoUpdater.setFeedURL({
@@ -13,16 +14,15 @@ autoUpdater.setFeedURL({
   repo: 'elastron',
 })
 
-autoUpdater.on('error', e => {
-  dialog.showErrorBox(
-    'Update Error',
-    'Could not update application. Please contact me at antonkorotkoff@gmail.com'
-  )
+ipcMain.on('online-status-changed', (event, online) => {
+  if (online) {
+    autoUpdater.checkForUpdates()
+  }
 })
 
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 768,
     minWidth: 1280,
@@ -53,8 +53,6 @@ function createWindow() {
     })
     autoUpdater.quitAndInstall()
   })
-
-  autoUpdater.checkForUpdates()
 
   // and load the index.html of the app.
   mainWindow.loadFile('public/index.html')

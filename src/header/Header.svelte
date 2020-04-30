@@ -4,6 +4,7 @@
   import { routerKey } from '@storeon/router'
 
   import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
+  import OnlineIndicator from './OnlineIndicator.svelte'
 
   const { open } = getContext('modal-window')
 
@@ -50,6 +51,7 @@
       on:click={showConnectionDialog}
       href="javascript:void(0);">
       Connection
+      <OnlineIndicator />
     </a>
   </div>
 </header>

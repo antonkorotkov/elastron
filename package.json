@@ -67,10 +67,11 @@
     "storeon": "^2.0.2"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.0",
+    "@rollup/plugin-json": "^4.0.3",
+    "@rollup/plugin-node-resolve": "^7.0.0",
     "electron": "^8.2.3",
     "electron-builder": "^22.5.1",
-    "@rollup/plugin-commonjs": "^11.0.0",
-    "@rollup/plugin-node-resolve": "^7.0.0",
     "node-sass": "^4.13.1",
     "rollup": "^1.20.0",
     "rollup-plugin-css-only": "^2.0.0",
