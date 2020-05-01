@@ -1,5 +1,7 @@
 import API from '../../api/elasticsearch'
 
+import { trackEvent } from '../../utils/analitycs'
+
 export const allocation = store => {
   store.on('@init', () => ({
     allocation: {
@@ -23,6 +25,8 @@ export const allocation = store => {
 
   store.on('elasticsearch/allocation/fetch', async state => {
     try {
+      trackEvent('Allocation', 'Fetch')
+
       store.dispatch('elasticsearch/allocation/update', {
         loading: true,
       })
@@ -52,6 +56,7 @@ export const allocation = store => {
       store.dispatch('elasticsearch/allocation/update', {
         loading: false,
       })
+      trackEvent('Error', 'Allocation', error.message)
     }
   })
 

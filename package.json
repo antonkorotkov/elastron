@@ -7,7 +7,7 @@
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "start-local": "sirv public",
-    "start": "electron .",
+    "start": "ENV=development electron .",
     "dist-mac": "electron-builder -m",
     "dist-win": "electron-builder -w",
     "dist": "electron-builder -mw",
@@ -63,8 +63,10 @@
     "jsoneditor": "^8.6.4",
     "local-storage": "^2.0.0",
     "lodash": "^4.17.15",
+    "node-localstorage": "^2.1.6",
     "sirv-cli": "^0.4.4",
-    "storeon": "^2.0.2"
+    "storeon": "^2.0.2",
+    "universal-analytics": "^0.4.20"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^11.0.0",

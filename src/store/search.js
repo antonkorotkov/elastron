@@ -1,6 +1,8 @@
 import API from '../api/elasticsearch'
 import get from 'lodash/get'
 
+import { trackEvent } from '../utils/analitycs'
+
 export const search = store => {
   store.on('@init', () => ({
     search: {
@@ -61,6 +63,8 @@ export const search = store => {
 
   store.on('search/run', async state => {
     try {
+      trackEvent('Search', 'Run', state.search.type)
+
       store.dispatch('search/loading', true)
 
       const buildSearchParams = () => ({
@@ -116,6 +120,7 @@ export const search = store => {
           get(error, 'response.data.error.reason', error.message)
         ),
       })
+      trackEvent('Error', 'Search', error.message)
     }
   })
 }

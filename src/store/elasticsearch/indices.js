@@ -1,5 +1,7 @@
 import API from '../../api/elasticsearch'
 
+import { trackEvent } from '../../utils/analitycs'
+
 export const indices = store => {
   store.on('@init', () => ({
     indices: {
@@ -23,6 +25,8 @@ export const indices = store => {
 
   store.on('elasticsearch/indices/fetch', async state => {
     try {
+      trackEvent('Indices', 'Fetch')
+
       store.dispatch('elasticsearch/indices/update', {
         loading: true,
       })
@@ -52,6 +56,7 @@ export const indices = store => {
       store.dispatch('elasticsearch/indices/update', {
         loading: false,
       })
+      trackEvent('Error', 'Indices', error.message)
     }
   })
 

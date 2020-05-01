@@ -1,9 +1,14 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
+
+const { trackEvent } = require('./app/analytics')
+global['trackEvent'] = trackEvent
+
 let mainWindow
 
 autoUpdater.on('error', e => {
+  trackEvent('Error', 'Update', e.message || 'no message')
   console.log('Error', e)
 })
 
@@ -17,6 +22,7 @@ autoUpdater.setFeedURL({
 ipcMain.on('online-status-changed', (event, online) => {
   if (online) {
     autoUpdater.checkForUpdates()
+    trackEvent('App', 'Update Check', process.platform)
   }
 })
 
@@ -34,7 +40,11 @@ function createWindow() {
     },
   })
 
+  trackEvent('App', 'Open', process.platform)
+
   autoUpdater.on('update-available', async () => {
+    trackEvent('App', 'Update Available', process.platform)
+
     const answer = await dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Found Updates',
@@ -47,6 +57,8 @@ function createWindow() {
   })
 
   autoUpdater.on('update-downloaded', async () => {
+    trackEvent('App', 'Update Downloaded', process.platform)
+
     await dialog.showMessageBox(mainWindow, {
       title: 'Install Updates',
       message: 'Updates downloaded, application will be quit for update...',
@@ -62,6 +74,7 @@ function createWindow() {
 
   mainWindow.webContents.on('new-window', function (e, url) {
     e.preventDefault()
+    trackEvent('App', 'Open Link', url)
     require('electron').shell.openExternal(url)
   })
 
