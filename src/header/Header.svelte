@@ -6,6 +6,16 @@
   import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
   import OnlineIndicator from './OnlineIndicator.svelte'
 
+  let onHeaderDblClick
+
+  if (typeof window.require === 'function') {
+    const { ipcRenderer } = window.require('electron')
+
+    onHeaderDblClick = () => {
+      ipcRenderer.send('header-doubleclick')
+    }
+  }
+
   const { open } = getContext('modal-window')
 
   const showConnectionDialog = () => {
@@ -29,7 +39,7 @@
   }
 </style>
 
-<header>
+<header on:dblclick={onHeaderDblClick}>
   <div style="-webkit-app-region: drag" class="ui menu inverted fixed">
     <div class="logo item">
       <b>Elastron</b>
@@ -40,12 +50,12 @@
     <a class="item" href="/search" class:active={$route.match.page == 'search'}>
       Search
     </a>
-    <a
+    <!-- <a
       class="item"
       href="/mapping"
       class:active={$route.match.page == 'mapping'}>
       Mapping
-    </a>
+    </a> -->
     <a
       class="item right"
       on:click={showConnectionDialog}

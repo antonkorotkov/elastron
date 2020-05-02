@@ -4,6 +4,7 @@
 
   import Dashboard from './dashboard/Dashboard.svelte'
   import Search from './search/Search.svelte'
+  import Mapping from './mapping/Mapping.svelte'
 
   const { [routerKey]: route } = useStoreon(routerKey)
 </script>
@@ -19,7 +20,7 @@
   {#if $route.match.page === 'dashboard'}
     <Dashboard />
   {:else if $route.match.page === 'mapping'}
-    <div class="ui segment">Mapping comming soon</div>
+    <Mapping />
   {:else if $route.match.page === 'search'}
     <Search />
   {:else}

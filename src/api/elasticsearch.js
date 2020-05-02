@@ -114,6 +114,13 @@ export default class API {
     )
     return response.data
   }
+
+  async deleteDocument(index, type, id, params = {}) {
+    const response = await this.client.delete(`${index}/${type}/${id}`, {
+      params,
+    })
+    return response.data
+  }
 }
 
 class ConnectionError extends Error {

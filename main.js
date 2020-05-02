@@ -26,6 +26,14 @@ ipcMain.on('online-status-changed', (event, online) => {
   }
 })
 
+ipcMain.on('header-doubleclick', e => {
+  if (mainWindow.isMaximized()) {
+    mainWindow.setSize(1280, 768, false)
+    return mainWindow.center()
+  }
+  return mainWindow.maximize()
+})
+
 function createWindow() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -34,6 +42,8 @@ function createWindow() {
     minWidth: 1280,
     minHeight: 768,
     titleBarStyle: 'hiddenInset',
+    show: true,
+    backgroundColor: '#000',
     webPreferences: {
       nodeIntegration: true,
       devTools: true,

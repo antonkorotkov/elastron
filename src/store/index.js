@@ -10,6 +10,7 @@ import { indices } from './elasticsearch/indices'
 import { allocation } from './elasticsearch/allocation'
 import { shards } from './elasticsearch/shards'
 import { history } from './history'
+import { mapping } from './elasticsearch/mapping'
 
 export const store = createStoreon([
   internet,
@@ -21,5 +22,6 @@ export const store = createStoreon([
   indices,
   allocation,
   shards,
+  mapping,
   storeonDevtools,
 ])
