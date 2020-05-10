@@ -25,6 +25,14 @@
       sorter(column, index, sorted[index])
     }
   }
+
+  const getColspan = (row, i, total) => {
+    console.log(row, i, total)
+    if (total > row && i + 1 == row) {
+      return total - row + 1
+    }
+    return 1
+  }
 </script>
 
 <table class="ui attached table" class:selectable class:sortable>
@@ -46,7 +54,7 @@
       {#each rows as row}
         <tr>
           {#each row as cell, i}
-            <td>
+            <td colspan={getColspan(row.length, i, columns.length)}>
               <CellRenderer {cell} {i} {columns} />
             </td>
           {/each}

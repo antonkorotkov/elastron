@@ -13,6 +13,7 @@
       ipEditor = new JSONEditor(indexPreviewEditor, {
         mode: 'tree',
         onEditable: () => false,
+        onCreateMenu: () => [],
       })
     }
 
