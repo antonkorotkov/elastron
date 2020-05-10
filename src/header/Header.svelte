@@ -50,12 +50,6 @@
     <a class="item" href="/search" class:active={$route.match.page == 'search'}>
       Search
     </a>
-    <!-- <a
-      class="item"
-      href="/mapping"
-      class:active={$route.match.page == 'mapping'}>
-      Mapping
-    </a> -->
     <a
       class="item right"
       on:click={showConnectionDialog}
