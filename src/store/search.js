@@ -43,6 +43,7 @@ export const search = store => {
 
   store.on('connected', () => {
     store.dispatch('elasticsearch/indices/fetch')
+    store.dispatch('search/update', { index: '_all', results: [] })
   })
 
   store.on('search/documents/delete', async (state, index) => {
