@@ -1,6 +1,17 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, Menu, dialog } = require('electron')
+const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
+const pkg = require('./package.json')
+
+const { trackEvent } = require('./app/analytics')
+global['trackEvent'] = trackEvent
+
+let mainWindow
+
+autoUpdater.on('error', e => {
+  trackEvent('Error', 'Update', e.message || 'no message')
+  console.log('Error', e)
+})
 
 autoUpdater.setFeedURL({
   provider: 'github',
@@ -9,27 +20,42 @@ autoUpdater.setFeedURL({
   repo: 'elastron',
 })
 
-autoUpdater.on('error', e => {
-  dialog.showErrorBox(
-    'Update Error',
-    'Could not update application. Please contact me at antonkorotkoff@gmail.com'
-  )
+ipcMain.on('online-status-changed', (event, online) => {
+  if (online) {
+    autoUpdater.checkForUpdates()
+    trackEvent('App', 'Update Check', `${process.platform}:${pkg.version}`)
+  }
+})
+
+ipcMain.on('header-doubleclick', e => {
+  if (mainWindow.isMaximized()) {
+    mainWindow.setSize(1280, 768, false)
+    return mainWindow.center()
+  }
+  return mainWindow.maximize()
 })
 
 function createWindow() {
   // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 768,
     minWidth: 1280,
     minHeight: 768,
     titleBarStyle: 'hiddenInset',
+    show: true,
+    backgroundColor: '#000',
     webPreferences: {
+      nodeIntegration: true,
       devTools: false,
     },
   })
 
+  trackEvent('App', 'Open', `${process.platform}:${pkg.version}`)
+
   autoUpdater.on('update-available', async () => {
+    trackEvent('App', 'Update Available', `${process.platform}:${pkg.version}`)
+
     const answer = await dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Found Updates',
@@ -42,14 +68,14 @@ function createWindow() {
   })
 
   autoUpdater.on('update-downloaded', async () => {
+    trackEvent('App', 'Update Downloaded', `${process.platform}:${pkg.version}`)
+
     await dialog.showMessageBox(mainWindow, {
       title: 'Install Updates',
       message: 'Updates downloaded, application will be quit for update...',
     })
     autoUpdater.quitAndInstall()
   })
-
-  autoUpdater.checkForUpdates()
 
   // and load the index.html of the app.
   mainWindow.loadFile('public/index.html')
@@ -59,6 +85,7 @@ function createWindow() {
 
   mainWindow.webContents.on('new-window', function (e, url) {
     e.preventDefault()
+    trackEvent('App', 'Open Link', url)
     require('electron').shell.openExternal(url)
   })
 
@@ -87,9 +114,7 @@ function createWindow() {
             label: 'Learn More',
             click: async () => {
               const { shell } = require('electron')
-              await shell.openExternal(
-                'https://github.com/antonkorotkov/elastron'
-              )
+              await shell.openExternal('https://github.com/antonkorotkov')
             },
           },
         ],

@@ -1,15 +1,18 @@
 {
   "name": "Elastron",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Full featured elasticsearch client",
   "main": "main.js",
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
     "start-local": "sirv public",
-    "start": "electron .",
-    "dist": "electron-builder",
-    "release": "electron-builder --publish=onTagOrDraft"
+    "start": "ENV=development electron .",
+    "dist-mac": "electron-builder -m",
+    "dist-win": "electron-builder -w",
+    "dist": "electron-builder -mw",
+    "release-mac": "electron-builder -m --publish=onTagOrDraft",
+    "release-win": "electron-builder -w --publish=onTagOrDraft"
   },
   "repository": "https://github.com/antonkorotkov/elastron-electron",
   "keywords": [
@@ -32,25 +35,45 @@
         "owner": "antonkorotkov",
         "private": true
       }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "publish": {
+        "provider": "github",
+        "repo": "elastron",
+        "owner": "antonkorotkov",
+        "private": true
+      }
     }
   },
   "dependencies": {
-    "electron-log": "^4.1.1",
-    "electron-updater": "^4.2.5",
     "@storeon/router": "^1.0.1",
     "@storeon/svelte": "^0.6.2",
     "axios": "^0.19.2",
+    "electron-log": "^4.1.1",
+    "electron-updater": "^4.2.5",
     "jsoneditor": "^8.6.4",
     "local-storage": "^2.0.0",
     "lodash": "^4.17.15",
+    "node-localstorage": "^2.1.6",
     "sirv-cli": "^0.4.4",
-    "storeon": "^2.0.2"
+    "storeon": "^2.0.2",
+    "universal-analytics": "^0.4.20"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^11.0.0",
+    "@rollup/plugin-json": "^4.0.3",
+    "@rollup/plugin-node-resolve": "^7.0.0",
     "electron": "^8.2.3",
     "electron-builder": "^22.5.1",
-    "@rollup/plugin-commonjs": "^11.0.0",
-    "@rollup/plugin-node-resolve": "^7.0.0",
     "node-sass": "^4.13.1",
     "rollup": "^1.20.0",
     "rollup-plugin-css-only": "^2.0.0",

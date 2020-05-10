@@ -4,6 +4,17 @@
   import { routerKey } from '@storeon/router'
 
   import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
+  import OnlineIndicator from './OnlineIndicator.svelte'
+
+  let onHeaderDblClick
+
+  if (typeof window.require === 'function') {
+    const { ipcRenderer } = window.require('electron')
+
+    onHeaderDblClick = () => {
+      ipcRenderer.send('header-doubleclick')
+    }
+  }
 
   const { open } = getContext('modal-window')
 
@@ -28,7 +39,7 @@
   }
 </style>
 
-<header>
+<header on:dblclick={onHeaderDblClick}>
   <div style="-webkit-app-region: drag" class="ui menu inverted fixed">
     <div class="logo item">
       <b>Elastron</b>
@@ -40,16 +51,11 @@
       Search
     </a>
     <a
-      class="item"
-      href="/mapping"
-      class:active={$route.match.page == 'mapping'}>
-      Mapping
-    </a>
-    <a
       class="item right"
       on:click={showConnectionDialog}
       href="javascript:void(0);">
       Connection
+      <OnlineIndicator />
     </a>
   </div>
 </header>

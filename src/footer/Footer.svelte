@@ -1,3 +1,7 @@
+<script>
+  import pkg from '../../package.json'
+</script>
+
 <style>
   footer {
     position: fixed !important;
@@ -9,10 +13,15 @@
 </style>
 
 <footer class="ui segment">
-  <p>
-    Made with 🖤 by
-    <a href="https://github.com/antonkorotkov" target="_blank">
-      @antonkorotkov
-    </a>
-  </p>
+  <div class="ui grid">
+    <div class="eight wide column">
+      <p>
+        Made with 🖤 by
+        <a href="https://github.com/antonkorotkov" target="_blank">
+          @antonkorotkov
+        </a>
+      </p>
+    </div>
+    <div class="eight wide column right aligned">Version {pkg.version}</div>
+  </div>
 </footer>

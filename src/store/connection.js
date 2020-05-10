@@ -1,15 +1,24 @@
+import ls from 'local-storage'
+
 import API from '../api/elasticsearch'
 
 export const connection = store => {
-  store.on('@init', () => ({
-    connection: {
-      host: 'http://localhost',
-      port: '9200',
-      useAuth: false,
-      user: '',
-      password: '',
-    },
-  }))
+  store.on('@init', () => {
+    const connections = ls('connection') || []
+
+    if (connections.length)
+      return { connection: connections[connections.length - 1] }
+
+    return {
+      connection: {
+        host: 'http://localhost',
+        port: '9200',
+        useAuth: false,
+        user: '',
+        password: '',
+      },
+    }
+  })
 
   store.on('connection/clear', _state => {
     return {

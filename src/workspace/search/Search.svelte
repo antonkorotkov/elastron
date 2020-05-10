@@ -77,6 +77,13 @@
     e.target.value = from
   }
 
+  const onClickRemove = index => {
+    if (
+      confirm('Are you sure you want to delete this document from the index?')
+    )
+      dispatch('search/documents/delete', index)
+  }
+
   onMount(() => {
     if (requestBodyEditor) {
       qEditor = new JSONEditor(
@@ -111,9 +118,7 @@
                   text: 'Delete',
                   title: 'Delete the document from the server',
                   className: 'jsoneditor-remove',
-                  click: () => {
-                    alert('Comming soon')
-                  },
+                  click: () => onClickRemove(node.path[0]),
                 },
               ]
             }
@@ -127,7 +132,7 @@
 
   afterUpdate(() => {
     if (rEditor && !isEqual(rEditor.get(), $search.results)) {
-      rEditor.set($search.results)
+      rEditor.update($search.results)
     }
   })
 

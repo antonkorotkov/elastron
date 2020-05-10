@@ -1,51 +1,69 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { onMount } from 'svelte'
+  import orderBy from 'lodash/orderBy'
 
   import API from '../../../api/elasticsearch'
+  import Table from '../../../components/tables/Table.svelte'
+  import Cell from './Cell.svelte'
+  import { humanStoreSizeToPseudoBytes } from '../../../utils/helpers.js'
 
   const { dispatch, indices } = useStoreon('indices')
 
+  const onTableSort = (column, index, direction) => {
+    const sort = o => {
+      switch (column) {
+        case 'docs.count':
+        case 'docs.deleted':
+        case 'pri':
+        case 'rep':
+          return Number(o[index])
+        case 'pri.store.size':
+        case 'store.size':
+          return humanStoreSizeToPseudoBytes(o[index])
+        default:
+          return o[index]
+      }
+    }
+
+    const sorted = orderBy($indices.data, [sort], [direction])
+    dispatch('elasticsearch/indices/update', { data: sorted })
+  }
+
   onMount(async () => {
-    dispatch('elasticsearch/indices/fetch')
+    if (!$indices.data.length) dispatch('elasticsearch/indices/fetch')
   })
 </script>
 
+<style>
+  .refresh {
+    cursor: pointer;
+  }
+</style>
+
 <div class="ui segments">
   <div class="ui segment">
-    <h4>Indices</h4>
+    <div class="ui grid">
+      <div class="eight wide column">
+        <h4>Indices</h4>
+      </div>
+      <div class="eight wide column right aligned">
+        <i
+          class="sync alternate icon refresh"
+          class:loading={$indices.loading}
+          on:click={e => dispatch('elasticsearch/indices/fetch')} />
+      </div>
+    </div>
   </div>
   {#if $indices.columns.length}
-    <table class="ui selectable attached table">
-      <thead>
-        <tr>
-          {#each $indices.columns as column}
-            <th>{column.toUpperCase()}</th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#if $indices.data.length}
-          {#each $indices.data as row}
-            <tr>
-              {#each row as entry, i}
-                {#if $indices.columns[i] === 'health'}
-                  <td>
-                    <div class="ui label {entry}">{entry}</div>
-                  </td>
-                {:else}
-                  <td>{entry}</td>
-                {/if}
-              {/each}
-            </tr>
-          {/each}
-        {:else}
-          <tr>
-            <td colspan={$indices.columns.length}>No indices</td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    <Table
+      columns={$indices.columns}
+      rows={$indices.data}
+      sorter={onTableSort}
+      emptyMessage="No indices found"
+      selectable
+      sortable
+      {Cell} />
   {:else}
     <div class="ui segment">
       <p>

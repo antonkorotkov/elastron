@@ -1,10 +1,13 @@
 import API from '../../api/elasticsearch'
 
+import { trackEvent } from '../../utils/analitycs'
+
 export const shards = store => {
   store.on('@init', () => ({
     shards: {
       columns: [],
       data: [],
+      loading: false,
     },
   }))
 
@@ -16,11 +19,17 @@ export const shards = store => {
     store.dispatch('elasticsearch/shards/update', {
       columns: [],
       data: [],
+      loading: false,
     })
   })
 
   store.on('elasticsearch/shards/fetch', async state => {
     try {
+      trackEvent('Shards', 'Fetch')
+
+      store.dispatch('elasticsearch/shards/update', {
+        loading: true,
+      })
       const api = new API(state.connection)
       const shards = await api.getShards()
       if (shards) {
@@ -28,11 +37,15 @@ export const shards = store => {
         store.dispatch('elasticsearch/shards/update', {
           columns,
           data,
+          loading: false,
         })
       } else {
         store.dispatch('notification/add', {
           type: 'error',
           message: 'Could not get shards data',
+        })
+        store.dispatch('elasticsearch/shards/update', {
+          loading: false,
         })
       }
     } catch (error) {
@@ -40,13 +53,14 @@ export const shards = store => {
         type: 'error',
         message: error.message,
       })
+      store.dispatch('elasticsearch/shards/update', {
+        loading: false,
+      })
+      trackEvent('Error', 'Shards', error.message)
     }
   })
 
-  store.on('elasticsearch/shards/update', (_state, { columns, data }) => ({
-    shards: {
-      columns,
-      data,
-    },
+  store.on('elasticsearch/shards/update', (state, shards) => ({
+    shards: { ...state.shards, ...shards },
   }))
 }

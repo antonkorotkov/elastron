@@ -1,6 +1,8 @@
 import API from '../api/elasticsearch'
 import get from 'lodash/get'
 
+import { trackEvent } from '../utils/analitycs'
+
 export const search = store => {
   store.on('@init', () => ({
     search: {
@@ -23,7 +25,7 @@ export const search = store => {
         from: 0,
         _source: true,
       },
-      uriQuery: 'user:kimchy',
+      uriQuery: '*',
       sort: '',
       size: 10,
       from: 0,
@@ -41,6 +43,55 @@ export const search = store => {
 
   store.on('connected', () => {
     store.dispatch('elasticsearch/indices/fetch')
+    store.dispatch('search/update', { index: '_all', results: [] })
+  })
+
+  store.on('search/documents/delete', async (state, index) => {
+    try {
+      trackEvent('Search', 'Delete Document')
+      store.dispatch('search/loading', true)
+
+      const document = get(state.search.results, index, false)
+
+      if (document) {
+        const { _index, _type, _id } = document
+        const response = await new API(state.connection).deleteDocument(
+          _index,
+          _type,
+          _id
+        )
+        if (get(response, 'result') === 'deleted') {
+          store.dispatch('notification/add', {
+            type: 'success',
+            message: `Document with id '${_id}' was successfully deleted from index '${_index}'`,
+          })
+
+          const filteredResults = state.search.results.filter(
+            (_v, i) => i !== index
+          )
+          store.dispatch('search/update', {
+            results: filteredResults,
+            stats: {
+              ...state.search.stats,
+              total_results: filteredResults.length,
+            },
+          })
+        }
+      }
+
+      store.dispatch('search/loading', false)
+    } catch (error) {
+      store.dispatch('search/loading', false)
+      store.dispatch('notification/add', {
+        type: 'error',
+        message: get(
+          error,
+          'response.data.error.root_cause[0].reason',
+          get(error, 'response.data.error.reason', error.message)
+        ),
+      })
+      trackEvent('Error', 'Search Delete Document', error.message || '')
+    }
   })
 
   store.on('search/update', (state, data) => {
@@ -61,6 +112,8 @@ export const search = store => {
 
   store.on('search/run', async state => {
     try {
+      trackEvent('Search', 'Run', state.search.type)
+
       store.dispatch('search/loading', true)
 
       const buildSearchParams = () => ({
@@ -116,6 +169,7 @@ export const search = store => {
           get(error, 'response.data.error.reason', error.message)
         ),
       })
+      trackEvent('Error', 'Search', error.message)
     }
   })
 }

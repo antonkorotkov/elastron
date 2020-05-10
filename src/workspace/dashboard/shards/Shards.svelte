@@ -1,45 +1,64 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { onMount } from 'svelte'
+  import orderBy from 'lodash/orderBy'
 
   import API from '../../../api/elasticsearch'
+  import Table from '../../../components/tables/Table.svelte'
+  import { humanStoreSizeToPseudoBytes } from '../../../utils/helpers.js'
 
   const { dispatch, shards } = useStoreon('shards')
 
+  const onTableSort = (column, index, direction) => {
+    const sort = o => {
+      switch (column) {
+        case 'shard':
+        case 'docs':
+          return Number(o[index])
+        case 'store':
+          return humanStoreSizeToPseudoBytes(o[index])
+        default:
+          return o[index]
+      }
+    }
+
+    const sorted = orderBy($shards.data, [sort], [direction])
+    dispatch('elasticsearch/shards/update', { data: sorted })
+  }
+
   onMount(async () => {
-    dispatch('elasticsearch/shards/fetch')
+    if (!$shards.data.length) dispatch('elasticsearch/shards/fetch')
   })
 </script>
 
+<style>
+  .refresh {
+    cursor: pointer;
+  }
+</style>
+
 <div class="ui segments">
   <div class="ui segment">
-    <h4>Shards</h4>
+    <div class="ui grid">
+      <div class="eight wide column">
+        <h4>Shards</h4>
+      </div>
+      <div class="eight wide column right aligned">
+        <i
+          class="sync alternate icon refresh"
+          class:loading={$shards.loading}
+          on:click={e => dispatch('elasticsearch/shards/fetch')} />
+      </div>
+    </div>
   </div>
   {#if $shards.columns.length}
-    <table class="ui selectable attached table">
-      <thead>
-        <tr>
-          {#each $shards.columns as column}
-            <th>{column.toUpperCase()}</th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#if $shards.data.length}
-          {#each $shards.data as row}
-            <tr>
-              {#each row as entry}
-                <td>{entry}</td>
-              {/each}
-            </tr>
-          {/each}
-        {:else}
-          <tr>
-            <td colspan={$shards.columns.length}>No shards</td>
-          </tr>
-        {/if}
-      </tbody>
-    </table>
+    <Table
+      columns={$shards.columns}
+      rows={$shards.data}
+      emptyMessage="No shards found"
+      sorter={onTableSort}
+      selectable
+      sortable />
   {:else}
     <div class="ui segment">
       <p>

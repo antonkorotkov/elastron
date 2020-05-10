@@ -1,10 +1,13 @@
 import API from '../../api/elasticsearch'
 
+import { trackEvent } from '../../utils/analitycs'
+
 export const allocation = store => {
   store.on('@init', () => ({
     allocation: {
       columns: [],
       data: [],
+      loading: false,
     },
   }))
 
@@ -16,11 +19,17 @@ export const allocation = store => {
     store.dispatch('elasticsearch/allocation/update', {
       columns: [],
       data: [],
+      loading: false,
     })
   })
 
   store.on('elasticsearch/allocation/fetch', async state => {
     try {
+      trackEvent('Allocation', 'Fetch')
+
+      store.dispatch('elasticsearch/allocation/update', {
+        loading: true,
+      })
       const api = new API(state.connection)
       const allocation = await api.getAllocation()
       if (allocation) {
@@ -28,11 +37,15 @@ export const allocation = store => {
         store.dispatch('elasticsearch/allocation/update', {
           columns,
           data,
+          loading: false,
         })
       } else {
         store.dispatch('notification/add', {
           type: 'error',
           message: 'Could not get allocation data',
+        })
+        store.dispatch('elasticsearch/allocation/update', {
+          loading: false,
         })
       }
     } catch (error) {
@@ -40,13 +53,14 @@ export const allocation = store => {
         type: 'error',
         message: error.message,
       })
+      store.dispatch('elasticsearch/allocation/update', {
+        loading: false,
+      })
+      trackEvent('Error', 'Allocation', error.message)
     }
   })
 
-  store.on('elasticsearch/allocation/update', (_state, { columns, data }) => ({
-    allocation: {
-      columns,
-      data,
-    },
+  store.on('elasticsearch/allocation/update', (state, allocation) => ({
+    allocation: { ...state.allocation, ...allocation },
   }))
 }

@@ -5,5 +5,5 @@
 </script>
 
 <Indices />
-<Allocation />
 <Shards />
+<Allocation />
