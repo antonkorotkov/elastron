@@ -27,7 +27,6 @@
   }
 
   const getColspan = (row, i, total) => {
-    console.log(row, i, total)
     if (total > row && i + 1 == row) {
       return total - row + 1
     }
