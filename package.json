@@ -17,10 +17,8 @@
   "repository": "https://github.com/antonkorotkov/elastron-electron",
   "keywords": [
     "Electron",
-    "quick",
-    "start",
-    "tutorial",
-    "demo"
+    "elasticsearch",
+    "gui"
   ],
   "author": "Anton Korotkov",
   "license": "MIT",
