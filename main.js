@@ -1,6 +1,7 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
+const pkg = require('./package.json')
 
 const { trackEvent } = require('./app/analytics')
 global['trackEvent'] = trackEvent
@@ -22,7 +23,7 @@ autoUpdater.setFeedURL({
 ipcMain.on('online-status-changed', (event, online) => {
   if (online) {
     autoUpdater.checkForUpdates()
-    trackEvent('App', 'Update Check', process.platform)
+    trackEvent('App', 'Update Check', `${process.platform}:${pkg.version}`)
   }
 })
 
@@ -46,14 +47,14 @@ function createWindow() {
     backgroundColor: '#000',
     webPreferences: {
       nodeIntegration: true,
-      devTools: true,
+      devTools: false,
     },
   })
 
-  trackEvent('App', 'Open', process.platform)
+  trackEvent('App', 'Open', `${process.platform}:${pkg.version}`)
 
   autoUpdater.on('update-available', async () => {
-    trackEvent('App', 'Update Available', process.platform)
+    trackEvent('App', 'Update Available', `${process.platform}:${pkg.version}`)
 
     const answer = await dialog.showMessageBox(mainWindow, {
       type: 'info',
@@ -67,7 +68,7 @@ function createWindow() {
   })
 
   autoUpdater.on('update-downloaded', async () => {
-    trackEvent('App', 'Update Downloaded', process.platform)
+    trackEvent('App', 'Update Downloaded', `${process.platform}:${pkg.version}`)
 
     await dialog.showMessageBox(mainWindow, {
       title: 'Install Updates',
@@ -113,9 +114,7 @@ function createWindow() {
             label: 'Learn More',
             click: async () => {
               const { shell } = require('electron')
-              await shell.openExternal(
-                'https://github.com/antonkorotkov/elastron'
-              )
+              await shell.openExternal('https://github.com/antonkorotkov')
             },
           },
         ],
