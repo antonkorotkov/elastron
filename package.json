@@ -24,9 +24,14 @@
   "license": "MIT",
   "build": {
     "appId": "com.elastron.www",
+    "afterSign": "notarize.js",
     "mac": {
       "category": "db.development.tools",
       "icon": "public/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "./entitlements.mac.plist",
+      "entitlementsInherit": "./entitlements.mac.plist",
       "publish": {
         "provider": "github",
         "repo": "elastron",
@@ -56,6 +61,7 @@
     "@storeon/router": "^1.0.1",
     "@storeon/svelte": "^0.6.2",
     "axios": "^0.19.2",
+    "elasticdump": "^6.28.0",
     "electron-log": "^4.1.1",
     "electron-updater": "^4.2.5",
     "jsoneditor": "^8.6.4",
@@ -72,6 +78,7 @@
     "@rollup/plugin-node-resolve": "^7.0.0",
     "electron": "^8.2.3",
     "electron-builder": "^22.5.1",
+    "electron-notarize": "^0.3.0",
     "node-sass": "^4.13.1",
     "rollup": "^1.20.0",
     "rollup-plugin-css-only": "^2.0.0",

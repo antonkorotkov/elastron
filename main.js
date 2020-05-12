@@ -1,10 +1,38 @@
-// Modules to control application life and create native browser window
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const pkg = require('./package.json')
 
+//const Elasticdump = require('elasticdump')
 const { trackEvent } = require('./app/analytics')
 global['trackEvent'] = trackEvent
+
+// const options = {
+//   input: 'http://localhost:9200/my-index',
+//   output: `${app.getPath('downloads')}/dump.json`,
+//   type: 'mapping',
+// }
+
+// const dumper = new Elasticdump(options.input, options.output, options)
+
+// dumper.on('log', function (message) {
+//   console.log('log', message)
+// })
+// dumper.on('debug', function (message) {
+//   console.log('debug', message)
+// })
+// dumper.on('error', function (error) {
+//   console.log(
+//     'error',
+//     `Error Emitted => ${error.message || JSON.stringify(error)}`
+//   )
+// })
+
+// dumper.dump(function (error) {
+//   console.log(arguments)
+//   if (error) {
+//     process.exit(1)
+//   }
+// })
 
 let mainWindow
 
