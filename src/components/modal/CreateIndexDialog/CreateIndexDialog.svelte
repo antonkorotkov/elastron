@@ -1,16 +1,12 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
-  import { getContext } from 'svelte'
+  import { onMount, getContext } from 'svelte'
 
   import API from '../../../api/elasticsearch'
   import { validateIndexName } from '../../../utils/helpers.js'
 
   const { close } = getContext('modal-window')
-  const { dispatch, connection, indices } = useStoreon(
-    'connection',
-    'history',
-    'indices'
-  )
+  const { dispatch, connection, indices } = useStoreon('connection', 'indices')
 
   export let onCancel = () => {}
   export let onOkay = () => {}
@@ -28,6 +24,10 @@
           )
         ]
     ) || []
+
+  onMount(() => {
+    document.getElementById('index-name').focus()
+  })
 
   const _onCancel = () => {
     onCancel()
