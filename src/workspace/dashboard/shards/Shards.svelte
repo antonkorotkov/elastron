@@ -5,7 +5,10 @@
 
   import API from '../../../api/elasticsearch'
   import Table from '../../../components/tables/Table.svelte'
-  import { humanStoreSizeToPseudoBytes } from '../../../utils/helpers.js'
+  import {
+    humanStoreSizeToPseudoBytes,
+    classToggle,
+  } from '../../../utils/helpers.js'
 
   const { dispatch, shards } = useStoreon('shards')
 
@@ -47,6 +50,8 @@
         <i
           class="sync alternate icon refresh"
           class:loading={$shards.loading}
+          on:mouseover={e => classToggle(e, 'green')}
+          on:mouseout={e => classToggle(e, 'green')}
           on:click={e => dispatch('elasticsearch/shards/fetch')} />
       </div>
     </div>

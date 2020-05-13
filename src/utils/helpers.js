@@ -1,3 +1,7 @@
+/**
+ *
+ * @param {*} size
+ */
 export const humanStoreSizeToPseudoBytes = size => {
   const multipliers = {
     b: 1,
@@ -14,4 +18,21 @@ export const humanStoreSizeToPseudoBytes = size => {
 
     if (sizeValue) return parseFloat(sizeValue) * multipliers[i]
   }
+}
+
+/**
+ *
+ * @param {*} e
+ * @param {*} className
+ */
+export const classToggle = (e, className) => {
+  e.target.classList.toggle(className)
+}
+
+/**
+ *
+ * @param {*} indexName
+ */
+export const validateIndexName = indexName => {
+  return /^[^-_+ A-Z:\.][a-z0-9\-]*$/.test(indexName)
 }

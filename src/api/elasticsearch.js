@@ -1,7 +1,10 @@
 import axios from 'axios'
 
 export default class API {
-  // todo: refactore URL building
+  /**
+   *
+   * @param {*} connection
+   */
   constructor(connection) {
     this.client = axios.create({
       baseURL: this.buildConnectionUrl(connection),
@@ -9,6 +12,10 @@ export default class API {
     })
   }
 
+  /**
+   *
+   * @param {*} connection
+   */
   buildConnectionHeaders(connection) {
     const { useAuth, user, password } = connection
     if (useAuth) {
@@ -18,11 +25,19 @@ export default class API {
     }
   }
 
+  /**
+   *
+   * @param {*} connection
+   */
   buildConnectionUrl(connection) {
     const { host, port } = connection
     return `${host.replace(/\/+$/, '')}${Number(port) > 0 ? `:${port}` : ''}`
   }
 
+  /**
+   *
+   * @param {*} data
+   */
   parseCatResponse(data) {
     const struct = String(data)
       .split('\n')
@@ -38,6 +53,9 @@ export default class API {
     return false
   }
 
+  /**
+   *
+   */
   async test() {
     try {
       const response = await this.client.get('/', {
@@ -60,6 +78,9 @@ export default class API {
     }
   }
 
+  /**
+   *
+   */
   async getIndices() {
     try {
       const response = await this.client.get('/_cat/indices?v')
@@ -69,6 +90,9 @@ export default class API {
     }
   }
 
+  /**
+   *
+   */
   async getAllocation() {
     try {
       const response = await this.client.get('/_cat/allocation?v')
@@ -78,6 +102,9 @@ export default class API {
     }
   }
 
+  /**
+   *
+   */
   async getShards() {
     try {
       const response = await this.client.get('/_cat/shards?v')
@@ -87,6 +114,10 @@ export default class API {
     }
   }
 
+  /**
+   *
+   * @param {*} params
+   */
   async uriSearch(params) {
     const { index, type, query, size, from, sort, _source } = params
     const response = await this.client.get(
@@ -104,6 +135,10 @@ export default class API {
     return response.data
   }
 
+  /**
+   *
+   * @param {*} params
+   */
   async bodySearch(params) {
     const { index, type, query } = params
     const response = await this.client.post(
@@ -115,6 +150,13 @@ export default class API {
     return response.data
   }
 
+  /**
+   *
+   * @param {*} index
+   * @param {*} type
+   * @param {*} id
+   * @param {*} params
+   */
   async deleteDocument(index, type, id, params = {}) {
     const response = await this.client.delete(`${index}/${type}/${id}`, {
       params,
@@ -122,9 +164,39 @@ export default class API {
     return response.data
   }
 
+  /**
+   *
+   * @param {*} index
+   */
   async getIndex(index) {
     try {
       const response = await this.client.get(`/${index}`)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err.message)
+    }
+  }
+
+  /**
+   *
+   * @param {*} index
+   */
+  async deleteIndex(index) {
+    try {
+      const response = await this.client.delete(`/${index}`)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err.message)
+    }
+  }
+
+  /**
+   *
+   * @param {*} index
+   */
+  async createIndex(index) {
+    try {
+      const response = await this.client.put(`/${index}`)
       return response.data
     } catch (err) {
       throw new ConnectionError(err.message)

@@ -7,8 +7,6 @@
 
   const { dispatch, connection, history } = useStoreon('connection', 'history')
 
-  let form
-
   export let onCancel = () => {}
   export let onOkay = () => {}
 
