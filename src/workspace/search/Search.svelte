@@ -103,6 +103,13 @@
         {
           mode: 'tree',
           onEditable: () => false,
+          onEvent: (node, event) => {
+            if (event.type === 'mouseover') {
+              if (event.target.tagName.toLowerCase() === 'a') {
+                event.target.href = 'javascript:;'
+              }
+            }
+          },
           onCreateMenu: (items, node) => {
             if (node.type === 'single' && node.path.length === 1) {
               return [
