@@ -106,7 +106,7 @@
           onEvent: (node, event) => {
             if (event.type === 'mouseover') {
               if (event.target.tagName.toLowerCase() === 'a') {
-                event.target.href = 'javascript:;'
+                event.target.target = '_blank'
               }
             }
           },
