@@ -52,6 +52,7 @@
           message: `Index ${indexName} has been created`,
         })
         dispatch('elasticsearch/indices/fetch')
+        dispatch('elasticsearch/shards/fetch')
         close()
       } else {
         dispatch('notification/add', {

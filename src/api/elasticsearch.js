@@ -194,6 +194,32 @@ export default class API {
    *
    * @param {*} index
    */
+  async closeIndex(index) {
+    try {
+      const response = await this.client.post(`/${index}/_close`)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err.message)
+    }
+  }
+
+  /**
+   *
+   * @param {*} index
+   */
+  async openIndex(index) {
+    try {
+      const response = await this.client.post(`/${index}/_open`)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err.message)
+    }
+  }
+
+  /**
+   *
+   * @param {*} index
+   */
   async createIndex(index) {
     try {
       const response = await this.client.put(`/${index}`)

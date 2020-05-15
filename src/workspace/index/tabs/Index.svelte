@@ -62,6 +62,7 @@
           message: `Index ${indexName} has been deleted`,
         })
         dispatch('elasticsearch/indices/fetch')
+        dispatch('elasticsearch/shards/fetch')
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -78,11 +79,90 @@
     dispatch(routerNavigate, '/')
     isLoading = false
   }
+
+  const onCloseIndexClick = async indexName => {
+    isLoading = true
+
+    try {
+      const api = new API($connection)
+      const result = await api.closeIndex(indexName)
+
+      if (result.acknowledged) {
+        dispatch('notification/add', {
+          type: 'success',
+          message: `Index ${indexName} has been closed`,
+        })
+        dispatch('elasticsearch/indices/fetch')
+      } else {
+        dispatch('notification/add', {
+          type: 'error',
+          message: `Something went wrong while closing the index`,
+        })
+      }
+    } catch (e) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: e.message,
+      })
+    }
+
+    isLoading = false
+  }
+
+  const onOpenIndexClick = async indexName => {
+    isLoading = true
+
+    try {
+      const api = new API($connection)
+      const result = await api.openIndex(indexName)
+
+      if (result.acknowledged) {
+        dispatch('notification/add', {
+          type: 'success',
+          message: `Index ${indexName} has been opened`,
+        })
+        dispatch('elasticsearch/indices/fetch')
+      } else {
+        dispatch('notification/add', {
+          type: 'error',
+          message: `Something went wrong while opening the index`,
+        })
+      }
+    } catch (e) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: e.message,
+      })
+    }
+
+    isLoading = false
+  }
 </script>
 
-<div class="ui buttons">
+<div>
   <button
-    class="ui negative button"
+    class="ui tiny button"
+    on:click={e => onCloseIndexClick($index.selected)}
+    class:loading={isLoading}
+    disabled={isLoading}>
+    Close
+  </button>
+  <button
+    class="ui tiny button"
+    on:click={e => onOpenIndexClick($index.selected)}
+    class:loading={isLoading}
+    disabled={isLoading}>
+    Open
+  </button>
+  <button
+    class="ui tiny blue button"
+    on:click={e => onCloneIndexClick($index.selected)}
+    class:loading={isLoading}
+    disabled={isLoading}>
+    Clone
+  </button>
+  <button
+    class="ui right floated tiny negative button"
     on:click={e => onDeleteIndexClick($index.selected)}
     class:loading={isLoading}
     disabled={isLoading}>
