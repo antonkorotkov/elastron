@@ -1,4 +1,5 @@
 import axios from 'axios'
+import get from 'lodash/get'
 
 export default class API {
   /**
@@ -86,7 +87,7 @@ export default class API {
       const response = await this.client.get('/_cat/indices?v')
       return this.parseCatResponse(response.data)
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
     }
   }
 
@@ -98,7 +99,7 @@ export default class API {
       const response = await this.client.get('/_cat/allocation?v')
       return this.parseCatResponse(response.data)
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
     }
   }
 
@@ -110,7 +111,7 @@ export default class API {
       const response = await this.client.get('/_cat/shards?v')
       return this.parseCatResponse(response.data)
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
     }
   }
 
@@ -173,7 +174,7 @@ export default class API {
       const response = await this.client.get(`/${index}`)
       return response.data
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
     }
   }
 
@@ -186,7 +187,7 @@ export default class API {
       const response = await this.client.delete(`/${index}`)
       return response.data
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
     }
   }
 
@@ -199,7 +200,7 @@ export default class API {
       const response = await this.client.post(`/${index}/_close`)
       return response.data
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
     }
   }
 
@@ -212,7 +213,7 @@ export default class API {
       const response = await this.client.post(`/${index}/_open`)
       return response.data
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
     }
   }
 
@@ -225,15 +226,82 @@ export default class API {
       const response = await this.client.put(`/${index}`)
       return response.data
     } catch (err) {
-      throw new ConnectionError(err.message)
+      throw new ConnectionError(err)
+    }
+  }
+
+  /**
+   *
+   * @param {*} existingIndex
+   * @param {*} newIndex
+   */
+  async cloneIndex(existingIndex, newIndex) {
+    try {
+      const response = await this.client.post(
+        `/${existingIndex}/_clone/${newIndex}`
+      )
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err)
+    }
+  }
+
+  /**
+   *
+   * @param {*} index
+   */
+  async freezeIndex(index) {
+    try {
+      const response = await this.client.post(`/${index}/_freeze`)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err)
+    }
+  }
+
+  /**
+   *
+   * @param {*} index
+   */
+  async unfreezeIndex(index) {
+    try {
+      const response = await this.client.post(`/${index}/_unfreeze`)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err)
+    }
+  }
+
+  /**
+   *
+   * @param {*} index
+   */
+  async wipeIndex(index) {
+    try {
+      const response = await this.client.post(
+        `/${index}/_delete_by_query?conflicts=proceed`,
+        {
+          query: {
+            match_all: {},
+          },
+        }
+      )
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err)
     }
   }
 }
 
 class ConnectionError extends Error {
-  constructor(message) {
+  constructor(error) {
+    const message = get(
+      error,
+      'response.data.error.root_cause[0].reason',
+      get(error, 'response.data.error.reason', error.message)
+    )
     super(message)
     this.type = 'ConnectionError'
-    this.message = `Could not connect to the server: ${this.message}`
+    this.message = message
   }
 }

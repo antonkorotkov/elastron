@@ -1,11 +1,14 @@
 <script>
   import JSONEditor from 'jsoneditor'
-  import { onMount, onDestroy, afterUpdate } from 'svelte'
+  import { onMount, onDestroy, afterUpdate, getContext } from 'svelte'
   import { useStoreon } from '@storeon/svelte'
   import { routerNavigate } from '@storeon/router'
   import get from 'lodash/get'
 
   import API from '../../../api/elasticsearch'
+  import CloneIndexDialog from '../../../components/modal/CloneIndexDialog/CloneIndexDialog.svelte'
+
+  const { open } = getContext('modal-window')
 
   const { dispatch, index, connection, indices } = useStoreon(
     'index',
@@ -42,6 +45,16 @@
     }
   })
 
+  const showCloneIndexDialog = () => {
+    open(CloneIndexDialog)
+  }
+
+  const refreshDashboard = () => {
+    dispatch('elasticsearch/indices/fetch')
+    dispatch('elasticsearch/shards/fetch')
+    dispatch('elasticsearch/allocation/fetch')
+  }
+
   const onDeleteIndexClick = async indexName => {
     if (
       !confirm(
@@ -61,8 +74,7 @@
           type: 'success',
           message: `Index ${indexName} has been deleted`,
         })
-        dispatch('elasticsearch/indices/fetch')
-        dispatch('elasticsearch/shards/fetch')
+        refreshDashboard()
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -92,7 +104,7 @@
           type: 'success',
           message: `Index ${indexName} has been closed`,
         })
-        dispatch('elasticsearch/indices/fetch')
+        refreshDashboard()
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -121,7 +133,7 @@
           type: 'success',
           message: `Index ${indexName} has been opened`,
         })
-        dispatch('elasticsearch/indices/fetch')
+        refreshDashboard()
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -137,37 +149,158 @@
 
     isLoading = false
   }
+
+  const onFreezeIndexClick = async indexName => {
+    isLoading = true
+
+    try {
+      const api = new API($connection)
+      const result = await api.freezeIndex(indexName)
+
+      if (result.acknowledged) {
+        dispatch('notification/add', {
+          type: 'success',
+          message: `Index ${indexName} has been frozen`,
+        })
+        refreshDashboard()
+      } else {
+        dispatch('notification/add', {
+          type: 'error',
+          message: `Something went wrong while freezing the index`,
+        })
+      }
+    } catch (e) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: e.message,
+      })
+    }
+
+    isLoading = false
+  }
+
+  const onUnfreezeIndexClick = async indexName => {
+    isLoading = true
+
+    try {
+      const api = new API($connection)
+      const result = await api.unfreezeIndex(indexName)
+
+      if (result.acknowledged) {
+        dispatch('notification/add', {
+          type: 'success',
+          message: `Index ${indexName} has been unfrozen`,
+        })
+        refreshDashboard()
+      } else {
+        dispatch('notification/add', {
+          type: 'error',
+          message: `Something went wrong while unfreezing the index`,
+        })
+      }
+    } catch (e) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: e.message,
+      })
+    }
+
+    isLoading = false
+  }
+
+  const onWipeIndexClick = async indexName => {
+    if (
+      !confirm(
+        'Are you sure you want to wipe the index? It means you will loose all index data without an ability to restore.'
+      )
+    )
+      return
+
+    isLoading = true
+
+    try {
+      const api = new API($connection)
+      const result = await api.wipeIndex(indexName)
+
+      if (result.deleted) {
+        dispatch('notification/add', {
+          type: 'success',
+          message: `Index ${indexName} has been wiped. Documents deleted: ${result.deleted}.`,
+        })
+        refreshDashboard()
+      } else {
+        dispatch('notification/add', {
+          type: 'error',
+          message: `Something went wrong while wiping the index`,
+        })
+      }
+    } catch (e) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: e.message,
+      })
+    }
+
+    isLoading = false
+  }
 </script>
 
 <div>
-  <button
-    class="ui tiny button"
-    on:click={e => onCloseIndexClick($index.selected)}
-    class:loading={isLoading}
-    disabled={isLoading}>
-    Close
-  </button>
-  <button
-    class="ui tiny button"
-    on:click={e => onOpenIndexClick($index.selected)}
-    class:loading={isLoading}
-    disabled={isLoading}>
-    Open
-  </button>
-  <button
-    class="ui tiny blue button"
-    on:click={e => onCloneIndexClick($index.selected)}
-    class:loading={isLoading}
-    disabled={isLoading}>
-    Clone
-  </button>
-  <button
-    class="ui right floated tiny negative button"
-    on:click={e => onDeleteIndexClick($index.selected)}
-    class:loading={isLoading}
-    disabled={isLoading}>
-    Delete
-  </button>
+  <div class="ui tiny buttons">
+    <button
+      class="ui tiny blue basic button"
+      on:click={e => onOpenIndexClick($index.selected)}
+      class:loading={isLoading}
+      disabled={isLoading}>
+      Open
+    </button>
+    <button
+      class="ui tiny blue basic button"
+      on:click={e => onCloseIndexClick($index.selected)}
+      class:loading={isLoading}
+      disabled={isLoading}>
+      Close
+    </button>
+
+    <button
+      class="ui tiny teal basic button"
+      on:click={e => onFreezeIndexClick($index.selected)}
+      class:loading={isLoading}
+      disabled={isLoading}>
+      Freeze
+    </button>
+    <button
+      class="ui tiny teal basic button"
+      on:click={e => onUnfreezeIndexClick($index.selected)}
+      class:loading={isLoading}
+      disabled={isLoading}>
+      Unfreeze
+    </button>
+
+    <button
+      class="ui tiny green basic button"
+      on:click={showCloneIndexDialog}
+      class:loading={isLoading}
+      disabled={isLoading}>
+      Clone
+    </button>
+  </div>
+  <div class="ui right floated tiny buttons">
+    <button
+      class="ui orange basic button"
+      on:click={e => onWipeIndexClick($index.selected)}
+      class:loading={isLoading}
+      disabled={isLoading}>
+      Wipe
+    </button>
+    <button
+      class="ui red basic button"
+      on:click={e => onDeleteIndexClick($index.selected)}
+      class:loading={isLoading}
+      disabled={isLoading}>
+      Delete
+    </button>
+  </div>
 </div>
 
 <div class="ui vertical segment">
