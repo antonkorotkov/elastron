@@ -291,6 +291,35 @@ export default class API {
       throw new ConnectionError(err)
     }
   }
+
+  /**
+   *
+   * @param {*} index
+   * @param {*} mapping
+   */
+  async updateIndexMapping(index, mapping) {
+    try {
+      const types = Object.getOwnPropertyNames(mapping)
+      if (types.length === 1 && types[0] === 'properties') {
+        const response = await this.client.put(`/${index}/_mapping`, mapping)
+        return response.data
+      } else {
+        const responses = []
+
+        for (var i in mapping) {
+          const response = await this.client.post(
+            `/${index}/_mapping/${i}`,
+            mapping[i]
+          )
+          responses.push(response.data)
+        }
+
+        return responses
+      }
+    } catch (err) {
+      throw new ConnectionError(err)
+    }
+  }
 }
 
 class ConnectionError extends Error {

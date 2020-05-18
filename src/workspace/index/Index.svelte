@@ -58,7 +58,10 @@
       id="index"
       class="ui dropdown"
       value={$index.selected}
-      on:change={e => dispatch('elasticsearch/index/select', e.target.value)}
+      on:change={e => {
+        dispatch('elasticsearch/index/select', e.target.value)
+        activeTab = 'index'
+      }}
       disabled={$index.loading}>
       <option value="">Select Index</option>
       {#if _indices.length}
