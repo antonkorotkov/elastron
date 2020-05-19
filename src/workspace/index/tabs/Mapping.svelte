@@ -12,6 +12,16 @@
   let isLoading = false,
     canUpdate = true
 
+  const updateEditorContent = () => {
+    const mappings = get(
+      $index.info,
+      [$index.selected, $index.selected, 'mappings'],
+      false
+    )
+
+    if (mappings) mpEditor.update(mappings)
+  }
+
   onMount(() => {
     if (mappingPreviewEditor) {
       mpEditor = new JSONEditor(mappingPreviewEditor, {
@@ -29,19 +39,23 @@
         },
       })
 
-      const mappings = get(
-        $index.info,
-        [$index.selected, $index.selected, 'mappings'],
-        false
-      )
-
-      if (mappings) mpEditor.update(mappings)
+      updateEditorContent()
     }
 
     if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
   })
 
-  afterUpdate(() => {})
+  afterUpdate(() => {
+    const mappings = get(
+      $index.info,
+      [$index.selected, $index.selected, 'mappings'],
+      false
+    )
+
+    try {
+      if (mappings !== mpEditor.get()) mpEditor.update(mappings)
+    } catch (error) {}
+  })
 
   onDestroy(() => {
     if (mpEditor) {
