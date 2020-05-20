@@ -55,8 +55,12 @@
           type: 'success',
           message: `Index ${$index.selected} has been cloned into ${newIndex}`,
         })
-        dispatch('elasticsearch/indices/fetch')
+        dispatch('elasticsearch/indices/fetch', () =>
+          dispatch('elasticsearch/index/select', newIndex)
+        )
         dispatch('elasticsearch/shards/fetch')
+        dispatch('elasticsearch/allocation/fetch')
+        dispatch('elasticsearch/index/fetch')
         close()
       } else {
         dispatch('notification/add', {

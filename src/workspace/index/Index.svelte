@@ -1,7 +1,7 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { routerKey } from '@storeon/router'
-  import { onMount } from 'svelte'
+  import { onMount, afterUpdate } from 'svelte'
 
   import Index from './tabs/Index.svelte'
   import Mapping from './tabs/Mapping.svelte'
@@ -22,8 +22,8 @@
   const tabs = [
     { slug: 'index', name: 'Index', Component: Index },
     { slug: 'mapping', name: 'Mapping', Component: Mapping },
-    { slug: 'aliases', name: 'Aliases', Component: Aliases },
     { slug: 'settings', name: 'Settings', Component: Settings },
+    { slug: 'aliases', name: 'Aliases', Component: Aliases },
     { slug: 'templates', name: 'Templates', Component: Templates },
     { slug: 'monitoring', name: 'Monitoring', Component: Monitoring },
     { slug: 'status', name: 'Status', Component: Status },

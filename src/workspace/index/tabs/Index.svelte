@@ -105,6 +105,7 @@
           message: `Index ${indexName} has been closed`,
         })
         refreshDashboard()
+        dispatch('elasticsearch/index/fetch')
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -134,6 +135,7 @@
           message: `Index ${indexName} has been opened`,
         })
         refreshDashboard()
+        dispatch('elasticsearch/index/fetch')
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -163,6 +165,7 @@
           message: `Index ${indexName} has been frozen`,
         })
         refreshDashboard()
+        dispatch('elasticsearch/index/fetch')
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -192,6 +195,7 @@
           message: `Index ${indexName} has been unfrozen`,
         })
         refreshDashboard()
+        dispatch('elasticsearch/index/fetch')
       } else {
         dispatch('notification/add', {
           type: 'error',
@@ -222,7 +226,7 @@
       const api = new API($connection)
       const result = await api.wipeIndex(indexName)
 
-      if (result.deleted) {
+      if (get(result, 'deleted', false) !== false) {
         dispatch('notification/add', {
           type: 'success',
           message: `Index ${indexName} has been wiped. Documents deleted: ${result.deleted}.`,

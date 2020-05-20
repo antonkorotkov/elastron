@@ -320,6 +320,20 @@ export default class API {
       throw new ConnectionError(err)
     }
   }
+
+  /**
+   *
+   * @param {*} index
+   * @param {*} settings
+   */
+  async updateIndexSettings(index, settings) {
+    try {
+      const response = await this.client.put(`/${index}/_settings`, settings)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err)
+    }
+  }
 }
 
 class ConnectionError extends Error {

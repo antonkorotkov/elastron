@@ -23,7 +23,7 @@ export const indices = store => {
     })
   })
 
-  store.on('elasticsearch/indices/fetch', async state => {
+  store.on('elasticsearch/indices/fetch', async (state, cb) => {
     try {
       trackEvent('Indices', 'Fetch')
 
@@ -39,6 +39,9 @@ export const indices = store => {
           data,
           loading: false,
         })
+        if (typeof cb === 'function') {
+          cb()
+        }
       } else {
         store.dispatch('notification/add', {
           type: 'error',
