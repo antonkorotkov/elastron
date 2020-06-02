@@ -8,7 +8,7 @@
   export let selectable = false
   export let emptyMessage = 'No data'
   export let Cell = null
-  export let sorter = () => {}
+  export let sorter = false
 
   let sorted = {}
 
@@ -34,7 +34,7 @@
   }
 </script>
 
-<table class="ui attached table" class:selectable class:sortable>
+<table class="ui attached table" class:selectable class:sortable={!!sorter}>
   <thead>
     <tr>
       {#each columns as column, i}

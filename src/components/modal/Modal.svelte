@@ -58,7 +58,7 @@
     <div
       class="ui tiny modal hidden active"
       transition:fly={{ y: -500, duration: 300 }}>
-      <svelte:component this={Component} />
+      <svelte:component this={Component} {...props} />
     </div>
   </div>
 {/if}
