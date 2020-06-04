@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const pkg = require('./package.json')
+autoUpdater.autoDownload = false
 
 //const Elasticdump = require('elasticdump')
 const { trackEvent } = require('./app/analytics')
