@@ -14,7 +14,7 @@
     "release-mac": "electron-builder -m --publish=onTagOrDraft",
     "release-win": "electron-builder -w --publish=onTagOrDraft"
   },
-  "repository": "https://github.com/antonkorotkov/elastron-electron",
+  "repository": "https://github.com/antonkorotkov/elastron",
   "keywords": [
     "Electron",
     "elasticsearch",

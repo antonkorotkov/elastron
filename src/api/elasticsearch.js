@@ -339,9 +339,9 @@ export default class API {
    *
    * @param {*} index
    */
-  async getIndexAliases(index) {
+  async deleteIndexAlias(index, alias) {
     try {
-      const response = await this.client.get(`/${index}/_alias`)
+      const response = await this.client.delete(`/${index}/_alias/${alias}`)
       return response.data
     } catch (err) {
       throw new ConnectionError(err)

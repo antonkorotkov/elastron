@@ -143,7 +143,7 @@ function createWindow() {
             label: 'Learn More',
             click: async () => {
               const { shell } = require('electron')
-              await shell.openExternal('https://github.com/antonkorotkov')
+              await shell.openExternal('https://elastron.eney.solutions')
             },
           },
         ],

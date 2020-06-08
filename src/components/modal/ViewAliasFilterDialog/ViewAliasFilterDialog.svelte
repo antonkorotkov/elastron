@@ -12,6 +12,12 @@
   }
 </script>
 
+<style>
+  pre {
+    margin: 0;
+  }
+</style>
+
 <div class="header">Alias Filter</div>
 
 <div class="content">
