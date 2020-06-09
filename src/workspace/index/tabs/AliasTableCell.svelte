@@ -19,8 +19,8 @@
 
   const onDeleteClick = async () => {
     try {
-      loading = true
       if (!confirm('Are you sure you want to delete this alias?')) return
+      loading = true
 
       const api = new API($connection)
       const result = await api.deleteIndexAlias($index.selected, cell)

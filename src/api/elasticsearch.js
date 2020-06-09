@@ -347,6 +347,18 @@ export default class API {
       throw new ConnectionError(err)
     }
   }
+
+  /**
+   *
+   */
+  async createIndexAlias(index, alias, data) {
+    try {
+      const response = await this.client.post(`/${index}/_alias/${alias}`, data)
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err)
+    }
+  }
 }
 
 class ConnectionError extends Error {
