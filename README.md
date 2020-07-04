@@ -6,6 +6,10 @@
 yarn
 ```
 
+```sh
+yarn build
+```
+
 Development in browser: 
 
 ```sh
