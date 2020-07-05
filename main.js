@@ -76,7 +76,7 @@ function createWindow() {
     backgroundColor: '#000',
     webPreferences: {
       nodeIntegration: true,
-      devTools: false,
+      devTools: true,
     },
   })
 

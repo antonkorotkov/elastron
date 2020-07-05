@@ -5,8 +5,10 @@
 
   import { useStoreon } from '@storeon/svelte'
   import { getContext } from 'svelte'
+  import get from 'lodash/get'
 
   import ViewAliasFilterDialog from '../../../components/modal/ViewAliasFilterDialog/ViewAliasFilterDialog.svelte'
+  import EditAliasDialog from '../../../components/modal/EditAliasDialog/EditAliasDialog.svelte'
   import API from '../../../api/elasticsearch'
 
   const { open } = getContext('modal-window')
@@ -47,7 +49,14 @@
   }
 
   const onUpdateClick = () => {
-    console.log(cell)
+    open(EditAliasDialog, {
+      alias: cell,
+      aliases: get(
+        $index,
+        ['info', $index.selected, $index.selected, 'aliases'],
+        {}
+      ),
+    })
   }
 </script>
 

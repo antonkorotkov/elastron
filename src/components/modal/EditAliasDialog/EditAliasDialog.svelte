@@ -1,5 +1,6 @@
 <script>
   export let aliases = {}
+  export let alias = {}
 
   import { useStoreon } from '@storeon/svelte'
   import JSONEditor from 'jsoneditor'
@@ -13,8 +14,7 @@
   export let onCancel = () => {}
   export let onOkay = () => {}
 
-  let aliasName = '',
-    indexRouting = '',
+  let indexRouting = '',
     searchRouting = '',
     isWriteIndex = false,
     canSave = true,
@@ -39,7 +39,7 @@
 
     try {
       const api = new API($connection)
-      const result = await api.createIndexAlias($index.selected, aliasName, {
+      const result = await api.updateIndexAlias($index.selected, alias, {
         filter: fEditor.get(),
         is_write_index: isWriteIndex,
         index_routing: indexRouting,
@@ -49,14 +49,14 @@
       if (result.acknowledged) {
         dispatch('notification/add', {
           type: 'success',
-          message: `Alias ${aliasName} has been created`,
+          message: `Alias ${alias} has been updated`,
         })
         dispatch('elasticsearch/index/fetch')
         close()
       } else {
         dispatch('notification/add', {
           type: 'error',
-          message: `Something went wrong while creating the alias`,
+          message: `Something went wrong while updating the alias`,
         })
       }
     } catch (e) {
@@ -69,24 +69,33 @@
     isLoading = false
   }
 
-  const isAliasNameAllowed = name => {
-    if (!name.length) return false
-    return !get(aliases, name, false)
-  }
-
   onMount(() => {
+    const { filter, index_routing, search_routing, is_write_index } = get(
+      aliases,
+      alias,
+      {}
+    )
+
+    indexRouting = index_routing
+    searchRouting = search_routing
+    isWriteIndex = is_write_index
+
     if (filterEditor) {
-      fEditor = new JSONEditor(filterEditor, {
-        mode: 'code',
-        onChange: () => {
-          try {
-            fEditor.get()
-            canSave = true
-          } catch (e) {
-            canSave = false
-          }
+      fEditor = new JSONEditor(
+        filterEditor,
+        {
+          mode: 'code',
+          onChange: () => {
+            try {
+              fEditor.get()
+              canSave = true
+            } catch (e) {
+              canSave = false
+            }
+          },
         },
-      })
+        filter
+      )
     }
   })
 
@@ -97,14 +106,10 @@
   })
 </script>
 
-<div class="header">Create New Alias</div>
+<div class="header">Update New Alias</div>
 
 <div class="content">
   <form class="ui form" on:submit|preventDefault={save} id="alias-form">
-    <div class="field">
-      <label for="alias-name">Alias Name</label>
-      <input type="text" id="alias-name" bind:value={aliasName} />
-    </div>
     <div class="field">
       <label for="index-routing">Index Routing</label>
       <input type="text" id="index-routing" bind:value={indexRouting} />
@@ -141,7 +146,7 @@
     class="ui positive right button"
     class:loading={isLoading}
     form="alias-form"
-    disabled={!isAliasNameAllowed(aliasName) || !canSave || isLoading}>
-    Create
+    disabled={!canSave || isLoading}>
+    Update
   </button>
 </div>
