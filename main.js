@@ -39,7 +39,6 @@ let mainWindow
 
 autoUpdater.on('error', e => {
   trackEvent('Error', 'Update', e.message || 'no message')
-  console.log('Error', e)
 })
 
 autoUpdater.setFeedURL({
@@ -76,7 +75,7 @@ function createWindow() {
     backgroundColor: '#000',
     webPreferences: {
       nodeIntegration: true,
-      devTools: true,
+      devTools: false,
     },
   })
 

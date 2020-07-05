@@ -25,8 +25,6 @@ export const shards = store => {
 
   store.on('elasticsearch/shards/fetch', async state => {
     try {
-      trackEvent('Shards', 'Fetch')
-
       store.dispatch('elasticsearch/shards/update', {
         loading: true,
       })

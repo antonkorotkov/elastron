@@ -25,8 +25,6 @@ export const indices = store => {
 
   store.on('elasticsearch/indices/fetch', async (state, cb) => {
     try {
-      trackEvent('Indices', 'Fetch')
-
       store.dispatch('elasticsearch/indices/update', {
         loading: true,
       })

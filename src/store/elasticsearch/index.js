@@ -48,8 +48,6 @@ export const index = store => {
   store.on('elasticsearch/index/fetch', async state => {
     if (state.index.loading) return
     try {
-      trackEvent('Index', 'Fetch')
-
       store.dispatch('elasticsearch/index/loading', true)
       const api = new API(state.connection)
       const info = await api.getIndex(state.index.selected)

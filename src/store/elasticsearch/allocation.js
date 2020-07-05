@@ -25,8 +25,6 @@ export const allocation = store => {
 
   store.on('elasticsearch/allocation/fetch', async state => {
     try {
-      trackEvent('Allocation', 'Fetch')
-
       store.dispatch('elasticsearch/allocation/update', {
         loading: true,
       })
