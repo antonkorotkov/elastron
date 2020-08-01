@@ -70,6 +70,7 @@
     "node-localstorage": "^2.1.6",
     "sirv-cli": "^0.4.4",
     "storeon": "^2.0.2",
+    "svelte-select": "^3.10.0",
     "universal-analytics": "^0.4.20"
   },
   "devDependencies": {
