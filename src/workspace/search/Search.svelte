@@ -4,6 +4,7 @@
   import { useStoreon } from '@storeon/svelte'
   import { onMount, onDestroy, afterUpdate } from 'svelte'
   import get from 'lodash/get'
+  import Select from 'svelte-select'
 
   import Pagination from '../../components/pagination/Pagination.svelte'
 
@@ -190,6 +191,11 @@
   .pagination {
     text-align: right;
   }
+
+  .themed {
+    min-width: 190px;
+    --height: 38px;
+  }
 </style>
 
 <div class="ui segments">
@@ -207,20 +213,14 @@
             <option value="body">Request Body</option>
           </select>
         </div>
-        <div class="field">
+        <div class="field themed">
           <label for="index">Index</label>
-          <select
-            id="index"
-            class="ui dropdown"
-            on:change={e => onStateFieldChange({ index: e.target.value })}
-            value={$search.index}>
-            <option value="_all">All</option>
-            {#if _indices.length}
-              {#each _indices as index}
-                <option value={index}>{index}</option>
-              {/each}
-            {/if}
-          </select>
+          <Select
+            items={_indices}
+            isCreatable={true}
+            selectedValue={$search.index}
+            on:select={e => onStateFieldChange({ index: e.detail.value })}
+            on:clear={e => onStateFieldChange({ index: '_all' })} />
         </div>
 
         {#if $search.type === 'uri'}
