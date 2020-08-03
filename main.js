@@ -35,7 +35,14 @@ global['trackEvent'] = trackEvent
 //   }
 // })
 
-let mainWindow
+let mainWindow,
+  notifyUpdateNotAvailable = false
+
+const checkForUpdates = (notify = false) => {
+  notifyUpdateNotAvailable = notify
+  autoUpdater.checkForUpdates()
+  trackEvent('App', 'Update Check', `${process.platform}:${pkg.version}`)
+}
 
 autoUpdater.on('error', e => {
   trackEvent('Error', 'Update', e.message || 'no message')
@@ -46,13 +53,6 @@ autoUpdater.setFeedURL({
   token: '0414f1ae0f8265c966504422256f5f43185dffc6',
   owner: 'antonkorotkov',
   repo: 'elastron',
-})
-
-ipcMain.on('online-status-changed', (event, online) => {
-  if (online) {
-    autoUpdater.checkForUpdates()
-    trackEvent('App', 'Update Check', `${process.platform}:${pkg.version}`)
-  }
 })
 
 ipcMain.on('header-doubleclick', e => {
@@ -93,6 +93,21 @@ function createWindow() {
     })
 
     if (answer.response === 0) autoUpdater.downloadUpdate()
+  })
+
+  autoUpdater.on('update-not-available', async () => {
+    trackEvent(
+      'App',
+      'Update Not Available',
+      `${process.platform}:${pkg.version}`
+    )
+
+    if (!notifyUpdateNotAvailable) return
+
+    await dialog.showMessageBox(mainWindow, {
+      title: 'Updates Not Available',
+      message: 'You have the latest version of Elastron',
+    })
   })
 
   autoUpdater.on('update-downloaded', async () => {
@@ -145,6 +160,10 @@ function createWindow() {
               await shell.openExternal('https://elastron.eney.solutions')
             },
           },
+          {
+            label: 'Check For Updates',
+            click: () => checkForUpdates(true),
+          },
         ],
       },
     ])
@@ -155,3 +174,5 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(createWindow)
+
+checkForUpdates()
