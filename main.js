@@ -1,10 +1,9 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
-const { autoUpdater } = require('electron-updater')
-const pkg = require('./package.json')
-autoUpdater.autoDownload = false
 
 //const Elasticdump = require('elasticdump')
+const pkg = require('./package.json')
 const { trackEvent } = require('./app/analytics')
+const updater = require('./app/updater')
 global['trackEvent'] = trackEvent
 
 // const options = {
@@ -35,25 +34,7 @@ global['trackEvent'] = trackEvent
 //   }
 // })
 
-let mainWindow,
-  notifyUpdateNotAvailable = false
-
-const checkForUpdates = (notify = false) => {
-  notifyUpdateNotAvailable = notify
-  autoUpdater.checkForUpdates()
-  trackEvent('App', 'Update Check', `${process.platform}:${pkg.version}`)
-}
-
-autoUpdater.on('error', e => {
-  trackEvent('Error', 'Update', e.message || 'no message')
-})
-
-autoUpdater.setFeedURL({
-  provider: 'github',
-  token: '0414f1ae0f8265c966504422256f5f43185dffc6',
-  owner: 'antonkorotkov',
-  repo: 'elastron',
-})
+let mainWindow
 
 ipcMain.on('header-doubleclick', e => {
   if (mainWindow.isMaximized()) {
@@ -63,7 +44,7 @@ ipcMain.on('header-doubleclick', e => {
   return mainWindow.maximize()
 })
 
-function createWindow() {
+const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -80,45 +61,6 @@ function createWindow() {
   })
 
   trackEvent('App', 'Open', `${process.platform}:${pkg.version}`)
-
-  autoUpdater.on('update-available', async () => {
-    trackEvent('App', 'Update Available', `${process.platform}:${pkg.version}`)
-
-    const answer = await dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: 'Found Updates',
-      message:
-        'The new version of Elastron is available, do you want update now?',
-      buttons: ['Yeah', 'Nope'],
-    })
-
-    if (answer.response === 0) autoUpdater.downloadUpdate()
-  })
-
-  autoUpdater.on('update-not-available', async () => {
-    trackEvent(
-      'App',
-      'Update Not Available',
-      `${process.platform}:${pkg.version}`
-    )
-
-    if (!notifyUpdateNotAvailable) return
-
-    await dialog.showMessageBox(mainWindow, {
-      title: 'Updates Not Available',
-      message: 'You have the latest version of Elastron',
-    })
-  })
-
-  autoUpdater.on('update-downloaded', async () => {
-    trackEvent('App', 'Update Downloaded', `${process.platform}:${pkg.version}`)
-
-    await dialog.showMessageBox(mainWindow, {
-      title: 'Install Updates',
-      message: 'Updates downloaded, application will be quit for update...',
-    })
-    autoUpdater.quitAndInstall()
-  })
 
   // and load the index.html of the app.
   mainWindow.loadFile('public/index.html')
@@ -162,17 +104,21 @@ function createWindow() {
           },
           {
             label: 'Check For Updates',
-            click: () => checkForUpdates(true),
+            click: () => updater.checkForUpdates(true),
           },
         ],
       },
     ])
   )
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(createWindow)
-
-checkForUpdates()
+app.whenReady().then(() => {
+  const window = createWindow()
+  updater.init(window)
+  updater.checkForUpdates()
+})
