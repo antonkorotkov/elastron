@@ -19,7 +19,14 @@
   const { open } = getContext('modal-window')
 
   const showConnectionDialog = () => {
-    open(ConnectionDialog)
+    open(
+      ConnectionDialog,
+      {},
+      {
+        closeOnEsc: false,
+        closeOnOuterClick: false,
+      }
+    )
   }
 
   const { [routerKey]: route } = useStoreon(routerKey)

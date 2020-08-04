@@ -11,6 +11,7 @@ export const connection = store => {
 
     return {
       connection: {
+        name: 'Local Server',
         host: 'http://localhost',
         port: '9200',
         useAuth: false,
@@ -23,6 +24,7 @@ export const connection = store => {
   store.on('connection/clear', _state => {
     return {
       connection: {
+        name: '',
         host: '',
         port: '',
         useAuth: false,

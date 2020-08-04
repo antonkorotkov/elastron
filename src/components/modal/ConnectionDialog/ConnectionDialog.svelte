@@ -8,18 +8,26 @@
   const { dispatch, connection, history } = useStoreon('connection', 'history')
 
   export let onCancel = () => {}
-  export let onOkay = () => {}
+  export const onOkay = () => {}
 
   const { close } = getContext('modal-window')
 
   const _onCancel = () => {
+    save()
     onCancel()
     close()
   }
 
-  const _onOkay = () => {
-    onOkay(value)
-    close()
+  const deleteConnection = () => {
+    try {
+      dispatch('history/connection/delete', $connection)
+      dispatch('connection/update', $history.connection[0] || [])
+    } catch (e) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: e.message,
+      })
+    }
   }
 
   const testConnection = async () => {
@@ -86,7 +94,11 @@
               {#if $history.connection.length}
                 {#each $history.connection as connection, i}
                   <option value={i}>
-                    {connection.host}{connection.port ? `:${connection.port}` : ''}
+                    {#if connection.name}
+                      {connection.name}
+                    {:else}
+                      {connection.host}{connection.port ? `:${connection.port}` : ''}
+                    {/if}
                   </option>
                 {/each}
               {/if}
@@ -99,11 +111,25 @@
   {/if}
   <form class="ui form" on:submit|preventDefault={save} id="connection-form">
     <div class="fields">
+      <div class="sixteen wide field">
+        <label for="name">Name</label>
+        <input
+          type="text"
+          id="name"
+          required={true}
+          on:change={e => dispatch('connection/update', {
+              name: e.target.value,
+            })}
+          value={$connection.name || ''} />
+      </div>
+    </div>
+    <div class="fields">
       <div class="twelve wide field">
         <label for="host">Host</label>
         <input
           type="url"
           id="host"
+          required={true}
           on:change={e => dispatch('connection/update', {
               host: e.target.value,
             })}
@@ -149,7 +175,7 @@
           <label for="password">Password</label>
           <input
             required={$connection.useAuth}
-            type="text"
+            type="password"
             id="password"
             on:change={e => dispatch('connection/update', {
                 password: e.target.value,
@@ -163,6 +189,7 @@
 
 <div class="actions">
   <div class="ui black deny button right" on:click={_onCancel}>Cancel</div>
+  <div class="ui negative right button" on:click={deleteConnection}>Delete</div>
   <div class="ui right button" on:click={testConnection}>Test</div>
   <button type="submit" class="ui positive right button" form="connection-form">
     Save

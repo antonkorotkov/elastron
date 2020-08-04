@@ -44,4 +44,30 @@ export const history = store => {
       },
     }
   })
+
+  store.on('history/connection/delete', (state, connection) => {
+    connection.name = connection.name || ''
+    if (!some(state.history.connection, item => isEqual(item, connection)))
+      return state
+
+    let savedConnections = ls('connection') || []
+    savedConnections = savedConnections.filter(c => {
+      c.name = c.name || ''
+      return !isEqual(c, connection)
+    })
+    ls('connection', savedConnections)
+
+    trackEvent(
+      'History',
+      'Removed Connection',
+      `Total: ${savedConnections.length}`
+    )
+
+    return {
+      history: {
+        ...state.history,
+        connection: [...savedConnections],
+      },
+    }
+  })
 }

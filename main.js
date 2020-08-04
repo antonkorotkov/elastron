@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, dialog, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain } = require('electron')
 
 //const Elasticdump = require('elasticdump')
 const pkg = require('./package.json')
@@ -56,7 +56,7 @@ const createWindow = () => {
     backgroundColor: '#000',
     webPreferences: {
       nodeIntegration: true,
-      devTools: false,
+      devTools: true,
     },
   })
 
