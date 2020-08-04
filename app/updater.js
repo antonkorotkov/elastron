@@ -26,9 +26,8 @@ const init = window => {
     const answer = await dialog.showMessageBox(window, {
       type: 'info',
       title: 'Found Updates',
-      message:
-        'The new version of Elastron is available, do you want update now?',
-      buttons: ['Yeah', 'Nope'],
+      message: 'The new version of Elastron is available.',
+      buttons: ['Download', 'Later'],
     })
 
     if (answer.response === 0) autoUpdater.downloadUpdate()
