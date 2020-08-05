@@ -29,7 +29,7 @@
     )
   }
 
-  const { [routerKey]: route } = useStoreon(routerKey)
+  const { [routerKey]: route, connection } = useStoreon(routerKey, 'connection')
 </script>
 
 <style>
@@ -57,12 +57,15 @@
     <a class="item" href="/search" class:active={$route.match.page == 'search'}>
       Search
     </a>
-    <a
-      class="item right"
-      on:click={showConnectionDialog}
-      href="javascript:void(0);">
-      Connection
-      <OnlineIndicator />
-    </a>
+    <div class="right menu">
+      <span class="item">{$connection.name || ''}</span>
+      <a
+        class="item"
+        on:click={showConnectionDialog}
+        href="javascript:void(0);">
+        Connection
+        <OnlineIndicator />
+      </a>
+    </div>
   </div>
 </header>

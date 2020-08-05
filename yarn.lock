@@ -401,10 +401,10 @@ at-least-node@^1.0.0:
   resolved "https://registry.yarnpkg.com/at-least-node/-/at-least-node-1.0.0.tgz#602cd4b46e844ad4effc92a8011a3c46e0238dc2"
   integrity sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==
 
-aws-sdk@^2.0.4, aws-sdk@^2.718.0:
-  version "2.725.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.725.0.tgz#287ef3b55aa66f10c88671ec62300e96015aaf6a"
-  integrity sha512-Qd/MlxfQC9NpTxFUQ7u2BdsjiwNtbn5oVp04NPfXEc0xyT216TtcIs+jNyiJ9WaH7AgkHouU1BbBcReO8byYzg==
+aws-sdk@^2.0.4, aws-sdk@^2.726.0:
+  version "2.726.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.726.0.tgz#075aae1922e67e21285abae1bb081252cff4fec3"
+  integrity sha512-QRQ7MaW5dprdr/T3vCTC+J8TeUfpM45yWsBuATPcCV/oO8afFHVySwygvGLY4oJuo5Mf4mJn3+JYTquo6CqiaA==
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -964,14 +964,14 @@ ejs@^3.1.3:
   dependencies:
     jake "^10.6.1"
 
-elasticdump@^6.33.1:
-  version "6.33.1"
-  resolved "https://registry.yarnpkg.com/elasticdump/-/elasticdump-6.33.1.tgz#90de4093278fec1cdf8d4a35dfbbb881170e9cb0"
-  integrity sha512-g+SeRgxjkNJjyqA2fKZsCcAQFMXSnPa9RXC5zggPT6D1YwJFndYfdHNXBg93gjc2c1P89DrvqZpdfCI6r9sQrw==
+elasticdump@^6.33.2:
+  version "6.33.2"
+  resolved "https://registry.yarnpkg.com/elasticdump/-/elasticdump-6.33.2.tgz#074cab65c66224fca641f41577ba75120753a682"
+  integrity sha512-zdVxNUeI3Ywj3ls8K+NcssOn4KjfJ5QdSyTsgIf9AsOlDCioGh5//qE5/c4HH0Bn14J/WETEcSW62YJKlMFN0w==
   dependencies:
     JSONStream "^1.3.5"
     async "^2.0.1"
-    aws-sdk "^2.718.0"
+    aws-sdk "^2.726.0"
     aws4 "^1.10.0"
     big.js "^5.2.2"
     bytes "^3.1.0"
@@ -3047,10 +3047,10 @@ supports-color@^7.0.0, supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
-svelte-preprocess@^4.0.9:
-  version "4.0.9"
-  resolved "https://registry.yarnpkg.com/svelte-preprocess/-/svelte-preprocess-4.0.9.tgz#f5f537c140331502df6d70b3a4bf52d61a984b1e"
-  integrity sha512-IajgvgXOWrxy18xY+VoYienngHmHmATKgpDGG2xx+nmHXv6fJbooOnNeUpAFS+sRvqR4D8oM71oHE4sRsYStZw==
+svelte-preprocess@^4.0.10:
+  version "4.0.10"
+  resolved "https://registry.yarnpkg.com/svelte-preprocess/-/svelte-preprocess-4.0.10.tgz#e6165a2500dcb3a1c88a19d9b8c74c919eca6b3c"
+  integrity sha512-Oafr9EzQkr6uf5PAN7McWmmShxmuowOe8Lsbvjt7NFncqVYDvkLBoHwSq/z1n2+APhowDPhyQD2hyCVs30cJwA==
   dependencies:
     "@types/pug" "^2.0.4"
     "@types/sass" "^1.16.0"
@@ -3062,10 +3062,10 @@ svelte-select@^3.10.0:
   resolved "https://registry.yarnpkg.com/svelte-select/-/svelte-select-3.10.0.tgz#728f47037994b378876560ceaacd1308901888fb"
   integrity sha512-ssiMIGWTMswbRr9ZqJXiOnIx5qlN/2kWcB9EQnisJpN9qeYDIfuWITu5TNaymsKpWH/3767eEtnBNiRFRUUrrQ==
 
-svelte@^3.24.0:
-  version "3.24.0"
-  resolved "https://registry.yarnpkg.com/svelte/-/svelte-3.24.0.tgz#6565a42c9705796fa66c6abb4fedc09f4323a4a8"
-  integrity sha512-VFXom6EP2DK83kxy4ZlBbaZklSbZIrpNH3oNXlPYHJUuW4q1OuAr3ZoYbfIVTVYPDgrI7Yq0gQcOhDlAtO4qfw==
+svelte@^3.24.1:
+  version "3.24.1"
+  resolved "https://registry.yarnpkg.com/svelte/-/svelte-3.24.1.tgz#aca364937dd1df27fe131e2a4c234acb6061db4b"
+  integrity sha512-OX/IBVUJSFo1rnznXdwf9rv6LReJ3qQ0PwRjj76vfUWyTfbHbR9OXqJBnUrpjyis2dwYcbT2Zm1DFjOOF1ZbbQ==
 
 tar@^2.0.0:
   version "2.2.2"

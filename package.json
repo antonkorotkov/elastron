@@ -1,6 +1,6 @@
 {
   "name": "Elastron",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Full featured elasticsearch client",
   "main": "main.js",
   "scripts": {
@@ -61,7 +61,7 @@
     "@storeon/router": "^1.2.0",
     "@storeon/svelte": "^1.0.0",
     "axios": "^0.19.2",
-    "elasticdump": "^6.33.1",
+    "elasticdump": "^6.33.2",
     "electron-log": "^4.2.2",
     "electron-updater": "^4.3.4",
     "jsoneditor": "^9.0.3",
@@ -87,8 +87,8 @@
     "rollup-plugin-replace": "^2.2.0",
     "rollup-plugin-svelte": "^5.2.3",
     "rollup-plugin-terser": "^6.1.0",
-    "svelte": "^3.24.0",
-    "svelte-preprocess": "^4.0.9"
+    "svelte": "^3.24.1",
+    "svelte-preprocess": "^4.0.10"
   },
   "prettier": {
     "trailingComma": "es5",
