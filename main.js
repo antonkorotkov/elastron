@@ -56,7 +56,7 @@ const createWindow = () => {
     backgroundColor: '#000',
     webPreferences: {
       nodeIntegration: true,
-      devTools: true,
+      devTools: false,
     },
   })
 

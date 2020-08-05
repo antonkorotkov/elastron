@@ -9,15 +9,14 @@
 
   const currentConnection = { ...$connection }
 
-  export let onCancel = () => {
-    dispatch('connection/update', currentConnection || {})
-  }
+  export let onCancel = () => {}
   export const onOkay = () => {}
 
   const { close } = getContext('modal-window')
 
   const _onCancel = () => {
     try {
+      dispatch('connection/update', currentConnection || {})
       onCancel()
       close()
     } catch (e) {
@@ -100,6 +99,7 @@
               id="previous"
               class="ui dropdown"
               on:change={onPreviousChange}>
+              <option value="-2">Select Connection</option>
               <option value="-1">New Connection</option>
               {#if $history.connection.length}
                 {#each $history.connection as connection, i}
@@ -130,6 +130,7 @@
           on:change={e => dispatch('connection/update', {
               name: e.target.value,
             })}
+          maxlength="32"
           value={$connection.name || ''} />
       </div>
     </div>
@@ -169,7 +170,7 @@
       </div>
     </div>
     {#if $connection.useAuth}
-      <div transition:blur class="fields">
+      <div class="fields">
         <div class="eight wide field">
           <label for="user">User</label>
           <input
