@@ -7,15 +7,25 @@
 
   const { dispatch, connection, history } = useStoreon('connection', 'history')
 
-  export let onCancel = () => {}
+  const currentConnection = { ...$connection }
+
+  export let onCancel = () => {
+    dispatch('connection/update', currentConnection || {})
+  }
   export const onOkay = () => {}
 
   const { close } = getContext('modal-window')
 
   const _onCancel = () => {
-    save()
-    onCancel()
-    close()
+    try {
+      onCancel()
+      close()
+    } catch (e) {
+      dispatch('notification/add', {
+        type: 'error',
+        message: e.message,
+      })
+    }
   }
 
   const deleteConnection = () => {
