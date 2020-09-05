@@ -29,6 +29,8 @@ export const search = store => {
       sort: '',
       size: 10,
       from: 0,
+      response: {},
+      aggs: {},
       results: [],
       stats: {
         total_results: 0,
@@ -38,6 +40,7 @@ export const search = store => {
         skipped_shards: 0,
         failed_shards: 0,
       },
+      view: 'hits',
     },
   }))
 
@@ -142,8 +145,11 @@ export const search = store => {
       }
 
       store.dispatch('search/update', {
+        response: results,
+        aggs: get(results, 'aggregations', {}),
         results: get(results, 'hits.hits', []),
       })
+
       const stats = {
         total_results: get(
           results,

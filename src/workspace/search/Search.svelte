@@ -4,6 +4,8 @@
   import { useStoreon } from '@storeon/svelte'
   import { onMount, onDestroy, afterUpdate } from 'svelte'
   import get from 'lodash/get'
+  import isEmpty from 'lodash/isEmpty'
+  import isNumber from 'lodash/isNumber'
   import Select from 'svelte-select'
 
   import Pagination from '../../components/pagination/Pagination.svelte'
@@ -112,7 +114,11 @@
             }
           },
           onCreateMenu: (items, node) => {
-            if (node.type === 'single' && node.path.length === 1) {
+            if (
+              node.type === 'single' &&
+              isNumber(node.path[0]) &&
+              node.path.length === 1
+            ) {
               return [
                 {
                   text: 'Edit',
@@ -138,9 +144,30 @@
     }
   })
 
+  let prevView = 'hits'
   afterUpdate(() => {
-    if (rEditor && !isEqual(rEditor.get(), $search.results)) {
-      rEditor.update($search.results)
+    if (rEditor) {
+      let json = {}
+      switch ($search.view) {
+        case 'hits':
+          json = $search.results
+          break
+        case 'aggs':
+          json = !isEmpty($search.aggs) ? $search.aggs : $search.results
+          break
+        case 'raw':
+          json = !isEmpty($search.response) ? $search.response : $search.results
+          break
+        default:
+          break
+      }
+
+      if (!isEqual(rEditor.get(), json)) {
+        if ($search.view != prevView) rEditor.set(json)
+        else rEditor.update(json)
+      }
+
+      prevView = $search.view
     }
   })
 
@@ -172,6 +199,10 @@
         message: error.message,
       })
     }
+  }
+
+  const switchView = view => {
+    dispatch('search/update', { view })
   }
 </script>
 
@@ -321,6 +352,7 @@
             id="uri"
             type="text"
             on:change={e => onStateFieldChange({ uriQuery: e.target.value })}
+            on:keydown={e => (e.keyCode == 13 ? onSearchRun() : null)}
             value={$search.uriQuery} />
           <button
             class="ui green button"
@@ -354,6 +386,30 @@
           </span>
           <span class="ui red label" title="Failed">
             {$search.stats.failed_shards}
+          </span>
+          View: &nbsp;
+          <span class="ui text">
+            <button
+              class="mini ui button"
+              class:active={$search.view == 'hits'}
+              class:disabled={isEmpty($search.results)}
+              on:click={() => switchView('hits')}>
+              Hits
+            </button>
+            <button
+              class="mini ui button"
+              class:active={$search.view == 'aggs'}
+              class:disabled={isEmpty($search.aggs)}
+              on:click={() => switchView('aggs')}>
+              Aggs
+            </button>
+            <button
+              class="mini ui button"
+              class:active={$search.view == 'raw'}
+              class:disabled={isEmpty($search.response)}
+              on:click={() => switchView('raw')}>
+              Raw
+            </button>
           </span>
         </div>
       </div>
