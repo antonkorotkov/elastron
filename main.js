@@ -56,6 +56,7 @@ const createWindow = () => {
     backgroundColor: '#000',
     webPreferences: {
       nodeIntegration: true,
+      enableRemoteModule: true,
       devTools: false,
     },
   })
