@@ -59,10 +59,7 @@
     </a>
     <div class="right menu">
       <span class="item">{$connection.name || ''}</span>
-      <a
-        class="item"
-        on:click={showConnectionDialog}
-        href="javascript:void(0);">
+      <a class="item" on:click={showConnectionDialog} href>
         Connection
         <OnlineIndicator />
       </a>
