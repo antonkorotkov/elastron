@@ -11,8 +11,9 @@
 
 <style>
   .padded {
-    padding: 0 1rem;
-    margin-bottom: 5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-bottom: 5rem;
   }
 </style>
 

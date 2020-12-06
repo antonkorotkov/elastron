@@ -247,6 +247,7 @@
         <div class="field themed">
           <label for="index">Index</label>
           <Select
+            inputStyles="height:36px;"
             items={_indices}
             isCreatable={true}
             selectedValue={$search.index}

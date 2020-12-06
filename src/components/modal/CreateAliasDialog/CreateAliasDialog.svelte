@@ -5,6 +5,7 @@
   import JSONEditor from 'jsoneditor'
   import { getContext, onMount, onDestroy } from 'svelte'
   import get from 'lodash/get'
+  import isEmpty from 'lodash/isEmpty'
 
   import API from '../../../api/elasticsearch'
 
@@ -39,12 +40,29 @@
 
     try {
       const api = new API($connection)
-      const result = await api.createIndexAlias($index.selected, aliasName, {
-        filter: fEditor.get(),
-        is_write_index: isWriteIndex,
-        index_routing: indexRouting,
-        search_routing: searchRouting,
-      })
+      const data = {}
+
+      if (fEditor.get()) {
+        data.filter = fEditor.get()
+      }
+
+      if (isWriteIndex) {
+        data.is_write_index = isWriteIndex
+      }
+
+      if (!isEmpty(indexRouting)) {
+        data.index_routing = indexRouting
+      }
+
+      if (!isEmpty(searchRouting)) {
+        data.search_routing = searchRouting
+      }
+
+      const result = await api.createIndexAlias(
+        $index.selected,
+        aliasName,
+        data
+      )
 
       if (result.acknowledged) {
         dispatch('notification/add', {

@@ -359,21 +359,6 @@ export default class API {
       throw new ConnectionError(err)
     }
   }
-
-  /**
-   *
-   * @param {*} index
-   * @param {*} alias
-   * @param {*} data
-   */
-  async updateIndexAlias(index, alias, data) {
-    try {
-      const response = await this.client.put(`/${index}/_alias/${alias}`, data)
-      return response.data
-    } catch (err) {
-      throw new ConnectionError(err)
-    }
-  }
 }
 
 class ConnectionError extends Error {

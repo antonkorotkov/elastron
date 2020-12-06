@@ -990,7 +990,7 @@ ejs@^3.1.5:
   dependencies:
     jake "^10.6.1"
 
-elasticdump@^6.33.2:
+elasticdump@^6.56.0:
   version "6.56.0"
   resolved "https://registry.yarnpkg.com/elasticdump/-/elasticdump-6.56.0.tgz#d7f2bf91b3c0aa313322472f35857d2b5128f15f"
   integrity sha512-xgJH1i6nINcRVAGW1ek+NQJOyOgsS9VDGsWW0sN51v3IUGbPgHSZXTpBtqykVjkb+KoiP1V3NkiKY76n7zd+Kw==
@@ -1017,7 +1017,7 @@ elasticdump@^6.33.2:
     socks5-http-client "^1.0.4"
     socks5-https-client "^1.2.1"
 
-electron-builder@^22.8.0:
+electron-builder@^22.9.1:
   version "22.9.1"
   resolved "https://registry.yarnpkg.com/electron-builder/-/electron-builder-22.9.1.tgz#a2962db6f2757bc01d02489f38fafe0809f68f60"
   integrity sha512-GXPt8l5Mxwm1QKYopUM6/Tdh9W3695G6Ax+IFyj5pQ51G4SD5L1uq4/RkPSsOgs3rP7jNSV6g6OfDzdtVufPdA==
@@ -1037,7 +1037,7 @@ electron-builder@^22.8.0:
     update-notifier "^4.1.1"
     yargs "^16.0.3"
 
-electron-log@^4.2.2:
+electron-log@^4.3.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/electron-log/-/electron-log-4.3.0.tgz#6e841a5c9af34ed3ca83e5a8a4156fdc39bed464"
   integrity sha512-iuJjH/ZEJkDyCbuAMvvFxAjCMDLMXIQ5NqvppETGrbtf4b/007r5P36BSvexdy0UzwDNzDtIuEXLR34vRXWZrg==
@@ -1064,7 +1064,7 @@ electron-publish@22.9.1:
     lazy-val "^1.0.4"
     mime "^2.4.6"
 
-electron-updater@^4.3.4:
+electron-updater@^4.3.5:
   version "4.3.5"
   resolved "https://registry.yarnpkg.com/electron-updater/-/electron-updater-4.3.5.tgz#4fb36f593a031c87ea07ee141c9f064d5deffb15"
   integrity sha512-5jjN7ebvfj1cLI0VZMdCnJk6aC4bP+dy7ryBf21vArR0JzpRVk0OZHA2QBD+H5rm6ZSeDYHOY6+8PrMEqJ4wlQ==
@@ -1821,7 +1821,7 @@ json5@^2.1.2:
   dependencies:
     minimist "^1.2.5"
 
-jsoneditor@^9.0.3:
+jsoneditor@^9.1.4:
   version "9.1.4"
   resolved "https://registry.yarnpkg.com/jsoneditor/-/jsoneditor-9.1.4.tgz#2c4451d9626118a8bbc77b64d74d355b7378c74a"
   integrity sha512-+OVL01G490dGnUTRzP+eNtDfPYTEfjX15wRTi1HgKlxi10btFFOG4rvZoiLN2ejBptwXdnFu2Qf9nJtH2Ic4jQ==
@@ -1975,7 +1975,7 @@ lodash.uniq@^4.5.0:
   resolved "https://registry.yarnpkg.com/lodash.uniq/-/lodash.uniq-4.5.0.tgz#d0225373aeb652adc1bc82e4945339a842754773"
   integrity sha1-0CJTc662Uq3BvILklFM5qEJ1R3M=
 
-lodash@^4.0.0, lodash@^4.17.10, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@~4.17.10:
+lodash@^4.0.0, lodash@^4.17.10, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.20, lodash@~4.17.10:
   version "4.17.20"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
   integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
@@ -2998,7 +2998,7 @@ stdout-stream@^1.4.0:
   dependencies:
     readable-stream "^2.0.1"
 
-storeon@^3.0.3:
+storeon@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/storeon/-/storeon-3.1.1.tgz#7ecb94e7c546eacaf973e70268e1dd5ace30826c"
   integrity sha512-rThlNtK0GeOKh2tUgAuh1W9fYeD8I9DKIptdxV0WYUJdMucb4bFUKzfqpimCHOJ2eK+ix86J/UetwoeDx+dpTQ==
@@ -3125,7 +3125,7 @@ supports-color@^7.0.0, supports-color@^7.1.0:
   dependencies:
     has-flag "^4.0.0"
 
-svelte-preprocess@^4.0.10:
+svelte-preprocess@^4.6.1:
   version "4.6.1"
   resolved "https://registry.yarnpkg.com/svelte-preprocess/-/svelte-preprocess-4.6.1.tgz#a7de4d91b32d5608b6637da960ee81e6089ae276"
   integrity sha512-s7KdhR2pOsffyOzZIMEb315f6pfgeDnOWN47m6YKFeSEx3NMf/79Znc3vuG/Ai79SL/vsi86WDrjFPLGRfDesg==
@@ -3135,12 +3135,12 @@ svelte-preprocess@^4.0.10:
     detect-indent "^6.0.0"
     strip-indent "^3.0.0"
 
-svelte-select@^3.10.0:
+svelte-select@^3.14.1:
   version "3.14.1"
   resolved "https://registry.yarnpkg.com/svelte-select/-/svelte-select-3.14.1.tgz#0050dc1adf86e0a3f81031c25b35f6152ce641a1"
   integrity sha512-YurQfJBWgemesILZy5bQeB2vaq7J9empOjVC3VXJPsFUog+bW8HWHd+0n6mPXkvHQI2xFfxtqGg3rDalVbDFcA==
 
-svelte@^3.24.1:
+svelte@^3.31.0:
   version "3.31.0"
   resolved "https://registry.yarnpkg.com/svelte/-/svelte-3.31.0.tgz#13966e5f55b975bc86675469bb2c58dd0e558d97"
   integrity sha512-r+n8UJkDqoQm1b+3tA3Lh6mHXKpcfOSOuEuIo5gE2W9wQYi64RYX/qE6CZBDDsP/H4M+N426JwY7XGH4xASvGQ==
