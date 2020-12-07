@@ -8,6 +8,7 @@ export const indices = store => {
       columns: [],
       data: [],
       loading: false,
+      search: '',
     },
   }))
 

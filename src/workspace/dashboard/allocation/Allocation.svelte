@@ -2,15 +2,19 @@
   import { useStoreon } from '@storeon/svelte'
   import { onMount } from 'svelte'
   import orderBy from 'lodash/orderBy'
+  import isEmpty from 'lodash/isEmpty'
 
   import API from '../../../api/elasticsearch'
   import Table from '../../../components/tables/Table.svelte'
   import {
     humanStoreSizeToPseudoBytes,
     classToggle,
+    filterArrayBy,
   } from '../../../utils/helpers.js'
 
   const { dispatch, allocation } = useStoreon('allocation')
+
+  let search = $allocation.search
 
   const onTableSort = (column, index, direction) => {
     const sort = o => {
@@ -32,6 +36,12 @@
     dispatch('elasticsearch/allocation/update', { data: sorted })
   }
 
+  $: filterRows = data => {
+    if (isEmpty(search)) return data
+
+    return filterArrayBy(data, search)
+  }
+
   onMount(async () => {
     if (!$allocation.data.length) dispatch('elasticsearch/allocation/fetch')
   })
@@ -41,15 +51,38 @@
   .refresh {
     cursor: pointer;
   }
+
+  .search {
+    display: inline-block;
+  }
+
+  .search .fields {
+    margin: 0;
+  }
 </style>
 
 <div class="ui segments">
   <div class="ui segment">
     <div class="ui grid">
-      <div class="eight wide column">
+      <div class="eight wide column middle aligned">
         <h4>Allocation</h4>
       </div>
       <div class="eight wide column right aligned">
+
+        <div class="ui mini form search">
+          <div class="inline fields">
+            <div class="field">
+              <input
+                bind:value={search}
+                on:change={e => dispatch('elasticsearch/allocation/update', {
+                    search,
+                  })}
+                type="text"
+                placeholder="Search" />
+            </div>
+          </div>
+        </div>
+
         <i
           class="sync alternate icon refresh"
           class:loading={$allocation.loading}
@@ -62,7 +95,7 @@
   {#if $allocation.columns.length}
     <Table
       columns={$allocation.columns}
-      rows={$allocation.data}
+      rows={filterRows($allocation.data)}
       emptyMessage="No allocations found"
       sorter={onTableSort}
       selectable

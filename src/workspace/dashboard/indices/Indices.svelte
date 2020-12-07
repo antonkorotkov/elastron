@@ -2,6 +2,7 @@
   import { useStoreon } from '@storeon/svelte'
   import { onMount, getContext } from 'svelte'
   import orderBy from 'lodash/orderBy'
+  import isEmpty from 'lodash/isEmpty'
 
   import API from '../../../api/elasticsearch'
   import Table from '../../../components/tables/Table.svelte'
@@ -9,11 +10,14 @@
   import {
     humanStoreSizeToPseudoBytes,
     classToggle,
+    filterArrayBy,
   } from '../../../utils/helpers.js'
   import CreateIndexDialog from '../../../components/modal/CreateIndexDialog/CreateIndexDialog.svelte'
 
   const { dispatch, indices } = useStoreon('indices')
   const { open } = getContext('modal-window')
+
+  let search = $indices.search
 
   const onTableSort = (column, index, direction) => {
     const sort = o => {
@@ -42,6 +46,12 @@
   const showCreateIndexDialog = () => {
     open(CreateIndexDialog)
   }
+
+  $: filterRows = data => {
+    if (isEmpty(search)) return data
+
+    return filterArrayBy(data, search)
+  }
 </script>
 
 <style>
@@ -52,12 +62,20 @@
   .add-index {
     margin-left: 0.5rem;
   }
+
+  .search {
+    display: inline-block;
+  }
+
+  .search .fields {
+    margin: 0;
+  }
 </style>
 
 <div class="ui segments">
   <div class="ui segment">
     <div class="ui grid">
-      <div class="eight wide column">
+      <div class="eight wide column middle aligned">
         <h4>
           Indices
           <i
@@ -69,6 +87,21 @@
         </h4>
       </div>
       <div class="eight wide column right aligned">
+
+        <div class="ui mini form search">
+          <div class="inline fields">
+            <div class="field">
+              <input
+                bind:value={search}
+                on:change={e => dispatch('elasticsearch/indices/update', {
+                    search,
+                  })}
+                type="text"
+                placeholder="Search" />
+            </div>
+          </div>
+        </div>
+
         <i
           class="sync alternate icon refresh"
           class:loading={$indices.loading}
@@ -81,7 +114,7 @@
   {#if $indices.columns.length}
     <Table
       columns={$indices.columns}
-      rows={$indices.data}
+      rows={filterRows($indices.data)}
       sorter={onTableSort}
       emptyMessage="No indices found"
       selectable

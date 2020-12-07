@@ -20,6 +20,7 @@ export const allocation = store => {
       columns: [],
       data: [],
       loading: false,
+      search: '',
     })
   })
 

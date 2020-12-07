@@ -36,3 +36,11 @@ export const classToggle = (e, className) => {
 export const validateIndexName = indexName => {
   return /^[^-_+ A-Z:\.][a-z0-9\-]*$/.test(indexName)
 }
+
+export const filterArrayBy = (data, search) =>
+  data.filter(item => {
+    for (let col of item) {
+      if (col.toLowerCase().indexOf(search.toLowerCase()) > -1) return true
+    }
+    return false
+  })
