@@ -120,7 +120,7 @@ export default class API {
    * @param {*} params
    */
   async uriSearch(params) {
-    const { index, type, query, size, from, sort, _source } = params
+    const { index, type, query, size, from, sort, _source, explain } = params
     const response = await this.client.get(
       `${index ? `/${index}` : ''}${type ? `/${type}` : ''}/_search`,
       {
@@ -130,6 +130,7 @@ export default class API {
           from,
           sort,
           _source,
+          explain,
         },
       }
     )

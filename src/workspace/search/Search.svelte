@@ -201,6 +201,30 @@
     }
   }
 
+  const onProfilingChanged = checked => {
+    const requestBody = qEditor.get()
+    if (checked) {
+      requestBody.profile = true
+    } else {
+      delete requestBody.profile
+    }
+    qEditor.set(requestBody)
+    dispatch('search/update', { requestBody })
+    onStateFieldChange({ profiling: checked })
+  }
+
+  const onExplainChanged = checked => {
+    const requestBody = qEditor.get()
+    if (checked) {
+      requestBody.explain = true
+    } else {
+      delete requestBody.explain
+    }
+    qEditor.set(requestBody)
+    dispatch('search/update', { requestBody })
+    onStateFieldChange({ explain: checked })
+  }
+
   const switchView = view => {
     dispatch('search/update', { view })
   }
@@ -331,6 +355,32 @@
               id="type-value"
               on:change={onDocTypeChange}
               value={$search.docType} />
+          </div>
+        {/if}
+
+        <div class="field">
+          <label for="explain">Explain</label>
+          <div class="ui checkbox">
+            <input
+              id="explain"
+              type="checkbox"
+              on:change={e => onExplainChanged(e.target.checked)}
+              checked={$search.explain} />
+            <label for="explain">Enable</label>
+          </div>
+        </div>
+
+        {#if $search.type === 'body'}
+          <div class="field">
+            <label>Profiling</label>
+            <div class="ui checkbox">
+              <input
+                id="profiling"
+                type="checkbox"
+                on:change={e => onProfilingChanged(e.target.checked)}
+                checked={$search.profiling} />
+              <label for="profiling">Enable</label>
+            </div>
           </div>
         {/if}
       </div>

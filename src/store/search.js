@@ -7,6 +7,8 @@ export const search = store => {
   store.on('@init', () => ({
     search: {
       loading: false,
+      profiling: false,
+      explain: false,
       type: 'uri',
       index: '_all',
       useDocType: false,
@@ -130,6 +132,7 @@ export const search = store => {
         from: state.search.from,
         sort: state.search.sort,
         _source: state.search.useSource ? state.search._source : true,
+        explain: state.search.explain,
       })
 
       const api = new API(state.connection)
