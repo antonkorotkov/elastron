@@ -169,6 +169,33 @@ export default class API {
   /**
    *
    * @param {*} index
+   * @param {*} id
+   * @param {*} fields
+   */
+  async updateDocument(index, id, fields = {}) {
+    const response = await this.client.post(
+      `${index}/_update/${id}?refresh=true`,
+      {
+        doc: fields,
+      }
+    )
+    return response.data
+  }
+
+  /**
+   *
+   * @param {*} index
+   * @param {*} id
+   * @param {*} fields
+   */
+  async indexDocument(index, type, id, fields = {}) {
+    const response = await this.client.put(`${index}/${type}/${id}`, fields)
+    return response.data
+  }
+
+  /**
+   *
+   * @param {*} index
    */
   async getIndex(index) {
     try {

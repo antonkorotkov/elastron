@@ -43,12 +43,114 @@ export const search = store => {
         failed_shards: 0,
       },
       view: 'hits',
+      editDoc: null,
     },
   }))
 
   store.on('connected', () => {
     store.dispatch('elasticsearch/indices/fetch')
     store.dispatch('search/update', { index: '_all', results: [] })
+  })
+
+  store.on('search/documents/reindex', async (state, data) => {
+    try {
+      trackEvent('Search', 'Update Document')
+      store.dispatch('search/loading', true)
+
+      const { _index, _type, _id } = state.search.editDoc
+
+      const response = await new API(state.connection).indexDocument(
+        _index,
+        _type,
+        _id,
+        data
+      )
+
+      if (get(response, 'result') === 'updated') {
+        store.dispatch('notification/add', {
+          type: 'success',
+          message: `Document with id '${_id}' in index '${_index}' was successfully reindexed`,
+        })
+
+        const results = state.search.results.map((doc, index) => {
+          if (doc._id === _id && doc._index === _index) {
+            return {
+              ...doc,
+              _source: data,
+            }
+          }
+
+          return doc
+        })
+        store.dispatch('search/update', {
+          results,
+          view: 'hits',
+        })
+      }
+
+      store.dispatch('search/loading', false)
+    } catch (error) {
+      store.dispatch('search/loading', false)
+      store.dispatch('notification/add', {
+        type: 'error',
+        message: get(
+          error,
+          'response.data.error.root_cause[0].reason',
+          get(error, 'response.data.error.reason', error.message)
+        ),
+      })
+      trackEvent('Error', 'Search Update Document', error.message || '')
+    }
+  })
+
+  store.on('search/documents/update', async (state, data) => {
+    try {
+      trackEvent('Search', 'Update Document')
+      store.dispatch('search/loading', true)
+
+      const { _index, _id } = state.search.editDoc
+
+      const response = await new API(state.connection).updateDocument(
+        _index,
+        _id,
+        data
+      )
+
+      if (get(response, 'result') === 'updated') {
+        store.dispatch('notification/add', {
+          type: 'success',
+          message: `Document with id '${_id}' in index '${_index}' was successfully updated`,
+        })
+
+        const results = state.search.results.map((doc, index) => {
+          if (doc._id === _id && doc._index === _index) {
+            return {
+              ...doc,
+              _source: data,
+            }
+          }
+
+          return doc
+        })
+        store.dispatch('search/update', {
+          results,
+          view: 'hits',
+        })
+      }
+
+      store.dispatch('search/loading', false)
+    } catch (error) {
+      store.dispatch('search/loading', false)
+      store.dispatch('notification/add', {
+        type: 'error',
+        message: get(
+          error,
+          'response.data.error.root_cause[0].reason',
+          get(error, 'response.data.error.reason', error.message)
+        ),
+      })
+      trackEvent('Error', 'Search Update Document', error.message || '')
+    }
   })
 
   store.on('search/documents/delete', async (state, index) => {

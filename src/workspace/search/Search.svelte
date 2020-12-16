@@ -87,6 +87,13 @@
       dispatch('search/documents/delete', index)
   }
 
+  let canEditDoc = false
+  const onClickEditDocument = index => {
+    dispatch('search/update', { editDoc: $search.results[index] })
+    canEditDoc = false
+    switchView('edit')
+  }
+
   onMount(() => {
     if (requestBodyEditor) {
       qEditor = new JSONEditor(
@@ -105,7 +112,18 @@
         resultsEditor,
         {
           mode: 'tree',
-          onEditable: () => false,
+          onChange: () => {
+            try {
+              rEditor.get()
+              canEditDoc = true
+            } catch (e) {
+              canEditDoc = false
+            }
+          },
+          onEditable: function() {
+            if (rEditor && rEditor.getMode() == 'code') return true
+            return false
+          },
           onEvent: (node, event) => {
             if (event.type === 'mouseover') {
               if (event.target.tagName.toLowerCase() === 'a') {
@@ -124,9 +142,7 @@
                   text: 'Edit',
                   title: 'Edit the document and commit updates to the server',
                   className: 'jsoneditor-type-object',
-                  click: () => {
-                    alert('Comming soon')
-                  },
+                  click: () => onClickEditDocument(node.path[0]),
                 },
                 {
                   text: 'Delete',
@@ -146,29 +162,42 @@
 
   let prevView = 'hits'
   afterUpdate(() => {
-    if (rEditor) {
-      let json = {}
-      switch ($search.view) {
-        case 'hits':
-          json = $search.results
-          break
-        case 'aggs':
-          json = !isEmpty($search.aggs) ? $search.aggs : $search.results
-          break
-        case 'raw':
-          json = !isEmpty($search.response) ? $search.response : $search.results
-          break
-        default:
-          break
-      }
+    try {
+      if (rEditor) {
+        let json = {}
+        switch ($search.view) {
+          case 'hits':
+            json = $search.results
+            rEditor.setMode('tree')
+            break
+          case 'aggs':
+            json = !isEmpty($search.aggs) ? $search.aggs : $search.results
+            rEditor.setMode('tree')
+            break
+          case 'raw':
+            json = !isEmpty($search.response)
+              ? $search.response
+              : $search.results
+            rEditor.setMode('tree')
+            break
+          case 'edit':
+            json = !isEmpty($search.editDoc) ? $search.editDoc._source : {}
+            rEditor.setMode('code')
+            break
+          default:
+            break
+        }
 
-      if (!isEqual(rEditor.get(), json)) {
-        if ($search.view != prevView) rEditor.set(json)
-        else rEditor.update(json)
-      }
+        if (!isEqual(rEditor.get(), json)) {
+          if ($search.view != prevView) rEditor.set(json)
+          else {
+            if ($search.view !== 'edit') rEditor.update(json)
+          }
+        }
 
-      prevView = $search.view
-    }
+        prevView = $search.view
+      }
+    } catch (e) {}
   })
 
   onDestroy(() => {
@@ -228,6 +257,42 @@
   const switchView = view => {
     dispatch('search/update', { view })
   }
+
+  const saveEditDoc = method => {
+    if (method === 'update')
+      return () => {
+        try {
+          if (
+            confirm(
+              'Only listed fields will be updated in the document. Continue?'
+            )
+          )
+            dispatch('search/documents/update', rEditor.get())
+        } catch ({ message }) {
+          dispatch('notification/add', {
+            type: 'error',
+            message,
+          })
+        }
+      }
+
+    if (method === 'reindex')
+      return () => {
+        try {
+          if (
+            confirm(
+              'The entire document will be reindexed using listed fields. Continue?'
+            )
+          )
+            dispatch('search/documents/reindex', rEditor.get())
+        } catch ({ message }) {
+          dispatch('notification/add', {
+            type: 'error',
+            message,
+          })
+        }
+      }
+  }
 </script>
 
 <style>
@@ -241,6 +306,10 @@
 
   .stats {
     margin-bottom: 7px;
+  }
+
+  .edit-doc {
+    margin-bottom: 12px;
   }
 
   .pagination {
@@ -308,7 +377,7 @@
           </div>
 
           <div class="field">
-            <label>_Source</label>
+            <label for="source">_Source</label>
             <div class="ui checkbox">
               <input
                 id="source"
@@ -334,7 +403,7 @@
         {/if}
 
         <div class="field">
-          <label>Doc Type</label>
+          <label for="use-doc-type">Doc Type</label>
           <div class="ui checkbox">
             <input
               id="use-doc-type"
@@ -372,7 +441,7 @@
 
         {#if $search.type === 'body'}
           <div class="field">
-            <label>Profiling</label>
+            <label for="profiling">Profiling</label>
             <div class="ui checkbox">
               <input
                 id="profiling"
@@ -403,7 +472,7 @@
             id="uri"
             type="text"
             on:change={e => onStateFieldChange({ uriQuery: e.target.value })}
-            on:keydown={e => (e.keyCode == 13 ? onSearchRun() : null)}
+            on:keyup={e => (e.keyCode == 13 ? onSearchRun() : null)}
             value={$search.uriQuery} />
           <button
             class="ui green button"
@@ -418,77 +487,112 @@
   </div>
 
   <div class="ui segment">
-    <div class="ui grid">
-      <div class="twelve wide column">
-        <div class="ui circular labels stats">
-          Documents found: &nbsp;
-          <span class="ui label">{$search.stats.total_results}</span>
-          Time: &nbsp;
-          <span class="ui label">{$search.stats.time / 1000}s</span>
-          Shards: &nbsp;
-          <span class="ui blue label" title="Total">
-            {$search.stats.total_shards}
-          </span>
-          <span class="ui green label" title="Successful">
-            {$search.stats.successful_shards}
-          </span>
-          <span class="ui yellow label" title="Skipped">
-            {$search.stats.skipped_shards}
-          </span>
-          <span class="ui red label" title="Failed">
-            {$search.stats.failed_shards}
-          </span>
-          View: &nbsp;
-          <span class="ui text">
-            <button
-              class="mini ui button"
-              class:active={$search.view == 'hits'}
-              class:disabled={isEmpty($search.results)}
-              on:click={() => switchView('hits')}>
-              Hits
-            </button>
-            <button
-              class="mini ui button"
-              class:active={$search.view == 'aggs'}
-              class:disabled={isEmpty($search.aggs)}
-              on:click={() => switchView('aggs')}>
-              Aggs
-            </button>
-            <button
-              class="mini ui button"
-              class:active={$search.view == 'raw'}
-              class:disabled={isEmpty($search.response)}
-              on:click={() => switchView('raw')}>
-              Raw
-            </button>
-          </span>
+    {#if $search.view === 'edit' && $search.editDoc}
+      <div class="ui grid">
+        <div class="sixteen wide column">
+          <div class="edit-doc">
+            Editing: &nbsp;
+            <span class="ui label">
+              {$search.editDoc._type}:{$search.editDoc._id}
+            </span>
+            of index
+            <span class="ui label">{$search.editDoc._index}</span>
+            &nbsp|&nbsp;
+            <span class="ui text">
+              <button
+                class="mini ui button green"
+                disabled={!canEditDoc || $search.loading}
+                on:click={saveEditDoc('update')}>
+                Update
+              </button>
+              <button
+                class="mini ui button blue"
+                disabled={!canEditDoc || $search.loading}
+                on:click={saveEditDoc('reindex')}>
+                Reindex
+              </button>
+              <button
+                class="mini ui button red"
+                disabled={$search.loading}
+                on:click={() => switchView('hits')}>
+                Cancel
+              </button>
+            </span>
+          </div>
         </div>
       </div>
-      <div class="four wide column pagination">
-        {#if $search.type === 'uri'}
-          <Pagination
-            className="mini"
-            disable={$search.loading}
-            current_page={uriPaginationCurrentPage()}
-            offset={$search.from}
-            items_per_page={$search.size}
-            total_items={$search.stats.total_results}
-            on:change={onUriPaginationChanged} />
-        {/if}
+    {:else}
+      <div class="ui grid">
+        <div class="twelve wide column">
+          <div class="ui circular labels stats">
+            Documents found: &nbsp;
+            <span class="ui label">{$search.stats.total_results}</span>
+            Time: &nbsp;
+            <span class="ui label">{$search.stats.time / 1000}s</span>
+            Shards: &nbsp;
+            <span class="ui blue label" title="Total">
+              {$search.stats.total_shards}
+            </span>
+            <span class="ui green label" title="Successful">
+              {$search.stats.successful_shards}
+            </span>
+            <span class="ui yellow label" title="Skipped">
+              {$search.stats.skipped_shards}
+            </span>
+            <span class="ui red label" title="Failed">
+              {$search.stats.failed_shards}
+            </span>
+            View: &nbsp;
+            <span class="ui text">
+              <button
+                class="mini ui button"
+                class:active={$search.view == 'hits'}
+                class:disabled={isEmpty($search.results)}
+                on:click={() => switchView('hits')}>
+                Hits
+              </button>
+              <button
+                class="mini ui button"
+                class:active={$search.view == 'aggs'}
+                class:disabled={isEmpty($search.aggs)}
+                on:click={() => switchView('aggs')}>
+                Aggs
+              </button>
+              <button
+                class="mini ui button"
+                class:active={$search.view == 'raw'}
+                class:disabled={isEmpty($search.response)}
+                on:click={() => switchView('raw')}>
+                Raw
+              </button>
+            </span>
+          </div>
+        </div>
+        <div class="four wide column pagination">
+          {#if $search.type === 'uri'}
+            <Pagination
+              className="mini"
+              disable={$search.loading}
+              current_page={uriPaginationCurrentPage()}
+              offset={$search.from}
+              items_per_page={$search.size}
+              total_items={$search.stats.total_results}
+              on:change={onUriPaginationChanged} />
+          {/if}
 
-        {#if $search.type === 'body'}
-          <Pagination
-            className="mini"
-            disable={$search.loading}
-            current_page={bodyPaginationCurrentPage()}
-            offset={bodyPaginationOffset()}
-            items_per_page={bodyPaginationItemsPerPage()}
-            total_items={$search.stats.total_results}
-            on:change={onBodyPaginationChanged} />
-        {/if}
+          {#if $search.type === 'body'}
+            <Pagination
+              className="mini"
+              disable={$search.loading}
+              current_page={bodyPaginationCurrentPage()}
+              offset={bodyPaginationOffset()}
+              items_per_page={bodyPaginationItemsPerPage()}
+              total_items={$search.stats.total_results}
+              on:change={onBodyPaginationChanged} />
+          {/if}
+        </div>
       </div>
-    </div>
-
+    {/if}
     <div id="results-editor" bind:this={resultsEditor} />
   </div>
 </div>
