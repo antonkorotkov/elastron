@@ -24,6 +24,8 @@
   })
 
   if (InternetConnection.isOnline) dispatch('internet/online')
+
+  dispatch('server/info')
 </script>
 
 <Modal>

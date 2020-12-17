@@ -57,6 +57,11 @@
   }
 
   const onSearchRun = e => {
+    if ($search.view === 'edit') {
+      dispatch('search/update', {
+        view: 'hits',
+      })
+    }
     dispatch('search/run')
   }
 

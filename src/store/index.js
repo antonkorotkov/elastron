@@ -1,6 +1,7 @@
 import { createStoreon } from 'storeon'
 import { storeonDevtools } from 'storeon/devtools'
 
+import { server } from './server'
 import { internet } from './internet'
 import { connection } from './connection'
 import { routes } from './routes'
@@ -13,6 +14,7 @@ import { history } from './history'
 import { index } from './elasticsearch/index'
 
 export const store = createStoreon([
+  server,
   internet,
   history,
   connection,

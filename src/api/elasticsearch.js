@@ -66,6 +66,7 @@ export default class API {
         return {
           success: true,
           message: response.data.tagline,
+          ...response.data,
         }
       return {
         success: false,

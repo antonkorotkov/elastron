@@ -19,6 +19,9 @@
   const { open } = getContext('modal-window')
 
   const showConnectionDialog = () => {
+    dispatch('search/update', {
+      view: 'hits',
+    })
     open(
       ConnectionDialog,
       {},
@@ -29,7 +32,10 @@
     )
   }
 
-  const { [routerKey]: route, connection } = useStoreon(routerKey, 'connection')
+  const { dispatch, [routerKey]: route, connection } = useStoreon(
+    routerKey,
+    'connection'
+  )
 </script>
 
 <style>
