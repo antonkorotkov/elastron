@@ -188,6 +188,7 @@
           case 'edit':
             json = !isEmpty($search.editDoc) ? $search.editDoc._source : {}
             rEditor.setMode('code')
+            rEditor.aceEditor.setOptions({ maxLines: 100 })
             break
           default:
             break
