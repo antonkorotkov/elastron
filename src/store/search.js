@@ -108,10 +108,11 @@ export const search = store => {
       trackEvent('Search', 'Update Document')
       store.dispatch('search/loading', true)
 
-      const { _index, _id } = state.search.editDoc
+      const { _index, _type, _id } = state.search.editDoc
 
       const response = await new API(state.connection).updateDocument(
         _index,
+        _type,
         _id,
         data
       )

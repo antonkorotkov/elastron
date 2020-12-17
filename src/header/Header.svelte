@@ -2,6 +2,7 @@
   import { getContext } from 'svelte'
   import { useStoreon } from '@storeon/svelte'
   import { routerKey } from '@storeon/router'
+  import get from 'lodash/get'
 
   import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
   import OnlineIndicator from './OnlineIndicator.svelte'
@@ -32,10 +33,13 @@
     )
   }
 
-  const { dispatch, [routerKey]: route, connection } = useStoreon(
+  const { dispatch, [routerKey]: route, connection, server } = useStoreon(
     routerKey,
-    'connection'
+    'connection',
+    'server'
   )
+
+  $: version = get($server, 'version.number', false)
 </script>
 
 <style>
@@ -64,7 +68,12 @@
       Search
     </a>
     <div class="right menu">
-      <span class="item">{$connection.name || ''}</span>
+      {#if $connection.name}
+        <span class="item">{$connection.name}</span>
+      {/if}
+      {#if version}
+        <span class="item" title="ElasticSearch version">v{version}</span>
+      {/if}
       <a class="item" on:click={showConnectionDialog} href>
         Connection
         <OnlineIndicator />

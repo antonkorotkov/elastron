@@ -173,14 +173,18 @@ export default class API {
    * @param {*} id
    * @param {*} fields
    */
-  async updateDocument(index, id, fields = {}) {
-    const response = await this.client.post(
-      `${index}/_update/${id}?refresh=true`,
-      {
-        doc: fields,
-      }
-    )
-    return response.data
+  async updateDocument(index, type, id, fields = {}) {
+    try {
+      const response = await this.client.post(
+        `${index}/${type}/${id}/_update?refresh=true`,
+        {
+          doc: fields,
+        }
+      )
+      return response.data
+    } catch (err) {
+      throw new ConnectionError(err)
+    }
   }
 
   /**
