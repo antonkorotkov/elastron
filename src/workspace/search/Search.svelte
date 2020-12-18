@@ -8,7 +8,8 @@
   import isNumber from 'lodash/isNumber'
   import Select from 'svelte-select'
 
-  import Pagination from '../../components/pagination/Pagination.svelte'
+  import EditControls from './EditControls.svelte'
+  import SearchControls from './SearchControls.svelte'
 
   import 'jsoneditor/dist/jsoneditor.min.css'
 
@@ -26,20 +27,6 @@
         )
       ]
   )
-
-  $: uriPaginationCurrentPage = () => Math.round($search.from / $search.size)
-
-  $: bodyPaginationCurrentPage = () => {
-    const body = $search.requestBody
-    const from = get(body, 'from', 0)
-    const size = get(body, 'size', 10)
-
-    return Math.round(from / size)
-  }
-
-  $: bodyPaginationOffset = () => get($search.requestBody, 'from', 0)
-
-  $: bodyPaginationItemsPerPage = () => get($search.requestBody, 'size', 10)
 
   const onEditorChange = () => {
     try {
@@ -215,27 +202,6 @@
     }
   })
 
-  const onUriPaginationChanged = ({ detail }) => {
-    dispatch('search/update', { from: $search.size * detail })
-    dispatch('search/run')
-  }
-
-  const onBodyPaginationChanged = ({ detail }) => {
-    try {
-      const requestBody = qEditor.get()
-      const size = get(requestBody, 'size', 10)
-      requestBody.from = size * detail
-      qEditor.set(requestBody)
-      dispatch('search/update', { requestBody })
-      dispatch('search/run')
-    } catch (error) {
-      dispatch('notification/add', {
-        type: 'error',
-        message: error.message,
-      })
-    }
-  }
-
   const onProfilingChanged = checked => {
     const requestBody = qEditor.get()
     if (checked) {
@@ -263,42 +229,6 @@
   const switchView = view => {
     dispatch('search/update', { view })
   }
-
-  const saveEditDoc = method => {
-    if (method === 'update')
-      return () => {
-        try {
-          if (
-            confirm(
-              'Only listed fields will be updated in the document. Continue?'
-            )
-          )
-            dispatch('search/documents/update', rEditor.get())
-        } catch ({ message }) {
-          dispatch('notification/add', {
-            type: 'error',
-            message,
-          })
-        }
-      }
-
-    if (method === 'reindex')
-      return () => {
-        try {
-          if (
-            confirm(
-              'The entire document will be reindexed using listed fields. Continue?'
-            )
-          )
-            dispatch('search/documents/reindex', rEditor.get())
-        } catch ({ message }) {
-          dispatch('notification/add', {
-            type: 'error',
-            message,
-          })
-        }
-      }
-  }
 </script>
 
 <style>
@@ -308,18 +238,6 @@
 
   .search-options input[type='number'] {
     width: 6rem !important;
-  }
-
-  .stats {
-    margin-bottom: 7px;
-  }
-
-  .edit-doc {
-    margin-bottom: 12px;
-  }
-
-  .pagination {
-    text-align: right;
   }
 
   .themed {
@@ -494,110 +412,9 @@
 
   <div class="ui segment">
     {#if $search.view === 'edit' && $search.editDoc}
-      <div class="ui grid">
-        <div class="sixteen wide column">
-          <div class="edit-doc">
-            Editing: &nbsp;
-            <span class="ui label">
-              {$search.editDoc._type}:{$search.editDoc._id}
-            </span>
-            of index
-            <span class="ui label">{$search.editDoc._index}</span>
-            &nbsp|&nbsp;
-            <span class="ui text">
-              <button
-                class="mini ui button green"
-                disabled={!canEditDoc || $search.loading}
-                on:click={saveEditDoc('update')}>
-                Update
-              </button>
-              <button
-                class="mini ui button blue"
-                disabled={!canEditDoc || $search.loading}
-                on:click={saveEditDoc('reindex')}>
-                Reindex
-              </button>
-              <button
-                class="mini ui button red"
-                disabled={$search.loading}
-                on:click={() => switchView('hits')}>
-                Cancel
-              </button>
-            </span>
-          </div>
-        </div>
-      </div>
+      <EditControls {canEditDoc} editor={rEditor} />
     {:else}
-      <div class="ui grid">
-        <div class="twelve wide column">
-          <div class="ui circular labels stats">
-            Documents found: &nbsp;
-            <span class="ui label">{$search.stats.total_results}</span>
-            Time: &nbsp;
-            <span class="ui label">{$search.stats.time / 1000}s</span>
-            Shards: &nbsp;
-            <span class="ui blue label" title="Total">
-              {$search.stats.total_shards}
-            </span>
-            <span class="ui green label" title="Successful">
-              {$search.stats.successful_shards}
-            </span>
-            <span class="ui yellow label" title="Skipped">
-              {$search.stats.skipped_shards}
-            </span>
-            <span class="ui red label" title="Failed">
-              {$search.stats.failed_shards}
-            </span>
-            View: &nbsp;
-            <span class="ui text">
-              <button
-                class="mini ui button"
-                class:active={$search.view == 'hits'}
-                class:disabled={isEmpty($search.results)}
-                on:click={() => switchView('hits')}>
-                Hits
-              </button>
-              <button
-                class="mini ui button"
-                class:active={$search.view == 'aggs'}
-                class:disabled={isEmpty($search.aggs)}
-                on:click={() => switchView('aggs')}>
-                Aggs
-              </button>
-              <button
-                class="mini ui button"
-                class:active={$search.view == 'raw'}
-                class:disabled={isEmpty($search.response)}
-                on:click={() => switchView('raw')}>
-                Raw
-              </button>
-            </span>
-          </div>
-        </div>
-        <div class="four wide column pagination">
-          {#if $search.type === 'uri'}
-            <Pagination
-              className="mini"
-              disable={$search.loading}
-              current_page={uriPaginationCurrentPage()}
-              offset={$search.from}
-              items_per_page={$search.size}
-              total_items={$search.stats.total_results}
-              on:change={onUriPaginationChanged} />
-          {/if}
-
-          {#if $search.type === 'body'}
-            <Pagination
-              className="mini"
-              disable={$search.loading}
-              current_page={bodyPaginationCurrentPage()}
-              offset={bodyPaginationOffset()}
-              items_per_page={bodyPaginationItemsPerPage()}
-              total_items={$search.stats.total_results}
-              on:change={onBodyPaginationChanged} />
-          {/if}
-        </div>
-      </div>
+      <SearchControls />
     {/if}
     <div id="results-editor" bind:this={resultsEditor} />
   </div>
