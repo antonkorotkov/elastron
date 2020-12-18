@@ -73,10 +73,7 @@ export default class API {
         message: 'Something went wrong',
       }
     } catch (err) {
-      return {
-        success: false,
-        message: err.message,
-      }
+      throw new ConnectionError(err)
     }
   }
 
