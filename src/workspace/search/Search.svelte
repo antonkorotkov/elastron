@@ -10,12 +10,13 @@
 
   import EditControls from './EditControls.svelte'
   import SearchControls from './SearchControls.svelte'
+  import ProfileTable from './ProfileTable.svelte'
 
   import 'jsoneditor/dist/jsoneditor.min.css'
 
   const { dispatch, search, indices } = useStoreon('search', 'indices')
 
-  let requestBodyEditor, resultsEditor
+  let requestBodyEditor, resultsEditor, profile
   let qEditor, rEditor
 
   $: _indices = $indices.data.map(
@@ -178,6 +179,7 @@
             rEditor.aceEditor.setOptions({ maxLines: 100 })
             break
           default:
+            return
             break
         }
 
@@ -416,6 +418,12 @@
     {:else}
       <SearchControls />
     {/if}
-    <div id="results-editor" bind:this={resultsEditor} />
+    {#if $search.view === 'profile'}
+      <ProfileTable />
+    {/if}
+    <div
+      hidden={$search.view === 'profile'}
+      id="results-editor"
+      bind:this={resultsEditor} />
   </div>
 </div>

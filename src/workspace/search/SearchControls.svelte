@@ -4,6 +4,7 @@
   import Pagination from '../../components/pagination/Pagination.svelte'
 
   import isEmpty from 'lodash/isEmpty'
+  import get from 'lodash/get'
 
   const { dispatch, search } = useStoreon('search')
 
@@ -96,6 +97,13 @@
           on:click={() => switchView('raw')}>
           Raw
         </button>
+        {#if !isEmpty($search.profile)}
+          <button
+            class="mini ui button blue"
+            on:click={() => switchView('profile')}>
+            Profile
+          </button>
+        {/if}
       </span>
     </div>
   </div>

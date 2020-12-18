@@ -34,6 +34,7 @@ export const search = store => {
       response: {},
       aggs: {},
       results: [],
+      profile: {},
       stats: {
         total_results: 0,
         time: 0,
@@ -254,6 +255,7 @@ export const search = store => {
         response: results,
         aggs: get(results, 'aggregations', {}),
         results: get(results, 'hits.hits', []),
+        profile: get(results, 'profile', {}),
       })
 
       const stats = {
