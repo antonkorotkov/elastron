@@ -414,9 +414,9 @@
 
   <div class="ui segment">
     {#if $search.view === 'edit' && $search.editDoc}
-      <EditControls {canEditDoc} editor={rEditor} />
+      <EditControls {canEditDoc} {rEditor} />
     {:else}
-      <SearchControls />
+      <SearchControls {qEditor} />
     {/if}
     {#if $search.view === 'profile'}
       <ProfileTable />

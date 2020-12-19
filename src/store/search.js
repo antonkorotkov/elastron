@@ -1,5 +1,6 @@
 import API from '../api/elasticsearch'
 import get from 'lodash/get'
+import isEmpty from 'lodash/isEmpty'
 
 import { trackEvent } from '../utils/analitycs'
 
@@ -251,11 +252,12 @@ export const search = store => {
           break
       }
 
+      let profile = get(results, 'profile', {})
       store.dispatch('search/update', {
         response: results,
         aggs: get(results, 'aggregations', {}),
         results: get(results, 'hits.hits', []),
-        profile: get(results, 'profile', {}),
+        profile,
       })
 
       const stats = {
@@ -271,6 +273,10 @@ export const search = store => {
         failed_shards: get(results, '_shards.failed', 0),
       }
       store.dispatch('search/update', { stats })
+
+      if (state.search.view === 'profile' && isEmpty(profile)) {
+        store.dispatch('search/update', { view: 'hits' })
+      }
 
       store.dispatch('search/loading', false)
     } catch (error) {

@@ -6,6 +6,8 @@
   import isEmpty from 'lodash/isEmpty'
   import get from 'lodash/get'
 
+  export let qEditor
+
   const { dispatch, search } = useStoreon('search')
 
   $: uriPaginationCurrentPage = () => Math.round($search.from / $search.size)

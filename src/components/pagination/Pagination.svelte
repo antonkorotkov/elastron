@@ -66,28 +66,28 @@
       class="icon item"
       class:disabled={firstDisabled}
       on:click={onClickFirst}
-      href="javascript:;">
+      href>
       <i class="angle double left icon" />
     </a>
     <a
       class="icon item"
       class:disabled={prevDisabled}
       on:click={onClickPrev}
-      href="javascript:;">
+      href>
       <i class="left chevron icon" />
     </a>
     <a
       class="icon item"
       class:disabled={nextDisabled}
       on:click={onClickNext}
-      href="javascript:;">
+      href>
       <i class="right chevron icon" />
     </a>
     <a
       class="icon item"
       class:disabled={lastDisabled}
       on:click={onClickLast}
-      href="javascript:;">
+      href>
       <i class="angle double right icon" />
     </a>
   </div>

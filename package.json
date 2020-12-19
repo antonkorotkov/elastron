@@ -68,6 +68,7 @@
     "local-storage": "^2.0.0",
     "lodash": "^4.17.20",
     "node-localstorage": "^2.1.6",
+    "percent-to-hex": "^1.0.1",
     "sirv-cli": "^1.0.10",
     "storeon": "^3.1.2",
     "svelte-select": "^3.14.3",

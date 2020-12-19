@@ -1,7 +1,7 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
 
-  export let canEditDoc, editor
+  export let canEditDoc, rEditor
 
   const { dispatch, search } = useStoreon('search')
 
@@ -14,7 +14,7 @@
               'Only listed fields will be updated in the document. Continue?'
             )
           )
-            dispatch('search/documents/update', editor.get())
+            dispatch('search/documents/update', rEditor.get())
         } catch ({ message }) {
           dispatch('notification/add', {
             type: 'error',
@@ -31,7 +31,7 @@
               'The entire document will be reindexed using listed fields. Continue?'
             )
           )
-            dispatch('search/documents/reindex', editor.get())
+            dispatch('search/documents/reindex', rEditor.get())
         } catch ({ message }) {
           dispatch('notification/add', {
             type: 'error',

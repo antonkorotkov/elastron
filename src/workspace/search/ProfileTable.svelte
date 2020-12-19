@@ -12,9 +12,7 @@
     <h4 class="ui header">Affected Shards</h4>
     <div class="ui styled fluid accordion">
       {#each $search.profile.shards as shard, i}
-        <div class="profile-table__shard">
-          <Shard {shard} />
-        </div>
+        <Shard {shard} />
       {/each}
     </div>
   {/if}
