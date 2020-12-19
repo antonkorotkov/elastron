@@ -82,6 +82,12 @@
 
   let canEditDoc = false
   const onClickEditDocument = index => {
+    if (isEmpty($search.results[index]._source)) {
+      return dispatch('notification/add', {
+        type: 'error',
+        message: 'Document must have `_source` field in order to be edited',
+      })
+    }
     dispatch('search/update', { editDoc: $search.results[index] })
     canEditDoc = false
     switchView('edit')

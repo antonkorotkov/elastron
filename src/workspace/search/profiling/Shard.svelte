@@ -4,7 +4,7 @@
   let active = false
 
   import Search from './Search.svelte'
-  import Aggregation from './Aggregation.svelte'
+  import Aggregations from './Aggregations.svelte'
 </script>
 
 <div class="profile-table__shard">
@@ -19,7 +19,7 @@
       {/each}
     {/if}
     {#if shard.aggregations && shard.aggregations.length}
-      <Aggregation aggregations={shard.aggregations} />
+      <Aggregations aggregations={shard.aggregations} />
     {/if}
   </div>
 </div>
