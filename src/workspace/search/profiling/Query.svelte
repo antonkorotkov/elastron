@@ -1,33 +1,30 @@
 <script>
-  import PercentToHex from 'percent-to-hex'
   import isEmpty from 'lodash/isEmpty'
+  import { useStoreon } from '@storeon/svelte'
+
+  const { server } = useStoreon('server')
 
   // warning: circular dependency (this is for a reason)
   import Query from './Query.svelte'
+  import profiling, { getTimeMillis, getTimeColor } from './'
 
   export let query, queries
 
   let active = false
 
-  const getTimeColor = time => {
-    let total = 0
-    if (queries && queries.length) {
-      total = queries.reduce((sum, item) => sum + item.time_in_nanos, 0)
-    }
-    return PercentToHex([time / total, 70, 60])
-  }
-
-  const getTimeMillis = time => time / 1000000
+  $: timeInNanos = profiling.query(query).getNanos($server.version.number)
 </script>
 
 <div class="title" class:active on:click={() => (active = !active)}>
   <i class="dropdown icon" />
-  {query.type}
-  <small class="ui label">{query.description}</small>
+  {profiling.query(query).getType($server.version.number)}
+  <small class="ui label">
+    {profiling.query(query).getDescription($server.version.number)}
+  </small>
   <small
     class="ui label"
-    style="background-color:{getTimeColor(query.time_in_nanos)}">
-    {getTimeMillis(query.time_in_nanos || 0)}ms
+    style="background-color:{getTimeColor(timeInNanos, queries)}">
+    {getTimeMillis(timeInNanos || 0)}ms
   </small>
 </div>
 <div class="content" class:active>
