@@ -12,7 +12,7 @@ export const getTimeMillis = time => time / 1000000
 export const getTimeColor = (time, times) => {
   let total = 0
   if (times && times.length) {
-    total = times.reduce((sum, item) => sum + item.time_in_nanos, 0)
+    total = times.reduce((sum, item) => sum + item, 0)
   }
   return PercentToHex([time / total, 70, 60])
 }

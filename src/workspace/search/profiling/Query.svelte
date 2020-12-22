@@ -23,7 +23,9 @@
   </small>
   <small
     class="ui label"
-    style="background-color:{getTimeColor(timeInNanos, queries)}">
+    style="background-color:{getTimeColor(timeInNanos, queries.map(q =>
+        profiling.query(q).getNanos($server.version.number)
+      ))}">
     {getTimeMillis(timeInNanos || 0)}ms
   </small>
 </div>

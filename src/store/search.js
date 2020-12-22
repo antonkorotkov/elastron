@@ -68,7 +68,10 @@ export const search = store => {
         data
       )
 
-      if (get(response, 'result') === 'updated') {
+      if (
+        get(response, 'result') === 'updated' ||
+        get(response, '_id', false)
+      ) {
         store.dispatch('notification/add', {
           type: 'success',
           message: `Document with id '${_id}' in index '${_index}' was successfully reindexed`,
@@ -119,7 +122,10 @@ export const search = store => {
         data
       )
 
-      if (get(response, 'result') === 'updated') {
+      if (
+        get(response, 'result') === 'updated' ||
+        get(response, '_id', false)
+      ) {
         store.dispatch('notification/add', {
           type: 'success',
           message: `Document with id '${_id}' in index '${_index}' was successfully updated`,

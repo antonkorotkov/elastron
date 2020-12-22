@@ -21,7 +21,9 @@
   {profiling.collector(collector).getName($server.version.number)}
   <small
     class="ui label"
-    style="background-color:{getTimeColor(timeInNanos, collectors)}">
+    style="background-color:{getTimeColor(timeInNanos, collectors.map(c =>
+        profiling.collector(c).getNanos($server.version.number)
+      ))}">
     {getTimeMillis(timeInNanos || 0)}ms
   </small>
 </div>
