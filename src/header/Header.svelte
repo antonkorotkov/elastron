@@ -33,28 +33,15 @@
     )
   }
 
-  const { dispatch, [routerKey]: route, connection, server } = useStoreon(
-    routerKey,
-    'connection',
-    'server'
-  )
+  const {
+    dispatch,
+    [routerKey]: route,
+    connection,
+    server,
+  } = useStoreon(routerKey, 'connection', 'server')
 
   $: version = get($server, 'version.number', false)
 </script>
-
-<style>
-  .logo {
-    border-radius: 0 !important;
-    padding-left: 6rem !important;
-    background-color: #fff000 !important;
-  }
-  .logo b {
-    color: #000;
-  }
-  header {
-    height: 4rem;
-  }
-</style>
 
 <header on:dblclick={onHeaderDblClick}>
   <div style="-webkit-app-region: drag" class="ui menu inverted fixed">
@@ -81,3 +68,17 @@
     </div>
   </div>
 </header>
+
+<style>
+  .logo {
+    border-radius: 0 !important;
+    padding-left: 6rem !important;
+    background-color: #fff000 !important;
+  }
+  .logo b {
+    color: #000;
+  }
+  header {
+    height: 4rem;
+  }
+</style>

@@ -1,7 +1,7 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { routerKey } from '@storeon/router'
-  import { onMount, afterUpdate } from 'svelte'
+  import { onMount } from 'svelte'
 
   import Index from './tabs/Index.svelte'
   import Mapping from './tabs/Mapping.svelte'
@@ -11,11 +11,12 @@
   import Monitoring from './tabs/Monitoring.svelte'
   import Status from './tabs/Status.svelte'
 
-  const { dispatch, [routerKey]: route, indices, index } = useStoreon(
-    routerKey,
-    'indices',
-    'index'
-  )
+  const {
+    dispatch,
+    [routerKey]: route,
+    indices,
+    index,
+  } = useStoreon(routerKey, 'indices', 'index')
 
   let activeTab
 
@@ -45,13 +46,6 @@
   })
 </script>
 
-<style>
-  .sync {
-    margin-left: 1rem;
-    cursor: pointer;
-  }
-</style>
-
 <div class="ui segments">
   <div class="ui segment">
     <select
@@ -62,7 +56,8 @@
         dispatch('elasticsearch/index/select', e.target.value)
         activeTab = 'index'
       }}
-      disabled={$index.loading}>
+      disabled={$index.loading}
+    >
       <option value="">Select Index</option>
       {#if _indices.length}
         {#each _indices as index}
@@ -73,7 +68,8 @@
     <i
       class="sync alternate icon refresh"
       class:loading={$index.loading}
-      on:click={e => dispatch('elasticsearch/index/fetch')} />
+      on:click={e => dispatch('elasticsearch/index/fetch')}
+    />
   </div>
 </div>
 
@@ -86,7 +82,8 @@
             class="item"
             class:active={activeTab === tab.slug}
             href="javascript:;"
-            on:click={e => (activeTab = tab.slug)}>
+            on:click={e => (activeTab = tab.slug)}
+          >
             {tab.name}
           </a>
         {/each}
@@ -103,3 +100,10 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .sync {
+    margin-left: 1rem;
+    cursor: pointer;
+  }
+</style>

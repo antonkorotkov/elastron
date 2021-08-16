@@ -29,7 +29,7 @@
 </script>
 
 <Modal>
-  <main class="ui fluid container inverted">
+  <main class="ui fluid container">
     <Header />
     <WorkSpace />
     <Footer />

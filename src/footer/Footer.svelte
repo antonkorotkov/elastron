@@ -1,6 +1,44 @@
 <script>
   import pkg from '../../package.json'
+  import { useStoreon } from '@storeon/svelte'
+  import { isThemeToggleChecked } from '../utils/helpers'
+
+  const { dispatch, app } = useStoreon('app')
+
+  const onThemeChange = isChecked => {
+    const theme = isChecked ? 'dark' : 'light'
+    dispatch('app/toggleTheme', theme)
+  }
+
+  $: toggleChecked = isThemeToggleChecked($app.theme)
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
+
+<footer class="ui segment" class:inverted>
+  <div class="ui grid">
+    <div class="eight wide column left aligned">
+      <span>Version {pkg.version}</span>
+      |
+      <span>
+        Made with 🖤 by
+        <a href="https://github.com/antonkorotkov" target="_blank">
+          @antonkorotkov
+        </a>
+      </span>
+    </div>
+    <div class="eight wide column right aligned">
+      <div class="ui toggle checkbox theme-toggle">
+        <input
+          type="checkbox"
+          name="theme"
+          on:change={e => onThemeChange(e.target.checked)}
+          checked={toggleChecked}
+        />
+        <label>🌗</label>
+      </div>
+    </div>
+  </div>
+</footer>
 
 <style>
   footer {
@@ -10,18 +48,9 @@
     width: 100%;
     z-index: 10;
   }
-</style>
 
-<footer class="ui segment">
-  <div class="ui grid">
-    <div class="eight wide column">
-      <p>
-        Made with 🖤 by
-        <a href="https://github.com/antonkorotkov" target="_blank">
-          @antonkorotkov
-        </a>
-      </p>
-    </div>
-    <div class="eight wide column right aligned">Version {pkg.version}</div>
-  </div>
-</footer>
+  .theme-toggle {
+    font-size: 1.5rem;
+    line-height: 1rem;
+  }
+</style>

@@ -44,3 +44,7 @@ export const filterArrayBy = (data, search) =>
     }
     return false
   })
+
+export const isThemeToggleChecked = theme => {
+  return theme === 'dark' ? true : false
+}
