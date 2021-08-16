@@ -109,7 +109,7 @@
       {Cell}
     />
   {:else}
-    <div class="ui segment">
+    <div class="ui segment" class:inverted>
       <p>
         No
         <code>indices</code>

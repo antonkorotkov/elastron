@@ -1,6 +1,8 @@
 <script>
   import Column from './Column.svelte'
   import RowCell from './RowCell.svelte'
+  import { useStoreon } from '@storeon/svelte'
+  import { isThemeToggleChecked } from '../../utils/helpers'
 
   export let columns
   export let rows
@@ -13,6 +15,8 @@
   let sorted = {}
 
   let CellRenderer = Cell ? Cell : RowCell
+
+  const { app } = useStoreon('app')
 
   const onColumnClick = (column, index) => {
     if (!sortable) return
@@ -32,9 +36,16 @@
     }
     return 1
   }
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
-<table class="ui attached table" class:selectable class:sortable={!!sorter}>
+<table
+  class="ui attached table"
+  class:selectable
+  class:sortable={!!sorter}
+  class:inverted
+>
   <thead>
     <tr>
       {#each columns as column, i}
@@ -42,7 +53,8 @@
           on:click={e => onColumnClick.call(e, column, i)}
           class:sorted={sorted[i]}
           class:ascending={sorted[i] === 'asc'}
-          class:descending={sorted[i] === 'desc'}>
+          class:descending={sorted[i] === 'desc'}
+        >
           <Column {column} />
         </th>
       {/each}

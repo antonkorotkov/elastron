@@ -4,15 +4,15 @@
   import orderBy from 'lodash/orderBy'
   import isEmpty from 'lodash/isEmpty'
 
-  import API from '../../../api/elasticsearch'
   import Table from '../../../components/tables/Table.svelte'
   import {
     humanStoreSizeToPseudoBytes,
     classToggle,
     filterArrayBy,
+    isThemeToggleChecked,
   } from '../../../utils/helpers.js'
 
-  const { dispatch, allocation } = useStoreon('allocation')
+  const { dispatch, allocation, app } = useStoreon('allocation', 'app')
 
   let search = $allocation.search
 
@@ -42,10 +42,65 @@
     return filterArrayBy(data, search)
   }
 
+  $: inverted = isThemeToggleChecked($app.theme)
+
   onMount(async () => {
     if (!$allocation.data.length) dispatch('elasticsearch/allocation/fetch')
   })
 </script>
+
+<div class="ui segments">
+  <div class="ui segment" class:inverted>
+    <div class="ui grid">
+      <div class="eight wide column middle aligned">
+        <h4>Allocation</h4>
+      </div>
+      <div class="eight wide column right aligned">
+        <div class="ui mini form search">
+          <div class="inline fields">
+            <div class="field">
+              <input
+                bind:value={search}
+                on:change={e =>
+                  dispatch('elasticsearch/allocation/update', {
+                    search,
+                  })}
+                type="text"
+                placeholder="Search"
+              />
+            </div>
+          </div>
+        </div>
+
+        <i
+          class="sync alternate icon refresh"
+          class:loading={$allocation.loading}
+          on:mouseover={e => classToggle(e, 'green')}
+          on:mouseout={e => classToggle(e, 'green')}
+          on:click={e => dispatch('elasticsearch/allocation/fetch')}
+        />
+      </div>
+    </div>
+  </div>
+  {#if $allocation.columns.length}
+    <Table
+      columns={$allocation.columns}
+      rows={filterRows($allocation.data)}
+      emptyMessage="No allocations found"
+      sorter={onTableSort}
+      selectable
+      sortable
+    />
+  {:else}
+    <div class="ui segment">
+      <p>
+        No
+        <code>allocation</code>
+        data yet
+      </p>
+    </div>
+  {/if}
+</div>
 
 <style>
   .refresh {
@@ -60,53 +115,3 @@
     margin: 0;
   }
 </style>
-
-<div class="ui segments">
-  <div class="ui segment">
-    <div class="ui grid">
-      <div class="eight wide column middle aligned">
-        <h4>Allocation</h4>
-      </div>
-      <div class="eight wide column right aligned">
-
-        <div class="ui mini form search">
-          <div class="inline fields">
-            <div class="field">
-              <input
-                bind:value={search}
-                on:change={e => dispatch('elasticsearch/allocation/update', {
-                    search,
-                  })}
-                type="text"
-                placeholder="Search" />
-            </div>
-          </div>
-        </div>
-
-        <i
-          class="sync alternate icon refresh"
-          class:loading={$allocation.loading}
-          on:mouseover={e => classToggle(e, 'green')}
-          on:mouseout={e => classToggle(e, 'green')}
-          on:click={e => dispatch('elasticsearch/allocation/fetch')} />
-      </div>
-    </div>
-  </div>
-  {#if $allocation.columns.length}
-    <Table
-      columns={$allocation.columns}
-      rows={filterRows($allocation.data)}
-      emptyMessage="No allocations found"
-      sorter={onTableSort}
-      selectable
-      sortable />
-  {:else}
-    <div class="ui segment">
-      <p>
-        No
-        <code>allocation</code>
-        data yet
-      </p>
-    </div>
-  {/if}
-</div>
