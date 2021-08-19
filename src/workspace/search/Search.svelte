@@ -3,7 +3,6 @@
   import JSONEditor from 'jsoneditor'
   import { useStoreon } from '@storeon/svelte'
   import { onMount, onDestroy, afterUpdate } from 'svelte'
-  import get from 'lodash/get'
   import isEmpty from 'lodash/isEmpty'
   import isNumber from 'lodash/isNumber'
   import Select from 'svelte-select'
@@ -11,12 +10,17 @@
   import EditControls from './EditControls.svelte'
   import SearchControls from './SearchControls.svelte'
   import ProfileTable from './ProfileTable.svelte'
+  import { isThemeToggleChecked } from '../../utils/helpers'
 
   import 'jsoneditor/dist/jsoneditor.min.css'
 
-  const { dispatch, search, indices } = useStoreon('search', 'indices')
+  const { dispatch, search, indices, app } = useStoreon(
+    'search',
+    'indices',
+    'app'
+  )
 
-  let requestBodyEditor, resultsEditor, profile
+  let requestBodyEditor, resultsEditor
   let qEditor, rEditor
 
   $: _indices = $indices.data.map(
@@ -28,6 +32,8 @@
         )
       ]
   )
+
+  $: inverted = isThemeToggleChecked($app.theme)
 
   const onEditorChange = () => {
     try {
@@ -119,7 +125,7 @@
               canEditDoc = false
             }
           },
-          onEditable: function() {
+          onEditable: function () {
             if (rEditor && rEditor.getMode() == 'code') return true
             return false
           },
@@ -130,7 +136,7 @@
               }
             }
           },
-          onCreateMenu: (items, node) => {
+          onCreateMenu: (__, node) => {
             if (
               node.type === 'single' &&
               isNumber(node.path[0]) &&
@@ -186,7 +192,6 @@
             break
           default:
             return
-            break
         }
 
         if (!isEqual(rEditor.get(), json)) {
@@ -239,24 +244,9 @@
   }
 </script>
 
-<style>
-  .hidden {
-    display: none;
-  }
-
-  .search-options input[type='number'] {
-    width: 6rem !important;
-  }
-
-  .themed {
-    min-width: 190px;
-    --height: 38px;
-  }
-</style>
-
 <div class="ui segments">
-  <div class="ui segment">
-    <div class="ui form">
+  <div class="ui segment" class:inverted>
+    <div class="ui form" class:inverted>
       <div class="fields search-options">
         <div class="field">
           <label for="type">Search Type</label>
@@ -264,20 +254,22 @@
             id="type"
             class="ui dropdown"
             on:change={e => onStateFieldChange({ type: e.target.value })}
-            value={$search.type}>
+            value={$search.type}
+          >
             <option value="uri">URI Search</option>
             <option value="body">Request Body</option>
           </select>
         </div>
-        <div class="field themed">
+        <div class="field themed" id="indexSelect">
           <label for="index">Index</label>
           <Select
-            inputStyles="height:36px;"
+            inputStyles="height:36px;background:transparent;"
             items={_indices}
             isCreatable={true}
             selectedValue={$search.index}
             on:select={e => onStateFieldChange({ index: e.detail.value })}
-            on:clear={e => onStateFieldChange({ index: '_all' })} />
+            on:clear={e => onStateFieldChange({ index: '_all' })}
+          />
         </div>
 
         {#if $search.type === 'uri'}
@@ -287,7 +279,8 @@
               type="number"
               id="size"
               on:change={onSizeChange}
-              value={$search.size} />
+              value={$search.size}
+            />
           </div>
           <div class="field">
             <label for="from">From</label>
@@ -295,17 +288,20 @@
               type="number"
               id="from"
               on:change={onFromChange}
-              value={$search.from} />
+              value={$search.from}
+            />
           </div>
           <div class="field">
             <label for="sort">Sort</label>
             <input
               type="text"
               id="sort"
-              on:change={e => onStateFieldChange({
+              on:change={e =>
+                onStateFieldChange({
                   sort: e.target.value.trim(),
                 })}
-              value={$search.sort} />
+              value={$search.sort}
+            />
           </div>
 
           <div class="field">
@@ -314,10 +310,12 @@
               <input
                 id="source"
                 type="checkbox"
-                on:change={e => onStateFieldChange({
+                on:change={e =>
+                  onStateFieldChange({
                     useSource: e.target.checked,
                   })}
-                checked={$search.useSource} />
+                checked={$search.useSource}
+              />
               <label for="source">Enable</label>
             </div>
           </div>
@@ -329,7 +327,8 @@
                 type="text"
                 id="source-value"
                 on:change={e => onStateFieldChange({ _source: e.target.value })}
-                value={$search._source} />
+                value={$search._source}
+              />
             </div>
           {/if}
         {/if}
@@ -340,10 +339,12 @@
             <input
               id="use-doc-type"
               type="checkbox"
-              on:change={e => onStateFieldChange({
+              on:change={e =>
+                onStateFieldChange({
                   useDocType: e.target.checked,
                 })}
-              checked={$search.useDocType} />
+              checked={$search.useDocType}
+            />
             <label for="use-doc-type">Enable</label>
           </div>
         </div>
@@ -355,7 +356,8 @@
               type="text"
               id="type-value"
               on:change={onDocTypeChange}
-              value={$search.docType} />
+              value={$search.docType}
+            />
           </div>
         {/if}
 
@@ -366,7 +368,8 @@
               id="explain"
               type="checkbox"
               on:change={e => onExplainChanged(e.target.checked)}
-              checked={$search.explain} />
+              checked={$search.explain}
+            />
             <label for="explain">Enable</label>
           </div>
         </div>
@@ -379,7 +382,8 @@
                 id="profiling"
                 type="checkbox"
                 on:change={e => onProfilingChanged(e.target.checked)}
-                checked={$search.profiling} />
+                checked={$search.profiling}
+              />
               <label for="profiling">Enable</label>
             </div>
           </div>
@@ -393,7 +397,8 @@
           class="ui green button"
           class:loading={$search.loading}
           disabled={$search.loading}
-          on:click={onSearchRun}>
+          on:click={onSearchRun}
+        >
           Run
         </button>
       {/if}
@@ -405,12 +410,14 @@
             type="text"
             on:change={e => onStateFieldChange({ uriQuery: e.target.value })}
             on:keyup={e => (e.keyCode == 13 ? onSearchRun() : null)}
-            value={$search.uriQuery} />
+            value={$search.uriQuery}
+          />
           <button
             class="ui green button"
             class:loading={$search.loading}
             disabled={$search.loading}
-            on:click={onSearchRun}>
+            on:click={onSearchRun}
+          >
             Run
           </button>
         </div>
@@ -418,7 +425,7 @@
     </div>
   </div>
 
-  <div class="ui segment">
+  <div class="ui segment" class:inverted>
     {#if $search.view === 'edit' && $search.editDoc}
       <EditControls {canEditDoc} {rEditor} />
     {:else}
@@ -430,6 +437,31 @@
     <div
       hidden={$search.view === 'profile'}
       id="results-editor"
-      bind:this={resultsEditor} />
+      bind:this={resultsEditor}
+    />
   </div>
 </div>
+
+<style>
+  .hidden {
+    display: none;
+  }
+
+  .search-options input[type='number'] {
+    width: 6rem !important;
+  }
+
+  .themed {
+    min-width: 190px;
+    --height: 38px;
+  }
+
+  .inverted .themed {
+    --listBackground: black;
+    --itemHoverBG: rgb(22, 22, 22);
+  }
+
+  .inverted #indexSelect.themed .selection {
+    color: black;
+  }
+</style>

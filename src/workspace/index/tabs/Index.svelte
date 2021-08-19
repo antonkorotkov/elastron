@@ -255,14 +255,16 @@
       class="ui tiny blue basic button"
       on:click={e => onOpenIndexClick($index.selected)}
       class:loading={isLoading}
-      disabled={isLoading}>
+      disabled={isLoading}
+    >
       Open
     </button>
     <button
       class="ui tiny blue basic button"
       on:click={e => onCloseIndexClick($index.selected)}
       class:loading={isLoading}
-      disabled={isLoading}>
+      disabled={isLoading}
+    >
       Close
     </button>
 
@@ -270,14 +272,16 @@
       class="ui tiny teal basic button"
       on:click={e => onFreezeIndexClick($index.selected)}
       class:loading={isLoading}
-      disabled={isLoading}>
+      disabled={isLoading}
+    >
       Freeze
     </button>
     <button
       class="ui tiny teal basic button"
       on:click={e => onUnfreezeIndexClick($index.selected)}
       class:loading={isLoading}
-      disabled={isLoading}>
+      disabled={isLoading}
+    >
       Unfreeze
     </button>
 
@@ -285,7 +289,8 @@
       class="ui tiny green basic button"
       on:click={showCloneIndexDialog}
       class:loading={isLoading}
-      disabled={isLoading}>
+      disabled={isLoading}
+    >
       Clone
     </button>
   </div>
@@ -294,14 +299,16 @@
       class="ui orange basic button"
       on:click={e => onWipeIndexClick($index.selected)}
       class:loading={isLoading}
-      disabled={isLoading}>
+      disabled={isLoading}
+    >
       Wipe
     </button>
     <button
       class="ui red basic button"
       on:click={e => onDeleteIndexClick($index.selected)}
       class:loading={isLoading}
-      disabled={isLoading}>
+      disabled={isLoading}
+    >
       Delete
     </button>
   </div>

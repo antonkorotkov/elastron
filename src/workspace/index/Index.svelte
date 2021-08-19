@@ -10,13 +10,15 @@
   import Templates from './tabs/Templates.svelte'
   import Monitoring from './tabs/Monitoring.svelte'
   import Status from './tabs/Status.svelte'
+  import { isThemeToggleChecked } from '../../utils/helpers'
 
   const {
     dispatch,
     [routerKey]: route,
     indices,
     index,
-  } = useStoreon(routerKey, 'indices', 'index')
+    app,
+  } = useStoreon(routerKey, 'indices', 'index', 'app')
 
   let activeTab
 
@@ -25,9 +27,9 @@
     { slug: 'mapping', name: 'Mapping', Component: Mapping },
     { slug: 'settings', name: 'Settings', Component: Settings },
     { slug: 'aliases', name: 'Aliases', Component: Aliases },
-    { slug: 'templates', name: 'Templates', Component: Templates },
-    { slug: 'monitoring', name: 'Monitoring', Component: Monitoring },
-    { slug: 'status', name: 'Status', Component: Status },
+    // { slug: 'templates', name: 'Templates', Component: Templates },
+    // { slug: 'monitoring', name: 'Monitoring', Component: Monitoring },
+    // { slug: 'status', name: 'Status', Component: Status },
   ]
 
   $: _indices = $indices.data.map(
@@ -40,6 +42,8 @@
       ]
   )
 
+  $: inverted = isThemeToggleChecked($app.theme)
+
   onMount(() => {
     dispatch('elasticsearch/index/select', $route.match.index || '')
     activeTab = 'index'
@@ -47,7 +51,7 @@
 </script>
 
 <div class="ui segments">
-  <div class="ui segment">
+  <div class="ui segment" class:inverted>
     <select
       id="index"
       class="ui dropdown"
@@ -76,7 +80,7 @@
 {#if $index.selected && _indices.length}
   <div class="ui grid">
     <div class="two wide column">
-      <div class="ui vertical fluid pointing menu">
+      <div class="ui vertical fluid pointing menu" class:inverted>
         {#each tabs as tab}
           <a
             class="item"
@@ -90,7 +94,7 @@
       </div>
     </div>
     <div class="fourteen wide stretched column">
-      <div class="ui segment">
+      <div class="ui segment" class:inverted>
         {#each tabs as tab}
           {#if activeTab === tab.slug}
             <svelte:component this={tab.Component} />

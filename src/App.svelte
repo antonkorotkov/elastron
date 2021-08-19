@@ -8,10 +8,11 @@
   import Notifications from './components/notifications/Notifications.svelte'
   import InternetConnection from './utils/onlineCheck.js'
   import { store } from './store'
+  import { isThemeToggleChecked } from './utils/helpers'
 
   provideStoreon(store)
 
-  const { dispatch } = useStoreon()
+  const { dispatch, app } = useStoreon('app')
 
   InternetConnection.notifyMainProcess()
 
@@ -26,10 +27,12 @@
   if (InternetConnection.isOnline) dispatch('internet/online')
 
   dispatch('server/info')
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
 <Modal>
-  <main class="ui fluid container">
+  <main class="ui fluid container" class:bg-black={inverted}>
     <Header />
     <WorkSpace />
     <Footer />
@@ -37,3 +40,12 @@
 </Modal>
 
 <Notifications />
+
+<style>
+  main {
+    min-height: 100%;
+  }
+  .bg-black {
+    background: black;
+  }
+</style>

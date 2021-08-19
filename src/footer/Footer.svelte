@@ -20,7 +20,7 @@
       <span>Version {pkg.version}</span>
       |
       <span>
-        Made with 🖤 by
+        Made with {#if !inverted}&#x1F5A4{:else}&#x1F49B{/if} by
         <a href="https://github.com/antonkorotkov" target="_blank">
           @antonkorotkov
         </a>
