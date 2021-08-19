@@ -3,13 +3,17 @@
   import { onMount, getContext } from 'svelte'
 
   import API from '../../../api/elasticsearch'
-  import { validateIndexName } from '../../../utils/helpers.js'
+  import {
+    isThemeToggleChecked,
+    validateIndexName,
+  } from '../../../utils/helpers.js'
 
   const { close } = getContext('modal-window')
-  const { dispatch, connection, indices, index } = useStoreon(
+  const { dispatch, connection, indices, index, app } = useStoreon(
     'connection',
     'indices',
-    'index'
+    'index',
+    'app'
   )
 
   export let onCancel = () => {}
@@ -80,12 +84,19 @@
 
   const isIndexNameAllowed = name =>
     validateIndexName(name) && !_indices.includes(name)
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
-<div class="header">Clone The Index</div>
+<div class="ui header">Clone The Index</div>
 
 <div class="content">
-  <form class="ui form" on:submit|preventDefault={clone} id="create-index-form">
+  <form
+    class="ui form"
+    class:inverted
+    on:submit|preventDefault={clone}
+    id="create-index-form"
+  >
     <div class="fields">
       <div class="sixteen wide field">
         <label for="index-name">New Index Name</label>
@@ -96,13 +107,17 @@
 </div>
 
 <div class="actions">
-  <div class="ui black deny button right" on:click={_onCancel}>Cancel</div>
+  <div class="ui black deny button right" class:inverted on:click={_onCancel}>
+    Cancel
+  </div>
   <button
     disabled={!isIndexNameAllowed(newIndex) || isLoading}
     type="submit"
     class="ui positive right button"
     class:loading={isLoading}
-    form="create-index-form">
+    class:inverted
+    form="create-index-form"
+  >
     Clone
   </button>
 </div>

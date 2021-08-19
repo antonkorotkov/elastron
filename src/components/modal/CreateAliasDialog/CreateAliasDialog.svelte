@@ -8,8 +8,13 @@
   import isEmpty from 'lodash/isEmpty'
 
   import API from '../../../api/elasticsearch'
+  import { isThemeToggleChecked } from '../../../utils/helpers'
 
-  const { dispatch, connection, index } = useStoreon('connection', 'index')
+  const { dispatch, connection, index, app } = useStoreon(
+    'connection',
+    'index',
+    'app'
+  )
 
   export let onCancel = () => {}
   export let onOkay = () => {}
@@ -113,12 +118,19 @@
       fEditor.destroy()
     }
   })
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
-<div class="header">Create New Alias</div>
+<div class="ui header">Create New Alias</div>
 
 <div class="content">
-  <form class="ui form" on:submit|preventDefault={save} id="alias-form">
+  <form
+    class="ui form"
+    class:inverted
+    on:submit|preventDefault={save}
+    id="alias-form"
+  >
     <div class="field">
       <label for="alias-name">Alias Name</label>
       <input type="text" id="alias-name" bind:value={aliasName} />
@@ -136,7 +148,8 @@
         <input
           id="is-write-index"
           type="checkbox"
-          bind:checked={isWriteIndex} />
+          bind:checked={isWriteIndex}
+        />
         <label for="is-write-index">Is Write Index</label>
       </div>
     </div>
@@ -151,15 +164,19 @@
   <div
     class="ui black deny right button"
     disabled={isLoading}
-    on:click={_onCancel}>
+    class:inverted
+    on:click={_onCancel}
+  >
     Cancel
   </div>
   <button
     type="submit"
     class="ui positive right button"
     class:loading={isLoading}
+    class:inverted
     form="alias-form"
-    disabled={!isAliasNameAllowed(aliasName) || !canSave || isLoading}>
+    disabled={!isAliasNameAllowed(aliasName) || !canSave || isLoading}
+  >
     Create
   </button>
 </div>

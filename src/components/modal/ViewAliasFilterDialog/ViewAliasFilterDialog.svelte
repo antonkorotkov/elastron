@@ -2,7 +2,11 @@
   export let filter = ''
   export let onCancel = () => {}
 
+  import { useStoreon } from '@storeon/svelte'
   import { getContext } from 'svelte'
+  import { isThemeToggleChecked } from '../../../utils/helpers'
+
+  const { app } = useStoreon('app')
 
   const { close } = getContext('modal-window')
 
@@ -10,20 +14,24 @@
     onCancel()
     close()
   }
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
-<style>
-  pre {
-    margin: 0;
-  }
-</style>
-
-<div class="header">Alias Filter</div>
+<div class="ui header">Alias Filter</div>
 
 <div class="content">
   <pre>{filter}</pre>
 </div>
 
 <div class="actions">
-  <div class="ui black deny button right" on:click={_onCancel}>Close</div>
+  <div class="ui black deny button right" class:inverted on:click={_onCancel}>
+    Close
+  </div>
 </div>
+
+<style>
+  pre {
+    margin: 0;
+  }
+</style>

@@ -460,8 +460,4 @@
     --listBackground: black;
     --itemHoverBG: rgb(22, 22, 22);
   }
-
-  .inverted #indexSelect.themed .selection {
-    color: black;
-  }
 </style>

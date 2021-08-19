@@ -9,11 +9,15 @@
   import isEmpty from 'lodash/isEmpty'
 
   import API from '../../../api/elasticsearch'
+  import { isThemeToggleChecked } from '../../../utils/helpers'
 
-  const { dispatch, connection, index } = useStoreon('connection', 'index')
+  const { dispatch, connection, index, app } = useStoreon(
+    'connection',
+    'index',
+    'app'
+  )
 
   export let onCancel = () => {}
-  export let onOkay = () => {}
 
   let indexRouting = '',
     searchRouting = '',
@@ -27,11 +31,6 @@
 
   const _onCancel = () => {
     onCancel()
-    close()
-  }
-
-  const _onOkay = () => {
-    onOkay(value)
     close()
   }
 
@@ -121,12 +120,19 @@
       fEditor.destroy()
     }
   })
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
-<div class="header">Update New Alias</div>
+<div class="ui header">Update New Alias</div>
 
 <div class="content">
-  <form class="ui form" on:submit|preventDefault={save} id="alias-form">
+  <form
+    class="ui form"
+    class:inverted
+    on:submit|preventDefault={save}
+    id="alias-form"
+  >
     <div class="field">
       <label for="index-routing">Index Routing</label>
       <input type="text" id="index-routing" bind:value={indexRouting} />
@@ -140,7 +146,8 @@
         <input
           id="is-write-index"
           type="checkbox"
-          bind:checked={isWriteIndex} />
+          bind:checked={isWriteIndex}
+        />
         <label for="is-write-index">Is Write Index</label>
       </div>
     </div>
@@ -153,17 +160,21 @@
 
 <div class="actions">
   <div
+    class:inverted
     class="ui black deny right button"
     disabled={isLoading}
-    on:click={_onCancel}>
+    on:click={_onCancel}
+  >
     Cancel
   </div>
   <button
     type="submit"
     class="ui positive right button"
     class:loading={isLoading}
+    class:inverted
     form="alias-form"
-    disabled={!canSave || isLoading}>
+    disabled={!canSave || isLoading}
+  >
     Update
   </button>
 </div>

@@ -15,7 +15,7 @@ const init = window => {
 
   autoUpdater.setFeedURL({
     provider: 'github',
-    token: '0414f1ae0f8265c966504422256f5f43185dffc6',
+    token: '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',
     owner: 'antonkorotkov',
     repo: 'elastron',
   })
