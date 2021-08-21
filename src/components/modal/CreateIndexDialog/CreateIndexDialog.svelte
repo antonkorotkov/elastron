@@ -1,6 +1,7 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { onMount, getContext } from 'svelte'
+  import JSONEditor from 'jsoneditor'
 
   import API from '../../../api/elasticsearch'
   import {
@@ -17,8 +18,11 @@
 
   export let onCancel = () => {}
 
-  let indexName = ''
-  let isLoading = false
+  let indexName = '',
+    isLoading = false,
+    canCreate = true,
+    settingsEditor,
+    sEditor
 
   let _indices =
     $indices.data.map(
@@ -33,6 +37,25 @@
 
   onMount(() => {
     document.getElementById('index-name').focus()
+
+    if (settingsEditor) {
+      sEditor = new JSONEditor(
+        settingsEditor,
+        {
+          mode: 'code',
+          onChange: () => {
+            try {
+              sEditor.get()
+              canCreate = true
+            } catch (e) {
+              canCreate = false
+            }
+          },
+        },
+        {}
+      )
+      sEditor.aceEditor.setOptions({ maxLines: 32 })
+    }
   })
 
   const _onCancel = () => {
@@ -45,7 +68,7 @@
 
     try {
       const api = new API($connection)
-      const result = await api.createIndex(indexName)
+      const result = await api.createIndex(indexName, sEditor.get())
 
       if (result.acknowledged) {
         dispatch('notification/add', {
@@ -87,11 +110,13 @@
     on:submit|preventDefault={create}
     id="create-index-form"
   >
-    <div class="fields">
-      <div class="sixteen wide field">
-        <label for="index-name">Index Name</label>
-        <input type="text" id="index-name" bind:value={indexName} />
-      </div>
+    <div class="field">
+      <label for="index-name">Index Name</label>
+      <input type="text" id="index-name" bind:value={indexName} />
+    </div>
+    <div class="field">
+      <label for="settings-editor">Index Configuration</label>
+      <div id="settings-editor" bind:this={settingsEditor} />
     </div>
   </form>
 </div>
@@ -102,7 +127,7 @@
   </div>
   <button
     class:inverted
-    disabled={!isIndexNameAllowed(indexName) || isLoading}
+    disabled={!isIndexNameAllowed(indexName) || isLoading || !canCreate}
     type="submit"
     class="ui positive right button"
     class:loading={isLoading}

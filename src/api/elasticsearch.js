@@ -251,9 +251,9 @@ export default class API {
    *
    * @param {*} index
    */
-  async createIndex(index) {
+  async createIndex(index, settings = {}) {
     try {
-      const response = await this.client.put(`/${index}`)
+      const response = await this.client.put(`/${index}`, settings)
       return response.data
     } catch (err) {
       throw new ConnectionError(err)
