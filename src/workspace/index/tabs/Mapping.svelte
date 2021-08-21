@@ -1,6 +1,6 @@
 <script>
   import JSONEditor from 'jsoneditor'
-  import { onMount, onDestroy, afterUpdate, getContext } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import { useStoreon } from '@storeon/svelte'
   import get from 'lodash/get'
 
@@ -43,18 +43,6 @@
     }
 
     if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
-  })
-
-  afterUpdate(() => {
-    const mappings = get(
-      $index.info,
-      [$index.selected, $index.selected, 'mappings'],
-      false
-    )
-
-    try {
-      if (mappings !== mpEditor.get()) mpEditor.update(mappings)
-    } catch (error) {}
   })
 
   onDestroy(() => {
@@ -132,7 +120,8 @@
       class="ui green basic button"
       on:click={e => onUpdateMappingClick($index.selected)}
       class:loading={isLoading}
-      disabled={isLoading || !canUpdate}>
+      disabled={isLoading || !canUpdate}
+    >
       Update
     </button>
   </div>
