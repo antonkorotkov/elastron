@@ -3,23 +3,29 @@
 
   import Query from './Query.svelte'
   import Collector from './Collector.svelte'
+  import { useStoreon } from '@storeon/svelte'
+  import { isThemeToggleChecked } from '../../../utils/helpers'
+
+  const { app } = useStoreon('app')
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
 <div class="profile-table__search">
   {#if search.query && search.query.length}
-    <h5 class="ui header">Search Queries</h5>
+    <h5 class="ui header" class:inverted>Search Queries</h5>
     {#if search.rewrite_time}
       <small class="ui label">Rewrite Time: {search.rewrite_time}</small>
     {/if}
-    <div class="ui styled fluid accordion">
+    <div class="ui fluid accordion" class:inverted class:styled={!inverted}>
       {#each search.query as query, i}
         <Query {query} queries={search.query} />
       {/each}
     </div>
   {/if}
   {#if search.collector && search.collector.length}
-    <h5 class="ui header">Search Collectors</h5>
-    <div class="ui styled fluid accordion">
+    <h5 class="ui header" class:inverted>Search Collectors</h5>
+    <div class="ui fluid accordion" class:inverted class:styled={!inverted}>
       {#each search.collector as collector, i}
         <Collector {collector} collectors={search.collector} />
       {/each}

@@ -1,16 +1,18 @@
 <script>
   import isEmpty from 'lodash/isEmpty'
   import { useStoreon } from '@storeon/svelte'
-
-  const { server } = useStoreon('server')
-
+  import { isThemeToggleChecked } from '../../../utils/helpers'
   // warning: circular dependency (this is for a reason)
   import Query from './Query.svelte'
   import profiling, { getTimeMillis, getTimeColor } from './'
 
+  const { server, app } = useStoreon('server', 'app')
+
   export let query, queries
 
   let active = false
+
+  $: inverted = isThemeToggleChecked($app.theme)
 
   $: timeInNanos = profiling.query(query).getNanos($server.version.number)
 </script>
@@ -23,9 +25,11 @@
   </small>
   <small
     class="ui label"
-    style="background-color:{getTimeColor(timeInNanos, queries.map(q =>
-        profiling.query(q).getNanos($server.version.number)
-      ))}">
+    style="background-color:{getTimeColor(
+      timeInNanos,
+      queries.map(q => profiling.query(q).getNanos($server.version.number))
+    )}"
+  >
     {getTimeMillis(timeInNanos || 0)}ms
   </small>
 </div>
@@ -42,7 +46,7 @@
     </ul>
   {/if}
   {#if query.children && query.children.length}
-    <div class="ui styled fluid accordion">
+    <div class="ui fluid accordion" class:inverted class:styled={!inverted}>
       {#each query.children as q, i}
         <Query query={q} queries={query.children} />
       {/each}

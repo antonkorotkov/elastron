@@ -1,10 +1,10 @@
 <script>
   export let shard
 
-  let active = false
-
   import Search from './Search.svelte'
   import Aggregations from './Aggregations.svelte'
+
+  let active = false
 </script>
 
 <div class="profile-table__shard">
