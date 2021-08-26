@@ -27,7 +27,7 @@ const init = window => {
       type: 'info',
       title: 'Found Updates',
       message: 'The new version of Elastron is available.',
-      buttons: ['Download', 'Later'],
+      buttons: ['Download Silently', 'Later'],
     })
 
     if (answer.response === 0) autoUpdater.downloadUpdate()
@@ -53,7 +53,7 @@ const init = window => {
 
     await dialog.showMessageBox(window, {
       title: 'Install Updates',
-      message: 'Updates downloaded, application will be quit for update...',
+      message: 'Updates downloaded. Application will be restarted.',
     })
     autoUpdater.quitAndInstall()
   })
