@@ -14,13 +14,11 @@
 
   const { dispatch, app } = useStoreon('app')
 
-  InternetConnection.notifyMainProcess()
-
-  InternetConnection.onOnline(connected => {
+  InternetConnection.onOnline(() => {
     dispatch('internet/online')
   })
 
-  InternetConnection.onOffline(connected => {
+  InternetConnection.onOffline(() => {
     dispatch('internet/offline')
   })
 

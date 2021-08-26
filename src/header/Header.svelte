@@ -6,15 +6,10 @@
 
   import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
   import OnlineIndicator from './OnlineIndicator.svelte'
+  import messanger from '../api/ipc-renderer'
 
-  let onHeaderDblClick
-
-  if (typeof window.require === 'function') {
-    const { ipcRenderer } = window.require('electron')
-
-    onHeaderDblClick = () => {
-      ipcRenderer.send('header-doubleclick')
-    }
+  let onHeaderDblClick = () => {
+    messanger.send('header-doubleclick')
   }
 
   const { open } = getContext('modal-window')

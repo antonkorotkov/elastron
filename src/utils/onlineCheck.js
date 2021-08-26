@@ -1,16 +1,5 @@
-let notifyMainProcess = () => {}
-
-if (typeof window.require === 'function') {
-  const { ipcRenderer } = window.require('electron')
-
-  notifyMainProcess = () => {
-    ipcRenderer.send('online-status-changed', navigator.onLine)
-  }
-}
-
 const onOnline = callback => {
   const _online = () => {
-    notifyMainProcess()
     if (typeof callback === 'function') {
       callback(navigator.onLine)
     }
@@ -21,7 +10,6 @@ const onOnline = callback => {
 
 const onOffline = callback => {
   const _offline = () => {
-    notifyMainProcess()
     if (typeof callback === 'function') {
       callback(navigator.onLine)
     }
@@ -32,4 +20,4 @@ const onOffline = callback => {
 
 const isOnline = navigator.onLine
 
-export default { onOnline, onOffline, notifyMainProcess, isOnline }
+export default { onOnline, onOffline, isOnline }
