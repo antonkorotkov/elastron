@@ -1,12 +1,9 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
-
-  const { server, app } = useStoreon('server', 'app')
-
-  // warning: circular dependency (this is for a reason)
-  import Collector from './Collector.svelte'
   import profiling, { getTimeMillis, getTimeColor } from './'
   import { isThemeToggleChecked } from '../../../utils/helpers'
+
+  const { server, app } = useStoreon('server', 'app')
 
   export let collector, collectors
 
@@ -46,7 +43,7 @@
   {#if collector.children && collector.children.length}
     <div class="ui fluid accordion styled" class:inverted>
       {#each collector.children as q, i}
-        <Collector collector={q} collectors={collector.children} />
+        <svelte:self collector={q} collectors={collector.children} />
       {/each}
     </div>
   {/if}
@@ -56,5 +53,9 @@
   .title.inverted,
   .title.inverted:hover {
     color: white !important;
+  }
+
+  .ui.accordion.styled.inverted {
+    background-color: #333;
   }
 </style>

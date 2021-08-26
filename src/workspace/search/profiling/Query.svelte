@@ -2,8 +2,6 @@
   import isEmpty from 'lodash/isEmpty'
   import { useStoreon } from '@storeon/svelte'
   import { isThemeToggleChecked } from '../../../utils/helpers'
-  // warning: circular dependency (this is for a reason)
-  import Query from './Query.svelte'
   import profiling, { getTimeMillis, getTimeColor } from './'
 
   const { server, app } = useStoreon('server', 'app')
@@ -40,20 +38,20 @@
 </div>
 <div class="content" class:active>
   {#if !isEmpty(query.breakdown)}
-    <ul class="ui list">
+    <div class="ui list">
       {#each Object.keys(query.breakdown) as i}
-        <li>
+        <div class="item">
           <strong>{i}</strong>
           :
           <span class="ui label">{query.breakdown[i]}</span>
-        </li>
+        </div>
       {/each}
-    </ul>
+    </div>
   {/if}
   {#if query.children && query.children.length}
     <div class="ui fluid accordion styled" class:inverted>
       {#each query.children as q, i}
-        <Query query={q} queries={query.children} />
+        <svelte:self query={q} queries={query.children} />
       {/each}
     </div>
   {/if}
@@ -63,5 +61,9 @@
   .title.inverted,
   .title.inverted:hover {
     color: white !important;
+  }
+
+  .ui.accordion.styled.inverted {
+    background-color: #333;
   }
 </style>
