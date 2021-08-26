@@ -13,10 +13,16 @@
 <div class="profile-table">
   {#if !isEmpty($search.profile)}
     <h4 class="ui header" class:inverted>Affected Shards</h4>
-    <div class="ui fluid accordion" class:inverted class:styled={!inverted}>
+    <div class="ui fluid accordion styled" class:inverted>
       {#each $search.profile.shards as shard, i}
         <Shard {shard} />
       {/each}
     </div>
   {/if}
 </div>
+
+<style>
+  .ui.accordion.styled.inverted {
+    background-color: black;
+  }
+</style>

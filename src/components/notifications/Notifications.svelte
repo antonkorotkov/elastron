@@ -3,8 +3,16 @@
 
   import Notification from './Notification.svelte'
 
-  const { dispatch, notifications } = useStoreon('notifications')
+  const { notifications } = useStoreon('notifications')
 </script>
+
+{#if $notifications.length}
+  <div class="notifications">
+    {#each $notifications as notification}
+      <Notification {notification} />
+    {/each}
+  </div>
+{/if}
 
 <style>
   .notifications {
@@ -15,11 +23,3 @@
     z-index: 1001;
   }
 </style>
-
-{#if $notifications.length}
-  <div class="notifications">
-    {#each $notifications as notification}
-      <Notification {notification} />
-    {/each}
-  </div>
-{/if}

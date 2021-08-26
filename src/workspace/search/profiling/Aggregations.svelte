@@ -12,7 +12,7 @@
 
 {#if aggregations && aggregations.length}
   <h5 class="ui header" class:inverted>Aggregations</h5>
-  <div class="ui fluid accordion" class:inverted class:styled={!inverted}>
+  <div class="ui fluid accordion styled" class:inverted>
     {#each aggregations as query, i}
       <Query {query} queries={aggregations} />
     {/each}

@@ -19,7 +19,12 @@
   $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
-<div class="title" class:active on:click={() => (active = !active)}>
+<div
+  class="title"
+  class:inverted
+  class:active
+  on:click={() => (active = !active)}
+>
   <i class="dropdown icon" />
   {profiling.collector(collector).getName($server.version.number)}
   <small
@@ -39,10 +44,17 @@
     {profiling.collector(collector).getReason($server.version.number)}
   </small>
   {#if collector.children && collector.children.length}
-    <div class="ui fluid accordion" class:inverted class:styled={!inverted}>
+    <div class="ui fluid accordion styled" class:inverted>
       {#each collector.children as q, i}
         <Collector collector={q} collectors={collector.children} />
       {/each}
     </div>
   {/if}
 </div>
+
+<style>
+  .title.inverted,
+  .title.inverted:hover {
+    color: white !important;
+  }
+</style>

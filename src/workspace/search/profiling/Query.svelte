@@ -17,7 +17,12 @@
   $: timeInNanos = profiling.query(query).getNanos($server.version.number)
 </script>
 
-<div class="title" class:active on:click={() => (active = !active)}>
+<div
+  class="title"
+  class:inverted
+  class:active
+  on:click={() => (active = !active)}
+>
   <i class="dropdown icon" />
   {profiling.query(query).getType($server.version.number)}
   <small class="ui label">
@@ -46,10 +51,17 @@
     </ul>
   {/if}
   {#if query.children && query.children.length}
-    <div class="ui fluid accordion" class:inverted class:styled={!inverted}>
+    <div class="ui fluid accordion styled" class:inverted>
       {#each query.children as q, i}
         <Query query={q} queries={query.children} />
       {/each}
     </div>
   {/if}
 </div>
+
+<style>
+  .title.inverted,
+  .title.inverted:hover {
+    color: white !important;
+  }
+</style>
