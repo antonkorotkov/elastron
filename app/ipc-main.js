@@ -9,8 +9,8 @@ class MessagingAPI {
     ipcMain.on(eventName, callbackFunction)
   }
 
-  send(eventName, messageData) {
-    this.window.webContents.send(eventName, messageData)
+  send(eventName, ...messageData) {
+    this.window.webContents.send(eventName, ...messageData)
   }
 
   respond(eventName, callbackFunction) {
