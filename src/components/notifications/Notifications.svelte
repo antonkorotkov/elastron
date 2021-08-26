@@ -8,7 +8,7 @@
 
 {#if $notifications.length}
   <div class="notifications">
-    {#each $notifications as notification}
+    {#each $notifications as notification (notification.id)}
       <Notification {notification} />
     {/each}
   </div>
