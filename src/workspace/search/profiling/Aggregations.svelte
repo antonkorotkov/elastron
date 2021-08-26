@@ -20,10 +20,6 @@
 {/if}
 
 <style>
-  .title.inverted,
-  .title.inverted:hover {
-    color: white !important;
-  }
   .ui.accordion.styled.inverted {
     background-color: #333;
   }
