@@ -67,7 +67,9 @@
             title="Create new index"
             on:click={showCreateIndexDialog}
             on:mouseover={e => classToggle(e, 'green')}
+            on:focus={e => classToggle(e, 'green')}
             on:mouseout={e => classToggle(e, 'green')}
+            on:blur={e => classToggle(e, 'green')}
           />
         </h4>
       </div>
@@ -92,7 +94,9 @@
           class="sync alternate icon refresh"
           class:loading={$indices.loading}
           on:mouseover={e => classToggle(e, 'green')}
+          on:focus={e => classToggle(e, 'green')}
           on:mouseout={e => classToggle(e, 'green')}
+          on:blur={e => classToggle(e, 'green')}
           on:click={e => dispatch('elasticsearch/indices/fetch')}
         />
       </div>

@@ -79,7 +79,7 @@
           <a
             class="item"
             class:active={activeTab === tab.slug}
-            href="javascript:;"
+            href="#0"
             on:click={e => (activeTab = tab.slug)}
           >
             {tab.name}
