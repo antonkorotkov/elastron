@@ -4,6 +4,7 @@ const pkg = require('./package.json')
 const { trackEvent } = require('./app/analytics')
 const updater = require('./app/updater')
 const messanger = require('./app/ipc-main')
+const dumper = require('./app/dumper')
 
 global['trackEvent'] = trackEvent
 
@@ -92,4 +93,6 @@ app.whenReady().then(() => {
     }
     return window.maximize()
   })
+
+  dumper.init(messaging)
 })

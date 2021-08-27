@@ -231,7 +231,6 @@
           type: 'success',
           message: `Index ${indexName} has been wiped. Documents deleted: ${result.deleted}.`,
         })
-        refreshDashboard()
       } else {
         dispatch('notification/add', {
           type: 'error',

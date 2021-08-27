@@ -7,9 +7,6 @@
   import Mapping from './tabs/Mapping.svelte'
   import Aliases from './tabs/Aliases.svelte'
   import Settings from './tabs/Settings.svelte'
-  import Templates from './tabs/Templates.svelte'
-  import Monitoring from './tabs/Monitoring.svelte'
-  import Status from './tabs/Status.svelte'
   import { isThemeToggleChecked } from '../../utils/helpers'
 
   const {
@@ -27,9 +24,6 @@
     { slug: 'mapping', name: 'Mapping', Component: Mapping },
     { slug: 'settings', name: 'Settings', Component: Settings },
     { slug: 'aliases', name: 'Aliases', Component: Aliases },
-    // { slug: 'templates', name: 'Templates', Component: Templates },
-    // { slug: 'monitoring', name: 'Monitoring', Component: Monitoring },
-    // { slug: 'status', name: 'Status', Component: Status },
   ]
 
   $: _indices = $indices.data.map(

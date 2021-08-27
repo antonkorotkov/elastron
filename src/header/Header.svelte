@@ -49,6 +49,13 @@
     <a class="item" href="/search" class:active={$route.match.page == 'search'}>
       Search
     </a>
+    <a
+      class="item"
+      href="/import-export"
+      class:active={$route.match.page == 'import-export'}
+    >
+      Import/Export
+    </a>
     <div class="right menu">
       {#if $connection.name}
         <span class="item">{$connection.name}</span>

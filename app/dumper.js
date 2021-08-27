@@ -1,5 +1,4 @@
 const ElasticDump = require('elasticdump')
-const { ipcMain } = require('electron')
 
 // const options = {
 //   input: 'http://localhost:9200/my-index',
@@ -28,3 +27,9 @@ const { ipcMain } = require('electron')
 //     process.exit(1)
 //   }
 // })
+
+const init = messaging => {
+  console.log('Dumper Initialized')
+}
+
+module.exports = { init }
