@@ -1,6 +1,6 @@
 {
   "name": "Elastron",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Full featured elasticsearch client",
   "main": "main.js",
   "scripts": {
