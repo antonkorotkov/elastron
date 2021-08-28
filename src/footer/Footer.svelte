@@ -29,12 +29,13 @@
     <div class="eight wide column right aligned">
       <div class="ui toggle checkbox theme-toggle">
         <input
+          id="theme-mode-toggler"
           type="checkbox"
           name="theme"
           on:change={e => onThemeChange(e.target.checked)}
           checked={toggleChecked}
         />
-        <label>🌗</label>
+        <label for="theme-mode-toggler">🌗</label>
       </div>
     </div>
   </div>
