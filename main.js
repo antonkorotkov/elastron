@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron')
+const { app, BrowserWindow, Menu, dialog } = require('electron')
 
 const pkg = require('./package.json')
 const { trackEvent } = require('./app/analytics')
@@ -103,5 +103,5 @@ app.whenReady().then(() => {
     return window.maximize()
   })
 
-  dumper.init(messaging)
+  dumper.init(messaging, window)
 })

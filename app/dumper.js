@@ -1,4 +1,5 @@
 const ElasticDump = require('elasticdump')
+const { dialog } = require('electron')
 
 // const options = {
 //   input: 'http://localhost:9200/my-index',
@@ -28,8 +29,23 @@ const ElasticDump = require('elasticdump')
 //   }
 // })
 
-const init = messaging => {
+const init = (messaging, win) => {
   console.log('Dumper Initialized')
+
+  messaging.respond('import-export-select-file', async e => {
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [{ name: 'Export Files', extensions: ['json'] }],
+    })
+    return result
+  })
+
+  messaging.respond('import-export-select-dir', async e => {
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openDirectory', 'createDirectory'],
+    })
+    return result
+  })
 
   messaging.respond('import-export-run', async e => {
     console.log('Import Export Run command received')

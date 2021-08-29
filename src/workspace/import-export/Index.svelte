@@ -11,6 +11,12 @@
     ipcRenderer.run('import-export-run').then(result => console.log(result))
   }
 
+  const onSourceFileSelect = e => {
+    ipcRenderer
+      .run('import-export-select-dir')
+      .then(result => console.log(result))
+  }
+
   $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
@@ -29,7 +35,7 @@
           </div>
           <div class="twelve wide field">
             <label for="input">Source</label>
-            <input id="input" type="text" />
+            <input id="input" type="text" on:click={onSourceFileSelect} />
           </div>
         </div>
         <h4 class="ui dividing header" class:inverted>Output</h4>
