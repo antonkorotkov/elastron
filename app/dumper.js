@@ -6,7 +6,7 @@ const ElasticDump = require('elasticdump')
 //   type: 'mapping',
 // }
 
-// const dumper = new Elasticdump(options.input, options.output, options)
+// const dumper = new ElasticDump(options.input, options.output, options)
 
 // dumper.on('log', function (message) {
 //   console.log('log', message)
@@ -30,6 +30,21 @@ const ElasticDump = require('elasticdump')
 
 const init = messaging => {
   console.log('Dumper Initialized')
+
+  messaging.respond('import-export-run', async e => {
+    console.log('Import Export Run command received')
+
+    return new Promise((resolve, reject) => {
+      let k = 5
+      let i = setInterval(() => {
+        console.log('Response in', k--, 'seconds')
+      }, 1000)
+      setTimeout(() => {
+        clearInterval(i)
+        resolve('Response!')
+      }, 5000)
+    })
+  })
 }
 
 module.exports = { init }

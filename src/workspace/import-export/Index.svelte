@@ -1,10 +1,16 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
   import { classToggle, isThemeToggleChecked } from '../../utils/helpers'
+  import ipcRenderer from '../../api/ipc-renderer'
 
   const { app } = useStoreon('app')
 
   let active = false
+
+  const onRunClick = e => {
+    ipcRenderer.run('import-export-run').then(result => console.log(result))
+  }
+
   $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
@@ -74,7 +80,9 @@
             </div>
           </div>
         </div>
-        <button class="green ui button" class:inverted>Run</button>
+        <button class="green ui button" class:inverted on:click={onRunClick}
+          >Run</button
+        >
       </div>
     </div>
   </div>
