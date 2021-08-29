@@ -129,7 +129,7 @@
     class:inverted
     disabled={!isIndexNameAllowed(indexName) || isLoading || !canCreate}
     type="submit"
-    class="ui positive right button"
+    class="ui green right button"
     class:loading={isLoading}
     form="create-index-form"
   >

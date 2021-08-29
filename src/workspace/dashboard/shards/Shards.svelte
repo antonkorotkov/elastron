@@ -73,7 +73,9 @@
           class="sync alternate icon refresh"
           class:loading={$shards.loading}
           on:mouseover={e => classToggle(e, 'green')}
+          on:focus={e => classToggle(e, 'green')}
           on:mouseout={e => classToggle(e, 'green')}
+          on:blur={e => classToggle(e, 'green')}
           on:click={e => dispatch('elasticsearch/shards/fetch')}
         />
       </div>

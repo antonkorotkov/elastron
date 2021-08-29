@@ -56,13 +56,6 @@
                 </div>
                 <div class="two wide field">
                   <i
-                    class="plus circle icon"
-                    on:mouseover={e => classToggle(e, 'green')}
-                    on:focus={e => classToggle(e, 'green')}
-                    on:mouseout={e => classToggle(e, 'green')}
-                    on:blur={e => classToggle(e, 'green')}
-                  />
-                  <i
                     class="minus circle icon"
                     on:mouseover={e => classToggle(e, 'green')}
                     on:focus={e => classToggle(e, 'green')}
@@ -71,9 +64,17 @@
                   />
                 </div>
               </div>
+              <i
+                class="plus circle icon"
+                on:mouseover={e => classToggle(e, 'green')}
+                on:focus={e => classToggle(e, 'green')}
+                on:mouseout={e => classToggle(e, 'green')}
+                on:blur={e => classToggle(e, 'green')}
+              />
             </div>
           </div>
         </div>
+        <button class="green ui button" class:inverted>Run</button>
       </div>
     </div>
   </div>

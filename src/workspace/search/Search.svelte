@@ -395,6 +395,7 @@
       {#if $search.type === 'body'}
         <button
           class="ui green button"
+          class:inverted
           class:loading={$search.loading}
           disabled={$search.loading}
           on:click={onSearchRun}
@@ -414,6 +415,7 @@
           />
           <button
             class="ui green button"
+            class:inverted
             class:loading={$search.loading}
             disabled={$search.loading}
             on:click={onSearchRun}

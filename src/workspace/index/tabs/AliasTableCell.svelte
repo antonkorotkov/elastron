@@ -71,13 +71,15 @@
   <button
     class="mini ui primary basic button"
     on:click={onUpdateClick}
-    class:disabled={loading}>
+    class:disabled={loading}
+  >
     Update
   </button>
   <button
-    class="mini ui negative basic button"
+    class="mini ui red basic button"
     on:click={onDeleteClick}
-    class:disabled={loading}>
+    class:disabled={loading}
+  >
     Delete
   </button>
 {:else}{cell}{/if}

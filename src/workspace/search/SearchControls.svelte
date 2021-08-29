@@ -5,10 +5,11 @@
 
   import isEmpty from 'lodash/isEmpty'
   import get from 'lodash/get'
+  import { isThemeToggleChecked } from '../../utils/helpers'
 
   export let qEditor
 
-  const { dispatch, search } = useStoreon('search')
+  const { dispatch, search, app } = useStoreon('search', 'app')
 
   $: uriPaginationCurrentPage = () => Math.round($search.from / $search.size)
   $: bodyPaginationOffset = () => get($search.requestBody, 'from', 0)
@@ -44,17 +45,9 @@
       })
     }
   }
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
-
-<style>
-  .stats {
-    margin-bottom: 7px;
-  }
-
-  .pagination {
-    text-align: right;
-  }
-</style>
 
 <div class="ui grid">
   <div class="twelve wide column">
@@ -79,30 +72,38 @@
       View: &nbsp;
       <span class="ui text">
         <button
+          class:inverted
           class="mini ui button"
           class:active={$search.view == 'hits'}
           class:disabled={isEmpty($search.results)}
-          on:click={() => switchView('hits')}>
+          on:click={() => switchView('hits')}
+        >
           Hits
         </button>
         <button
+          class:inverted
           class="mini ui button"
           class:active={$search.view == 'aggs'}
           class:disabled={isEmpty($search.aggs)}
-          on:click={() => switchView('aggs')}>
+          on:click={() => switchView('aggs')}
+        >
           Aggs
         </button>
         <button
+          class:inverted
           class="mini ui button"
           class:active={$search.view == 'raw'}
           class:disabled={isEmpty($search.response)}
-          on:click={() => switchView('raw')}>
+          on:click={() => switchView('raw')}
+        >
           Raw
         </button>
         {#if !isEmpty($search.profile)}
           <button
+            class:inverted
             class="mini ui button blue"
-            on:click={() => switchView('profile')}>
+            on:click={() => switchView('profile')}
+          >
             Profile
           </button>
         {/if}
@@ -118,7 +119,8 @@
         offset={$search.from}
         items_per_page={$search.size}
         total_items={$search.stats.total_results}
-        on:change={onUriPaginationChanged} />
+        on:change={onUriPaginationChanged}
+      />
     {/if}
 
     {#if $search.type === 'body'}
@@ -129,7 +131,18 @@
         offset={bodyPaginationOffset()}
         items_per_page={bodyPaginationItemsPerPage()}
         total_items={$search.stats.total_results}
-        on:change={onBodyPaginationChanged} />
+        on:change={onBodyPaginationChanged}
+      />
     {/if}
   </div>
 </div>
+
+<style>
+  .stats {
+    margin-bottom: 7px;
+  }
+
+  .pagination {
+    text-align: right;
+  }
+</style>

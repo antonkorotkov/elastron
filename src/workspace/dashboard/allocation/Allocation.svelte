@@ -77,7 +77,9 @@
           class:loading={$allocation.loading}
           on:mouseover={e => classToggle(e, 'green')}
           on:mouseout={e => classToggle(e, 'green')}
-          on:click={e => dispatch('elasticsearch/allocation/fetch')}
+          on:focus={e => classToggle(e, 'green')}
+          on:blur={e => classToggle(e, 'green')}
+          on:click={() => dispatch('elasticsearch/allocation/fetch')}
         />
       </div>
     </div>

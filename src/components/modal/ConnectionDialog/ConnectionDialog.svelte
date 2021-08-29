@@ -228,11 +228,7 @@
   <div class="ui black deny button right" class:inverted on:click={_onCancel}>
     Cancel
   </div>
-  <div
-    class="ui negative right button"
-    class:inverted
-    on:click={deleteConnection}
-  >
+  <div class="ui red right button" class:inverted on:click={deleteConnection}>
     Delete
   </div>
   <div class="ui right button" class:inverted on:click={testConnection}>
@@ -240,7 +236,7 @@
   </div>
   <button
     type="submit"
-    class="ui positive right button"
+    class="ui green right button"
     class:inverted
     form="connection-form"
   >

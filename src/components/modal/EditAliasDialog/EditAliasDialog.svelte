@@ -169,7 +169,7 @@
   </div>
   <button
     type="submit"
-    class="ui positive right button"
+    class="ui green right button"
     class:loading={isLoading}
     class:inverted
     form="alias-form"
