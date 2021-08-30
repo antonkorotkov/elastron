@@ -2,8 +2,10 @@
   import { useStoreon } from '@storeon/svelte'
   import { classToggle, isThemeToggleChecked } from '../../utils/helpers'
   import ipcRenderer from '../../api/ipc-renderer'
+  import FileSelector from './components/FileSelector.svelte'
+  import DirSelector from './components/DirSelector.svelte'
 
-  const { app } = useStoreon('app')
+  const { dispatch, app, importExport } = useStoreon('app', 'importExport')
 
   let active = false
 
@@ -11,10 +13,14 @@
     ipcRenderer.run('import-export-run').then(result => console.log(result))
   }
 
-  const onSourceFileSelect = e => {
-    ipcRenderer
-      .run('import-export-select-dir')
-      .then(result => console.log(result))
+  const onSourceFileSelected = result => {
+    const { canceled, filePaths } = result
+    if (!canceled) dispatch('ie/input/source', filePaths[0])
+  }
+
+  const onDestinationDirSelected = result => {
+    const { canceled, filePaths } = result
+    if (!canceled) dispatch('ie/output/destination', filePaths[0])
   }
 
   $: inverted = isThemeToggleChecked($app.theme)
@@ -28,28 +34,54 @@
         <div class="fields">
           <div class="four wide field">
             <label for="input-select">Type</label>
-            <select id="input-select">
-              <option value="file">File</option>
+            <select
+              value={$importExport.input.type}
+              on:change={e => dispatch('ie/input/type', e.target.value)}
+              id="input-select"
+            >
+              <option
+                value="file"
+                disabled={$importExport.output.type === 'file'}>File</option
+              >
               <option value="index">Index</option>
             </select>
           </div>
           <div class="twelve wide field">
             <label for="input">Source</label>
-            <input id="input" type="text" on:click={onSourceFileSelect} />
+            {#if $importExport.input.type === 'file'}
+              <FileSelector
+                {inverted}
+                currentlySelected={$importExport.input.source}
+                selectedCallback={onSourceFileSelected}
+              />
+            {/if}
           </div>
         </div>
         <h4 class="ui dividing header" class:inverted>Output</h4>
         <div class="fields">
           <div class="four wide field">
             <label for="output-select">Type</label>
-            <select id="output-select">
-              <option value="file">File</option>
+            <select
+              value={$importExport.output.type}
+              on:change={e => dispatch('ie/output/type', e.target.value)}
+              id="output-select"
+            >
+              <option
+                value="file"
+                disabled={$importExport.input.type === 'file'}>File</option
+              >
               <option value="index">Index</option>
             </select>
           </div>
           <div class="twelve wide field">
-            <label for="output">Source</label>
-            <input id="output" type="text" />
+            <label for="output">Destination</label>
+            {#if $importExport.output.type === 'file'}
+              <DirSelector
+                {inverted}
+                currentlySelected={$importExport.output.destination}
+                selectedCallback={onDestinationDirSelected}
+              />
+            {/if}
           </div>
         </div>
         <div class="ui accordion field" class:inverted class:active>

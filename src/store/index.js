@@ -13,6 +13,7 @@ import { allocation } from './elasticsearch/allocation'
 import { shards } from './elasticsearch/shards'
 import { history } from './history'
 import { index } from './elasticsearch/index'
+import { importExport } from './import-export'
 
 export const store = createStoreon([
   app,
@@ -28,4 +29,5 @@ export const store = createStoreon([
   shards,
   index,
   storeonDevtools,
+  importExport,
 ])

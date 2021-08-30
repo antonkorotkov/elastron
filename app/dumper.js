@@ -32,15 +32,15 @@ const { dialog } = require('electron')
 const init = (messaging, win) => {
   console.log('Dumper Initialized')
 
-  messaging.respond('import-export-select-file', async e => {
+  messaging.respond('select-file', async (__, { extensions }) => {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
-      filters: [{ name: 'Export Files', extensions: ['json'] }],
+      filters: [{ name: 'Files', extensions }],
     })
     return result
   })
 
-  messaging.respond('import-export-select-dir', async e => {
+  messaging.respond('select-dir', async () => {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openDirectory', 'createDirectory'],
     })
