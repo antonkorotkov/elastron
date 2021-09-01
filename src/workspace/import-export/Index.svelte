@@ -1,26 +1,41 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
-  import { classToggle, isThemeToggleChecked } from '../../utils/helpers'
-  import ipcRenderer from '../../api/ipc-renderer'
+  import { isThemeToggleChecked } from '../../utils/helpers'
   import FileSelector from './components/FileSelector.svelte'
   import DirSelector from './components/DirSelector.svelte'
+  import IndexSelector from '../../components/inputs/IndexSelector.svelte'
+  import Options from './components/Options.svelte'
 
   const { dispatch, app, importExport } = useStoreon('app', 'importExport')
 
-  let active = false
+  let advancedOptionsActive = false
 
-  const onRunClick = e => {
-    ipcRenderer.run('import-export-run').then(result => console.log(result))
-  }
+  const onRunClick = () => dispatch('ie/run')
 
   const onSourceFileSelected = result => {
     const { canceled, filePaths } = result
-    if (!canceled) dispatch('ie/input/source', filePaths[0])
+    if (!canceled) dispatch('ie/input/file', filePaths[0])
   }
 
   const onDestinationDirSelected = result => {
     const { canceled, filePaths } = result
-    if (!canceled) dispatch('ie/output/destination', filePaths[0])
+    if (!canceled) dispatch('ie/output/file', filePaths[0])
+  }
+
+  $: canRun = () => {
+    if ($importExport.isRunning) return false
+
+    if (
+      $importExport.input.type === 'index' &&
+      $importExport.output.type === 'index' &&
+      ($importExport.input.index === $importExport.output.index ||
+        !$importExport.input.index ||
+        !$importExport.output.index)
+    ) {
+      return false
+    }
+
+    return true
   }
 
   $: inverted = isThemeToggleChecked($app.theme)
@@ -46,13 +61,20 @@
               <option value="index">Index</option>
             </select>
           </div>
-          <div class="twelve wide field">
+          <div class="twelve wide themed field">
             <label for="input">Source</label>
             {#if $importExport.input.type === 'file'}
               <FileSelector
                 {inverted}
-                currentlySelected={$importExport.input.source}
+                currentlySelected={$importExport.input.file}
                 selectedCallback={onSourceFileSelected}
+              />
+            {:else if $importExport.input.type === 'index'}
+              <IndexSelector
+                {inverted}
+                currentlySelected={$importExport.input.index}
+                onSelect={e => dispatch('ie/input/index', e.detail.value)}
+                onClear={() => dispatch('ie/input/index', '')}
               />
             {/if}
           </div>
@@ -73,53 +95,47 @@
               <option value="index">Index</option>
             </select>
           </div>
-          <div class="twelve wide field">
+          <div class="twelve wide themed field">
             <label for="output">Destination</label>
             {#if $importExport.output.type === 'file'}
               <DirSelector
                 {inverted}
-                currentlySelected={$importExport.output.destination}
+                currentlySelected={$importExport.output.file}
                 selectedCallback={onDestinationDirSelected}
+              />
+            {:else if $importExport.output.type === 'index'}
+              <IndexSelector
+                {inverted}
+                currentlySelected={$importExport.output.index}
+                onSelect={e => dispatch('ie/output/index', e.detail.value)}
+                onClear={e => dispatch('ie/output/index', '')}
               />
             {/if}
           </div>
         </div>
-        <div class="ui accordion field" class:inverted class:active>
-          <div class="title" class:active on:click={() => (active = !active)}>
+        <div
+          class="ui accordion field"
+          class:inverted
+          class:active={advancedOptionsActive}
+        >
+          <div
+            class="title"
+            class:active={advancedOptionsActive}
+            on:click={() => (advancedOptionsActive = !advancedOptionsActive)}
+          >
             <i class="icon dropdown" />
             Advanced Options
           </div>
-          <div class="content" class:active>
-            <div class="options">
-              <div class="fields">
-                <div class="seven wide field">
-                  <input type="text" placeholder="Option Name" />
-                </div>
-                <div class="seven wide field">
-                  <input type="text" placeholder="Option Value" />
-                </div>
-                <div class="two wide field">
-                  <i
-                    class="minus circle icon"
-                    on:mouseover={e => classToggle(e, 'green')}
-                    on:focus={e => classToggle(e, 'green')}
-                    on:mouseout={e => classToggle(e, 'green')}
-                    on:blur={e => classToggle(e, 'green')}
-                  />
-                </div>
-              </div>
-              <i
-                class="plus circle icon"
-                on:mouseover={e => classToggle(e, 'green')}
-                on:focus={e => classToggle(e, 'green')}
-                on:mouseout={e => classToggle(e, 'green')}
-                on:blur={e => classToggle(e, 'green')}
-              />
-            </div>
+          <div class="content" class:active={advancedOptionsActive}>
+            <Options />
           </div>
         </div>
-        <button class="green ui button" class:inverted on:click={onRunClick}
-          >Run</button
+        <button
+          class="green ui button"
+          class:inverted
+          class:loading={$importExport.isRunning}
+          on:click={onRunClick}
+          disabled={!canRun()}>Run</button
         >
       </div>
     </div>

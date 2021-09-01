@@ -8,14 +8,14 @@
   import Aliases from './tabs/Aliases.svelte'
   import Settings from './tabs/Settings.svelte'
   import { isThemeToggleChecked } from '../../utils/helpers'
+  import IndexSelector from '../../components/inputs/IndexSelector.svelte'
 
   const {
     dispatch,
     [routerKey]: route,
-    indices,
     index,
     app,
-  } = useStoreon(routerKey, 'indices', 'index', 'app')
+  } = useStoreon(routerKey, 'index', 'app')
 
   let activeTab
 
@@ -26,16 +26,6 @@
     { slug: 'aliases', name: 'Aliases', Component: Aliases },
   ]
 
-  $: _indices = $indices.data.map(
-    item =>
-      item[
-        $indices.columns.reduce(
-          (i, item, index) => (item === 'index' ? index : i),
-          0
-        )
-      ]
-  )
-
   $: inverted = isThemeToggleChecked($app.theme)
 
   onMount(() => {
@@ -45,33 +35,28 @@
 </script>
 
 <div class="ui segments">
-  <div class="ui segment" class:inverted>
-    <select
-      id="index"
-      class="ui dropdown"
-      value={$index.selected}
-      on:change={e => {
-        dispatch('elasticsearch/index/select', e.target.value)
+  <div class="ui segment top-bar" class:inverted>
+    <IndexSelector
+      allowClear={false}
+      containerStyle="display:inline-block;min-width:100px;"
+      {inverted}
+      currentlySelected={$index.selected}
+      isDisabled={$index.loading}
+      onSelect={e => {
+        dispatch('elasticsearch/index/select', e.detail.value)
         activeTab = 'index'
       }}
-      disabled={$index.loading}
-    >
-      <option value="">Select Index</option>
-      {#if _indices.length}
-        {#each _indices as index}
-          <option value={index}>{index}</option>
-        {/each}
-      {/if}
-    </select>
+      onClear={() => dispatch('elasticsearch/index/select', '')}
+    />
     <i
       class="sync alternate icon refresh"
       class:loading={$index.loading}
-      on:click={e => dispatch('elasticsearch/index/fetch')}
+      on:click={() => dispatch('elasticsearch/index/fetch')}
     />
   </div>
 </div>
 
-{#if $index.selected && _indices.length}
+{#if $index.selected}
   <div class="ui grid">
     <div class="two wide column">
       <div class="ui vertical fluid pointing menu" class:inverted>
@@ -100,8 +85,13 @@
 {/if}
 
 <style>
+  .top-bar {
+    display: flex;
+    align-items: center;
+  }
   .sync {
-    margin-left: 1rem;
+    height: 18px;
     cursor: pointer;
+    margin-left: 1rem;
   }
 </style>

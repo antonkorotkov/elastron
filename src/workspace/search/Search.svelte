@@ -5,8 +5,8 @@
   import { onMount, onDestroy, afterUpdate } from 'svelte'
   import isEmpty from 'lodash/isEmpty'
   import isNumber from 'lodash/isNumber'
-  import Select from 'svelte-select'
 
+  import IndexSelector from '../../components/inputs/IndexSelector.svelte'
   import EditControls from './EditControls.svelte'
   import SearchControls from './SearchControls.svelte'
   import ProfileTable from './ProfileTable.svelte'
@@ -14,24 +14,10 @@
 
   import 'jsoneditor/dist/jsoneditor.min.css'
 
-  const { dispatch, search, indices, app } = useStoreon(
-    'search',
-    'indices',
-    'app'
-  )
+  const { dispatch, search, app } = useStoreon('search', 'app')
 
   let requestBodyEditor, resultsEditor
   let qEditor, rEditor
-
-  $: _indices = $indices.data.map(
-    item =>
-      item[
-        $indices.columns.reduce(
-          (i, item, index) => (item === 'index' ? index : i),
-          0
-        )
-      ]
-  )
 
   $: inverted = isThemeToggleChecked($app.theme)
 
@@ -262,13 +248,12 @@
         </div>
         <div class="field themed" id="indexSelect">
           <label for="index">Index</label>
-          <Select
-            inputStyles="height:36px;background:transparent;"
-            items={_indices}
-            isCreatable={true}
-            selectedValue={$search.index}
-            on:select={e => onStateFieldChange({ index: e.detail.value })}
-            on:clear={e => onStateFieldChange({ index: '_all' })}
+          <IndexSelector
+            {inverted}
+            allowCustom={true}
+            currentlySelected={$search.index}
+            onSelect={e => onStateFieldChange({ index: e.detail.value })}
+            onClear={() => onStateFieldChange({ index: '_all' })}
           />
         </div>
 
@@ -455,11 +440,5 @@
 
   .themed {
     min-width: 190px;
-    --height: 38px;
-  }
-
-  .inverted .themed {
-    --listBackground: black;
-    --itemHoverBG: rgb(22, 22, 22);
   }
 </style>

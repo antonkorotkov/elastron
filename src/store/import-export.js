@@ -1,16 +1,66 @@
+import ipcRenderer from '../api/ipc-renderer'
+
 export const importExport = store => {
   store.on('@init', () => ({
     importExport: {
       input: {
         type: 'file',
-        source: '',
+        file: '',
+        index: '',
       },
       output: {
         type: 'index',
-        destination: '',
+        file: '',
+        index: '',
       },
+      options: [
+        {
+          name: 'limit',
+          value: '100',
+        },
+      ],
+      isRunning: false,
     },
   }))
+
+  store.on('ie/delete/option', (state, index) => {
+    let options = [...state.importExport.options]
+    options.splice(index, 1)
+
+    return {
+      importExport: {
+        ...state.importExport,
+        options,
+      },
+    }
+  })
+
+  store.on('ie/update/option', (state, { index, field, value }) => {
+    let options = [...state.importExport.options]
+    options[index][field] = value
+
+    return {
+      importExport: {
+        ...state.importExport,
+        options,
+      },
+    }
+  })
+
+  store.on('ie/add/option', state => {
+    let options = [...state.importExport.options]
+    options.push({
+      name: '',
+      value: '',
+    })
+
+    return {
+      importExport: {
+        ...state.importExport,
+        options,
+      },
+    }
+  })
 
   store.on('ie/input/type', (state, type) => ({
     importExport: {
@@ -22,12 +72,22 @@ export const importExport = store => {
     },
   }))
 
-  store.on('ie/input/source', (state, source) => ({
+  store.on('ie/input/file', (state, file) => ({
     importExport: {
       ...state.importExport,
       input: {
         ...state.importExport.input,
-        source,
+        file,
+      },
+    },
+  }))
+
+  store.on('ie/input/index', (state, index) => ({
+    importExport: {
+      ...state.importExport,
+      input: {
+        ...state.importExport.input,
+        index,
       },
     },
   }))
@@ -42,13 +102,34 @@ export const importExport = store => {
     },
   }))
 
-  store.on('ie/output/destination', (state, destination) => ({
+  store.on('ie/output/file', (state, file) => ({
     importExport: {
       ...state.importExport,
       output: {
         ...state.importExport.output,
-        destination,
+        file,
       },
     },
   }))
+
+  store.on('ie/output/index', (state, index) => ({
+    importExport: {
+      ...state.importExport,
+      output: {
+        ...state.importExport.output,
+        index,
+      },
+    },
+  }))
+
+  store.on('ie/run', state => {
+    // todo
+
+    return {
+      importExport: {
+        ...state.importExport,
+        isRunning: true,
+      },
+    }
+  })
 }

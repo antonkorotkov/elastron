@@ -146,7 +146,3 @@ button:focus {
 .inverted div.jsoneditor-value.jsoneditor-invalid {
   color: white;
 }
-
-.inverted #indexSelect.themed .selection {
-  color: black;
-}
