@@ -58,6 +58,7 @@
     }
   },
   "dependencies": {
+    "@electron/remote": "^1.2.1",
     "@storeon/router": "^2.0.1",
     "@storeon/svelte": "^1.0.0",
     "axios": "^0.21.1",

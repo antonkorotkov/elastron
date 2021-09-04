@@ -1,4 +1,6 @@
-const { app, BrowserWindow, Menu, dialog } = require('electron')
+const { app, BrowserWindow, Menu } = require('electron')
+
+require('@electron/remote/main').initialize()
 
 const pkg = require('./package.json')
 const { trackEvent } = require('./app/analytics')
@@ -21,6 +23,8 @@ const createWindow = () => {
     webPreferences: {
       nodeIntegration: true,
       enableRemoteModule: true,
+      contextIsolation: false,
+      nativeWindowOpen: true,
       devTools: process.env.ENV === 'development',
     },
   })
