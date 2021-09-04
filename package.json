@@ -72,7 +72,7 @@
     "percent-to-hex": "^1.0.1",
     "sirv-cli": "^1.0.11",
     "storeon": "^3.1.4",
-    "svelte-select": "^3.17.0",
+    "svelte-select": "^4.4.1",
     "universal-analytics": "^0.4.23"
   },
   "devDependencies": {

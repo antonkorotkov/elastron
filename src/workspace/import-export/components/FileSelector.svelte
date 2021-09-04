@@ -1,11 +1,13 @@
 <script>
   export let buttonText = 'Select'
-  export let inverted = false
   export let selectedCallback = () => {}
   export let currentlySelected
 
+  import { useStoreon } from '@storeon/svelte'
   import ipcRenderer from '../../../api/ipc-renderer'
+  import { isThemeToggleChecked } from '../../../utils/helpers'
 
+  const { app } = useStoreon('app')
   let selected = currentlySelected
 
   const onSelectClick = () => {
@@ -22,6 +24,8 @@
       })
       .then(selectedCallback)
   }
+
+  $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
 <div class="file-selector">

@@ -1,4 +1,5 @@
 import ipcRenderer from '../api/ipc-renderer'
+import get from 'lodash/get'
 
 export const importExport = store => {
   store.on('@init', () => ({
@@ -6,12 +7,14 @@ export const importExport = store => {
       input: {
         type: 'file',
         file: '',
-        index: '',
+        index: null,
+        connection: null,
       },
       output: {
         type: 'index',
         file: '',
-        index: '',
+        index: null,
+        connection: null,
       },
       options: [
         {
@@ -20,6 +23,33 @@ export const importExport = store => {
         },
       ],
       isRunning: false,
+    },
+  }))
+
+  store.on('@changed', (__, payload, store) => {
+    if (get(payload, 'history.connection', false)) {
+      store.dispatch('ie/input/connection', null)
+      store.dispatch('ie/output/connection', null)
+    }
+  })
+
+  store.on('ie/input/connection', (state, connection) => ({
+    importExport: {
+      ...state.importExport,
+      input: {
+        ...state.importExport.input,
+        connection,
+      },
+    },
+  }))
+
+  store.on('ie/output/connection', (state, connection) => ({
+    importExport: {
+      ...state.importExport,
+      output: {
+        ...state.importExport.output,
+        connection,
+      },
     },
   }))
 

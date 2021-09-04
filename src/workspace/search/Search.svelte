@@ -249,7 +249,6 @@
         <div class="field themed" id="indexSelect">
           <label for="index">Index</label>
           <IndexSelector
-            {inverted}
             allowCustom={true}
             currentlySelected={$search.index}
             onSelect={e => onStateFieldChange({ index: e.detail.value })}

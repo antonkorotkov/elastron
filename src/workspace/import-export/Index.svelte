@@ -5,6 +5,7 @@
   import DirSelector from './components/DirSelector.svelte'
   import IndexSelector from '../../components/inputs/IndexSelector.svelte'
   import Options from './components/Options.svelte'
+  import RemoteIndexSelector from './components/RemoteIndexSelector.svelte'
 
   const { dispatch, app, importExport } = useStoreon('app', 'importExport')
 
@@ -42,7 +43,7 @@
 </script>
 
 <div class="ui grid">
-  <div class="six wide column">
+  <div class="seven wide column">
     <div class="ui segment" class:inverted>
       <div class="ui form" class:inverted>
         <h4 class="ui dividing header" class:inverted>Input</h4>
@@ -59,23 +60,25 @@
                 disabled={$importExport.output.type === 'file'}>File</option
               >
               <option value="index">Index</option>
+              <option value="remote-index">Remote Index</option>
+              <option value="manual">Manual</option>
             </select>
           </div>
           <div class="twelve wide themed field">
             <label for="input">Source</label>
             {#if $importExport.input.type === 'file'}
               <FileSelector
-                {inverted}
                 currentlySelected={$importExport.input.file}
                 selectedCallback={onSourceFileSelected}
               />
             {:else if $importExport.input.type === 'index'}
               <IndexSelector
-                {inverted}
                 currentlySelected={$importExport.input.index}
                 onSelect={e => dispatch('ie/input/index', e.detail.value)}
-                onClear={() => dispatch('ie/input/index', '')}
+                onClear={() => dispatch('ie/input/index', null)}
               />
+            {:else if $importExport.input.type === 'remote-index'}
+              <RemoteIndexSelector direction="input" />
             {/if}
           </div>
         </div>
@@ -93,22 +96,22 @@
                 disabled={$importExport.input.type === 'file'}>File</option
               >
               <option value="index">Index</option>
+              <option value="remote-index">Remote Index</option>
+              <option value="manual">Manual</option>
             </select>
           </div>
           <div class="twelve wide themed field">
             <label for="output">Destination</label>
             {#if $importExport.output.type === 'file'}
               <DirSelector
-                {inverted}
                 currentlySelected={$importExport.output.file}
                 selectedCallback={onDestinationDirSelected}
               />
             {:else if $importExport.output.type === 'index'}
               <IndexSelector
-                {inverted}
                 currentlySelected={$importExport.output.index}
                 onSelect={e => dispatch('ie/output/index', e.detail.value)}
-                onClear={e => dispatch('ie/output/index', '')}
+                onClear={e => dispatch('ie/output/index', null)}
               />
             {/if}
           </div>
@@ -140,7 +143,7 @@
       </div>
     </div>
   </div>
-  <div class="ten wide column">
+  <div class="nine wide column">
     <div class="ui segment" class:inverted>Test</div>
   </div>
 </div>
