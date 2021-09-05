@@ -9,12 +9,14 @@ export const importExport = store => {
         file: '',
         index: null,
         connection: null,
+        remoteIndices: [],
       },
       output: {
         type: 'index',
         file: '',
         index: null,
         connection: null,
+        remoteIndices: [],
       },
       options: [
         {
@@ -32,6 +34,26 @@ export const importExport = store => {
       store.dispatch('ie/output/connection', null)
     }
   })
+
+  store.on('ie/input/remoteIndices', (state, remoteIndices) => ({
+    importExport: {
+      ...state.importExport,
+      input: {
+        ...state.importExport.input,
+        remoteIndices,
+      },
+    },
+  }))
+
+  store.on('ie/output/remoteIndices', (state, remoteIndices) => ({
+    importExport: {
+      ...state.importExport,
+      output: {
+        ...state.importExport.output,
+        remoteIndices,
+      },
+    },
+  }))
 
   store.on('ie/input/connection', (state, connection) => ({
     importExport: {

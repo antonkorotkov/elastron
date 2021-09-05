@@ -113,6 +113,8 @@
                 onSelect={e => dispatch('ie/output/index', e.detail.value)}
                 onClear={e => dispatch('ie/output/index', null)}
               />
+            {:else if $importExport.output.type === 'remote-index'}
+              <RemoteIndexSelector direction="output" />
             {/if}
           </div>
         </div>

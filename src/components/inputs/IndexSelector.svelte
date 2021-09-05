@@ -9,19 +9,12 @@
   export let placeholder = 'Select Index...'
 
   import { useStoreon } from '@storeon/svelte'
+  import { getIndexListFromIndexData } from '../../utils/helpers'
   import AdvancedDropdown from './AdvancedDropdown.svelte'
 
   const { indices } = useStoreon('indices')
 
-  $: items = $indices.data.map(
-    item =>
-      item[
-        $indices.columns.reduce(
-          (i, item, index) => (item === 'index' ? index : i),
-          0
-        )
-      ]
-  )
+  $: items = getIndexListFromIndexData($indices)
 </script>
 
 <div class="index-selector" style={containerStyle}>

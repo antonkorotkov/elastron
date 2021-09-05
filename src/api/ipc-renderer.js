@@ -1,4 +1,8 @@
-const { ipcRenderer } = require('electron')
+let ipcRenderer
+
+if (typeof require === 'function') {
+  ipcRenderer = require('electron').ipcRenderer
+}
 
 export default {
   listen: (eventName, callbackFunction) => {
