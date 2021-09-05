@@ -6,6 +6,7 @@
   import IndexSelector from '../../components/inputs/IndexSelector.svelte'
   import Options from './components/Options.svelte'
   import RemoteIndexSelector from './components/RemoteIndexSelector.svelte'
+  import TypeSelector from './components/TypeSelector.svelte'
 
   const { dispatch, app, importExport } = useStoreon('app', 'importExport')
 
@@ -50,19 +51,10 @@
         <div class="fields">
           <div class="four wide field">
             <label for="input-select">Type</label>
-            <select
-              value={$importExport.input.type}
-              on:change={e => dispatch('ie/input/type', e.target.value)}
-              id="input-select"
-            >
-              <option
-                value="file"
-                disabled={$importExport.output.type === 'file'}>File</option
-              >
-              <option value="index">Index</option>
-              <option value="remote-index">Remote Index</option>
-              <option value="manual">Manual</option>
-            </select>
+            <TypeSelector
+              direction="input"
+              isFileDisabled={$importExport.output.type === 'file'}
+            />
           </div>
           <div class="twelve wide themed field">
             <label for="input">Source</label>
@@ -86,19 +78,10 @@
         <div class="fields">
           <div class="four wide field">
             <label for="output-select">Type</label>
-            <select
-              value={$importExport.output.type}
-              on:change={e => dispatch('ie/output/type', e.target.value)}
-              id="output-select"
-            >
-              <option
-                value="file"
-                disabled={$importExport.input.type === 'file'}>File</option
-              >
-              <option value="index">Index</option>
-              <option value="remote-index">Remote Index</option>
-              <option value="manual">Manual</option>
-            </select>
+            <TypeSelector
+              direction="output"
+              isFileDisabled={$importExport.input.type === 'file'}
+            />
           </div>
           <div class="twelve wide themed field">
             <label for="output">Destination</label>

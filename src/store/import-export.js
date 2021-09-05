@@ -35,6 +35,32 @@ export const importExport = store => {
     }
   })
 
+  store.on('ie/input/reset', state => ({
+    importExport: {
+      ...state.importExport,
+      input: {
+        ...state.importExport.input,
+        file: '',
+        index: null,
+        connection: null,
+        remoteIndices: [],
+      },
+    },
+  }))
+
+  store.on('ie/output/reset', state => ({
+    importExport: {
+      ...state.importExport,
+      output: {
+        ...state.importExport.output,
+        file: '',
+        index: null,
+        connection: null,
+        remoteIndices: [],
+      },
+    },
+  }))
+
   store.on('ie/input/remoteIndices', (state, remoteIndices) => ({
     importExport: {
       ...state.importExport,
