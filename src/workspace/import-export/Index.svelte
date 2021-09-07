@@ -8,11 +8,16 @@
   import RemoteIndexSelector from './components/RemoteIndexSelector.svelte'
   import TypeSelector from './components/TypeSelector.svelte'
 
-  const { dispatch, app, importExport } = useStoreon('app', 'importExport')
+  const { dispatch, app, importExport, connection } = useStoreon(
+    'app',
+    'importExport',
+    'connection'
+  )
 
   let advancedOptionsActive = false
 
-  const onRunClick = () => dispatch('ie/run')
+  const onRunClick = () =>
+    dispatch('ie/run', { importExport: $importExport, connection: $connection })
 
   const onSourceFileSelected = result => {
     const { canceled, filePaths } = result
@@ -33,6 +38,38 @@
       ($importExport.input.index === $importExport.output.index ||
         !$importExport.input.index ||
         !$importExport.output.index)
+    ) {
+      return false
+    }
+
+    if (
+      ($importExport.input.type === 'file' && !$importExport.input.file) ||
+      ($importExport.output.type === 'file' && !$importExport.output.file)
+    ) {
+      return false
+    }
+
+    if (
+      ($importExport.input.type === 'remote-index' &&
+        !$importExport.input.index) ||
+      ($importExport.output.type === 'remote-index' &&
+        !$importExport.output.index)
+    ) {
+      return false
+    }
+
+    if (
+      ($importExport.input.type === 'index' && !$importExport.input.index) ||
+      ($importExport.output.type === 'index' && !$importExport.output.index)
+    ) {
+      return false
+    }
+
+    if (
+      $importExport.input.type === 'remote-index' &&
+      $importExport.output.type === 'remote-index' &&
+      $importExport.input.connection === $importExport.output.connection &&
+      $importExport.input.index === $importExport.output.index
     ) {
       return false
     }
@@ -71,6 +108,13 @@
               />
             {:else if $importExport.input.type === 'remote-index'}
               <RemoteIndexSelector direction="input" />
+            {:else if $importExport.input.type === 'manual'}
+              <input
+                class="ui input"
+                placeholder="Input address..."
+                on:change={e => dispatch('ie/input/address', e.target.value)}
+                value={$importExport.input.address}
+              />
             {/if}
           </div>
         </div>
@@ -98,6 +142,13 @@
               />
             {:else if $importExport.output.type === 'remote-index'}
               <RemoteIndexSelector direction="output" />
+            {:else if $importExport.output.type === 'manual'}
+              <input
+                class="ui input"
+                placeholder="Output address..."
+                on:change={e => dispatch('ie/output/address', e.target.value)}
+                value={$importExport.output.address}
+              />
             {/if}
           </div>
         </div>
@@ -118,13 +169,26 @@
             <Options />
           </div>
         </div>
-        <button
-          class="green ui button"
-          class:inverted
-          class:loading={$importExport.isRunning}
-          on:click={onRunClick}
-          disabled={!canRun()}>Run</button
-        >
+        <div class="ui left action input">
+          <button
+            class="green ui button"
+            class:inverted
+            class:loading={$importExport.isRunning}
+            on:click={onRunClick}
+            disabled={!canRun()}>Run</button
+          >
+          <select class="dump-type-dropdown">
+            <option value="settings">Settings</option>
+            <option value="analyzer">Analyzer</option>
+            <option value="data">Data</option>
+            <option value="mapping">Mapping</option>
+            <option value="policy">Policy</option>
+            <option value="alias">Alias</option>
+            <option value="template">Template</option>
+            <option value="component_template">Component Template</option>
+            <option value="index_template">Index Template</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>
@@ -132,3 +196,10 @@
     <div class="ui segment" class:inverted>Test</div>
   </div>
 </div>
+
+<style>
+  .ui.form .action .dump-type-dropdown {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+</style>

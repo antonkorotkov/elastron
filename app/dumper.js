@@ -29,6 +29,14 @@ const { dialog } = require('electron')
 //   }
 // })
 
+const getInputParam = options => {
+  const { importExport: input } = options
+  const { type, file, index, connection } = input
+
+  switch (type) {
+  }
+}
+
 const init = (messaging, win) => {
   console.log('Dumper Initialized')
 
@@ -47,8 +55,8 @@ const init = (messaging, win) => {
     return result
   })
 
-  messaging.respond('import-export-run', async e => {
-    console.log('Import Export Run command received')
+  messaging.respond('import-export-run', async (__, options) => {
+    console.log('Import Export Run command received', options)
 
     return new Promise((resolve, reject) => {
       let k = 5

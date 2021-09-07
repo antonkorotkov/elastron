@@ -44,6 +44,7 @@
     const connection = getConnectionByArrayIndex(e.detail.value)
     if (connection !== null) {
       dispatch(`ie/${direction}/connection`, e.detail.value)
+      dispatch(`ie/${direction}/index`, null)
       const indices = await loadIndicesFromConnection(connection)
       dispatch(`ie/${direction}/remoteIndices`, indices)
     }
@@ -51,7 +52,10 @@
 
   const onIndexSelect = e => dispatch(`ie/${direction}/index`, e.detail.value)
 
-  const onConnectionClear = () => dispatch(`ie/${direction}/connection`, null)
+  const onConnectionClear = () => {
+    dispatch(`ie/${direction}/connection`, null)
+    dispatch(`ie/${direction}/index`, null)
+  }
 
   const onIndexClear = () => dispatch(`ie/${direction}/index`, null)
 

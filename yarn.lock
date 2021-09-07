@@ -239,14 +239,14 @@
   integrity sha512-iiUgKzV9AuaEkZqkOLDIvlQiL6ltuZd9tGcW3gwpnX8JbuiuhFlEGmmFXEXkN50Cvq7Os88IY2v0dkDqXYWVgA==
 
 "@types/node@*":
-  version "16.7.10"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.7.10.tgz#7aa732cc47341c12a16b7d562f519c2383b6d4fc"
-  integrity sha512-S63Dlv4zIPb8x6MMTgDq5WWRJQe56iBEY0O3SOFA9JrRienkOVDXSXBjjJw6HTNQYSE2JI6GMCR6LVbIMHJVvA==
+  version "16.7.13"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.7.13.tgz#86fae356b03b5a12f2506c6cf6cd9287b205973f"
+  integrity sha512-pLUPDn+YG3FYEt/pHI74HmnJOWzeR+tOIQzUx93pi9M7D8OE7PSLr97HboXwk5F+JS+TLtWuzCOW97AHjmOXXA==
 
 "@types/node@^14.0.1", "@types/node@^14.6.2":
-  version "14.17.14"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.17.14.tgz#6fda9785b41570eb628bac27be4b602769a3f938"
-  integrity sha512-rsAj2u8Xkqfc332iXV12SqIsjVi07H479bOP4q94NAcjzmAvapumEhuVIt53koEf7JFrpjgNKjBga5Pnn/GL8A==
+  version "14.17.15"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.17.15.tgz#d5ebfb62a69074ebb85cbe0529ad917bb8f2bae8"
+  integrity sha512-D1sdW0EcSCmNdLKBGMYb38YsHUS6JcM7yQ6sLQ9KuZ35ck7LYCKE7kYFHOO59ayFOY3zobWVZxf4KXhYHcHYFA==
 
 "@types/normalize-package-data@^2.4.0":
   version "2.4.1"
@@ -548,9 +548,9 @@ aws4@^1.11.0, aws4@^1.8.0:
   integrity sha512-xh1Rl34h6Fi1DC2WWKfxUTVqRsNnr6LsKz2+hfwDxQJWmrx8+c7ylaqBMcHfl1U1r2dsifOvKX3LQuLNZ+XSvA==
 
 axios@^0.21.1:
-  version "0.21.2"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.2.tgz#21297d5084b2aeeb422f5d38e7be4fbb82239017"
-  integrity sha512-87otirqUw3e8CzHTMO+/9kh/FSgXt/eVDvipijwDtEuwbkySWZ9SBm6VEubmJ/kLKEoLQV/POhxXFb66bfekfg==
+  version "0.21.4"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
+  integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
   dependencies:
     follow-redirects "^1.14.0"
 
@@ -3415,9 +3415,9 @@ supports-color@^7.0.0, supports-color@^7.1.0:
     has-flag "^4.0.0"
 
 svelte-preprocess@^4.7.3:
-  version "4.9.0"
-  resolved "https://registry.yarnpkg.com/svelte-preprocess/-/svelte-preprocess-4.9.0.tgz#ff16b9f247aed23f153dfd38a5c7520fccb0c46c"
-  integrity sha512-9eMgTn6qOe9z/q4rSXO1G3vXudOAJC54q7QL4s0e5qZ/94Hqca/aVLyL0FUwt1Q52Hq9WGJ4oxQK/DIArcDeAA==
+  version "4.9.2"
+  resolved "https://registry.yarnpkg.com/svelte-preprocess/-/svelte-preprocess-4.9.2.tgz#ba4a14023e95dd549cd564ac14459aa3c026f549"
+  integrity sha512-Eu/09bEpcBD8a9pGxcILEAZssXifnWoi5ad5GgUAgoT4alblNikOIpKrWDFkepMqjgioXciWbIZOROoTX3ZLdA==
   dependencies:
     "@types/pug" "^2.0.4"
     "@types/sass" "^1.16.0"

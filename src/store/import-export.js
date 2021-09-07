@@ -10,6 +10,7 @@ export const importExport = store => {
         index: null,
         connection: null,
         remoteIndices: [],
+        address: '',
       },
       output: {
         type: 'index',
@@ -17,6 +18,7 @@ export const importExport = store => {
         index: null,
         connection: null,
         remoteIndices: [],
+        address: '',
       },
       options: [
         {
@@ -29,9 +31,12 @@ export const importExport = store => {
   }))
 
   store.on('@changed', (__, payload, store) => {
-    if (get(payload, 'history.connection', false)) {
-      store.dispatch('ie/input/connection', null)
-      store.dispatch('ie/output/connection', null)
+    if (
+      get(payload, 'history.connection', false) ||
+      get(payload, 'connection', false)
+    ) {
+      store.dispatch('ie/input/reset', null)
+      store.dispatch('ie/output/reset', null)
     }
   })
 
@@ -44,6 +49,7 @@ export const importExport = store => {
         index: null,
         connection: null,
         remoteIndices: [],
+        address: '',
       },
     },
   }))
@@ -57,6 +63,27 @@ export const importExport = store => {
         index: null,
         connection: null,
         remoteIndices: [],
+        address: '',
+      },
+    },
+  }))
+
+  store.on('ie/input/address', (state, address) => ({
+    importExport: {
+      ...state.importExport,
+      input: {
+        ...state.importExport.input,
+        address,
+      },
+    },
+  }))
+
+  store.on('ie/output/address', (state, address) => ({
+    importExport: {
+      ...state.importExport,
+      output: {
+        ...state.importExport.output,
+        address,
       },
     },
   }))
@@ -200,13 +227,24 @@ export const importExport = store => {
     },
   }))
 
-  store.on('ie/run', state => {
-    // todo
+  store.on('ie/run', (state, options) => {
+    ipcRenderer.run('import-export-run', options).then(result => {
+      store.dispatch('ie/finish')
+    })
 
     return {
       importExport: {
         ...state.importExport,
         isRunning: true,
+      },
+    }
+  })
+
+  store.on('ie/finish', state => {
+    return {
+      importExport: {
+        ...state.importExport,
+        isRunning: false,
       },
     }
   })
