@@ -1,5 +1,6 @@
 const ElasticDump = require('elasticdump')
 const { dialog } = require('electron')
+const { Options } = require('./Options')
 
 // const options = {
 //   input: 'http://localhost:9200/my-index',
@@ -29,14 +30,6 @@ const { dialog } = require('electron')
 //   }
 // })
 
-const getInputParam = options => {
-  const { importExport: input } = options
-  const { type, file, index, connection } = input
-
-  switch (type) {
-  }
-}
-
 const init = (messaging, win) => {
   console.log('Dumper Initialized')
 
@@ -55,18 +48,32 @@ const init = (messaging, win) => {
     return result
   })
 
-  messaging.respond('import-export-run', async (__, options) => {
-    console.log('Import Export Run command received', options)
+  messaging.respond('import-export-run', (__, options) => {
+    console.log('Import Export Run command received')
+
+    const dumperOptions = new Options(options)
+
+    console.log(dumperOptions.options)
+
+    const dumper = new ElasticDump(
+      dumperOptions.input,
+      dumperOptions.output,
+      dumperOptions.options
+    )
+
+    dumper.on('error', function (error) {
+      messaging.send('dumper-error', error)
+    })
+
+    dumper.on('log', function (message) {
+      console.log('log', message)
+    })
 
     return new Promise((resolve, reject) => {
-      let k = 5
-      let i = setInterval(() => {
-        console.log('Response in', k--, 'seconds')
-      }, 1000)
-      setTimeout(() => {
-        clearInterval(i)
-        resolve('Response!')
-      }, 5000)
+      dumper.dump(function (error) {
+        if (error) reject(error)
+        resolve('Ok')
+      })
     })
   })
 }

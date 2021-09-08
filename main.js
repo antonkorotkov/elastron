@@ -6,7 +6,7 @@ const pkg = require('./package.json')
 const { trackEvent } = require('./app/analytics')
 const updater = require('./app/updater')
 const messanger = require('./app/ipc-main')
-const dumper = require('./app/dumper')
+const dumper = require('./app/dumper/dumper')
 
 global['trackEvent'] = trackEvent
 

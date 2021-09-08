@@ -228,9 +228,19 @@ export const importExport = store => {
   }))
 
   store.on('ie/run', (state, options) => {
-    ipcRenderer.run('import-export-run', options).then(result => {
+    ipcRenderer.once('dumper-error', (__, error) => {
+      console.error(error.message)
       store.dispatch('ie/finish')
     })
+
+    ipcRenderer
+      .run('import-export-run', options)
+      .then(result => {
+        store.dispatch('ie/finish')
+      })
+      .catch(() => {
+        store.dispatch('ie/finish')
+      })
 
     return {
       importExport: {

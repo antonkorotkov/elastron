@@ -9,6 +9,10 @@ export default {
     ipcRenderer.on(eventName, callbackFunction)
   },
 
+  once: (eventName, callbackFunction) => {
+    ipcRenderer.once(eventName, callbackFunction)
+  },
+
   send: (eventName, ...messageData) => {
     ipcRenderer.send(eventName, ...messageData)
   },
