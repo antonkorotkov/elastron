@@ -119,7 +119,6 @@ class Options {
 
   constructor(rendererOptions) {
     this.rendererOptions = rendererOptions
-    console.log(this.rendererOptions)
   }
 
   get input() {
@@ -149,10 +148,21 @@ class Options {
   }
 
   get options() {
+    const {
+      importExport: { options: incomingOptions, type },
+    } = this.rendererOptions
     const _options = { ...this.defaults }
 
     _options.input = this.input
     _options.output = this.output
+
+    for (let option of incomingOptions) {
+      if (typeof _options[option.name] !== undefined) {
+        _options[option.name] = option.value
+      }
+    }
+
+    _options.type = type
 
     return _options
   }

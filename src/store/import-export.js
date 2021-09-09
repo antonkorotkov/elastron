@@ -2,33 +2,58 @@ import ipcRenderer from '../api/ipc-renderer'
 import get from 'lodash/get'
 
 export const importExport = store => {
-  store.on('@init', () => ({
-    importExport: {
-      input: {
-        type: 'file',
-        file: '',
-        index: null,
-        connection: null,
-        remoteIndices: [],
-        address: '',
-      },
-      output: {
-        type: 'index',
-        file: '',
-        index: null,
-        connection: null,
-        remoteIndices: [],
-        address: '',
-      },
-      options: [
-        {
-          name: 'limit',
-          value: '100',
+  store.on('@init', () => {
+    ipcRenderer.listen('dumper-error', (__, error) => {
+      store.dispatch('ie/log', {
+        type: 'error',
+        message: error.message,
+      })
+    })
+
+    ipcRenderer.listen('dumper-log', (__, log) => {
+      store.dispatch('ie/log', {
+        type: 'info',
+        message: log,
+      })
+    })
+
+    ipcRenderer.listen('dumper-debug', (__, debug) => {
+      store.dispatch('ie/log', {
+        type: 'verbose',
+        message: debug,
+      })
+    })
+
+    return {
+      importExport: {
+        input: {
+          type: 'file',
+          file: '',
+          index: null,
+          connection: null,
+          remoteIndices: [],
+          address: '',
         },
-      ],
-      isRunning: false,
-    },
-  }))
+        output: {
+          type: 'index',
+          file: '',
+          index: null,
+          connection: null,
+          remoteIndices: [],
+          address: '',
+        },
+        options: [
+          {
+            name: 'limit',
+            value: '100',
+          },
+        ],
+        type: 'data',
+        isRunning: false,
+        logs: [],
+      },
+    }
+  })
 
   store.on('@changed', (__, payload, store) => {
     if (
@@ -39,6 +64,33 @@ export const importExport = store => {
       store.dispatch('ie/output/reset', null)
     }
   })
+
+  store.on('ie/log', (state, log) => {
+    let logs = [...state.importExport.logs, log]
+
+    return {
+      importExport: {
+        ...state.importExport,
+        logs,
+      },
+    }
+  })
+
+  store.on('ie/log/clear', state => {
+    return {
+      importExport: {
+        ...state.importExport,
+        logs: [],
+      },
+    }
+  })
+
+  store.on('ie/type', (state, type) => ({
+    importExport: {
+      ...state.importExport,
+      type,
+    },
+  }))
 
   store.on('ie/input/reset', state => ({
     importExport: {
@@ -228,14 +280,9 @@ export const importExport = store => {
   }))
 
   store.on('ie/run', (state, options) => {
-    ipcRenderer.once('dumper-error', (__, error) => {
-      console.error(error.message)
-      store.dispatch('ie/finish')
-    })
-
     ipcRenderer
       .run('import-export-run', options)
-      .then(result => {
+      .then(() => {
         store.dispatch('ie/finish')
       })
       .catch(() => {
@@ -246,6 +293,7 @@ export const importExport = store => {
       importExport: {
         ...state.importExport,
         isRunning: true,
+        logs: [],
       },
     }
   })

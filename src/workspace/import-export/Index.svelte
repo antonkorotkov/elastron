@@ -74,6 +74,13 @@
       return false
     }
 
+    if (
+      ($importExport.input.type === 'manual' && !$importExport.input.address) ||
+      ($importExport.output.type === 'manual' && !$importExport.output.address)
+    ) {
+      return false
+    }
+
     return true
   }
 
@@ -138,7 +145,7 @@
               <IndexSelector
                 currentlySelected={$importExport.output.index}
                 onSelect={e => dispatch('ie/output/index', e.detail.value)}
-                onClear={e => dispatch('ie/output/index', null)}
+                onClear={() => dispatch('ie/output/index', null)}
               />
             {:else if $importExport.output.type === 'remote-index'}
               <RemoteIndexSelector direction="output" />
@@ -177,23 +184,67 @@
             on:click={onRunClick}
             disabled={!canRun()}>Run</button
           >
-          <select class="dump-type-dropdown">
-            <option value="settings">Settings</option>
-            <option value="analyzer">Analyzer</option>
-            <option value="data">Data</option>
-            <option value="mapping">Mapping</option>
-            <option value="policy">Policy</option>
-            <option value="alias">Alias</option>
-            <option value="template">Template</option>
-            <option value="component_template">Component Template</option>
-            <option value="index_template">Index Template</option>
+          <select
+            class="dump-type-dropdown"
+            on:change={e => dispatch('ie/type', e.target.value)}
+          >
+            <option
+              value="settings"
+              selected={$importExport.type === 'settings'}>Settings</option
+            >
+            <option
+              value="analyzer"
+              selected={$importExport.type === 'analyzer'}>Analyzer</option
+            >
+            <option value="data" selected={$importExport.type === 'data'}
+              >Data</option
+            >
+            <option value="mapping" selected={$importExport.type === 'mapping'}
+              >Mapping</option
+            >
+            <option value="policy" selected={$importExport.type === 'policy'}
+              >Policy</option
+            >
+            <option value="alias" selected={$importExport.type === 'alias'}
+              >Alias</option
+            >
+            <option
+              value="template"
+              selected={$importExport.type === 'template'}>Template</option
+            >
+            <option
+              value="component_template"
+              selected={$importExport.type === 'component_template'}
+              >Component Template</option
+            >
+            <option
+              value="index_template"
+              selected={$importExport.type === 'index_template'}
+              >Index Template</option
+            >
           </select>
         </div>
       </div>
     </div>
   </div>
   <div class="nine wide column">
-    <div class="ui segment" class:inverted>Test</div>
+    <div class="ui segment" class:inverted>
+      <div class="ui divided selection list" class:inverted>
+        {#each $importExport.logs as log}
+          <a class="item" href>
+            <div
+              class="ui horizontal label"
+              class:red={log.type === 'error'}
+              class:blue={log.type === 'info'}
+              class:yellow={log.type === 'verbose'}
+            >
+              {log.type}
+            </div>
+            {log.message}
+          </a>
+        {/each}
+      </div>
+    </div>
   </div>
 </div>
 

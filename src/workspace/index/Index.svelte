@@ -39,7 +39,6 @@
     <IndexSelector
       allowClear={false}
       containerStyle="display:inline-block;min-width:100px;"
-      {inverted}
       currentlySelected={$index.selected}
       isDisabled={$index.loading}
       onSelect={e => {

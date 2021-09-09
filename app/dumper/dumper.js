@@ -52,27 +52,16 @@ const init = (messaging, win) => {
     console.log('Import Export Run command received')
 
     const dumperOptions = new Options(options)
+    const dumper = new ElasticDump(dumperOptions.options)
 
-    console.log(dumperOptions.options)
-
-    const dumper = new ElasticDump(
-      dumperOptions.input,
-      dumperOptions.output,
-      dumperOptions.options
-    )
-
-    dumper.on('error', function (error) {
-      messaging.send('dumper-error', error)
-    })
-
-    dumper.on('log', function (message) {
-      console.log('log', message)
-    })
+    dumper.on('error', error => messaging.send('dumper-error', error))
+    dumper.on('log', message => messaging.send('dumper-log', message))
+    dumper.on('debug', message => messaging.send('dumper-debug', message))
 
     return new Promise((resolve, reject) => {
       dumper.dump(function (error) {
-        if (error) reject(error)
-        resolve('Ok')
+        if (error) return reject(false)
+        return resolve(true)
       })
     })
   })
