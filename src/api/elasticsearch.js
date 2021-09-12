@@ -1,5 +1,6 @@
 import axios from 'axios'
 import get from 'lodash/get'
+import { buildConnectionHeaders, buildConnectionUrl } from '../utils/helpers'
 
 export default class API {
   /**
@@ -8,31 +9,9 @@ export default class API {
    */
   constructor(connection) {
     this.client = axios.create({
-      baseURL: this.buildConnectionUrl(connection),
-      headers: this.buildConnectionHeaders(connection),
+      baseURL: buildConnectionUrl(connection),
+      headers: buildConnectionHeaders(connection),
     })
-  }
-
-  /**
-   *
-   * @param {*} connection
-   */
-  buildConnectionHeaders(connection) {
-    const { useAuth, user, password } = connection
-    if (useAuth) {
-      return {
-        Authorization: `Basic ${btoa(`${user}:${password}`)}`,
-      }
-    }
-  }
-
-  /**
-   *
-   * @param {*} connection
-   */
-  buildConnectionUrl(connection) {
-    const { host, port } = connection
-    return `${host.replace(/\/+$/, '')}${Number(port) > 0 ? `:${port}` : ''}`
   }
 
   /**

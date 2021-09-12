@@ -1,34 +1,7 @@
 const ElasticDump = require('elasticdump')
 const { dialog } = require('electron')
 const { Options } = require('./Options')
-
-// const options = {
-//   input: 'http://localhost:9200/my-index',
-//   output: `${app.getPath('downloads')}/dump.json`,
-//   type: 'mapping',
-// }
-
-// const dumper = new ElasticDump(options.input, options.output, options)
-
-// dumper.on('log', function (message) {
-//   console.log('log', message)
-// })
-// dumper.on('debug', function (message) {
-//   console.log('debug', message)
-// })
-// dumper.on('error', function (error) {
-//   console.log(
-//     'error',
-//     `Error Emitted => ${error.message || JSON.stringify(error)}`
-//   )
-// })
-
-// dumper.dump(function (error) {
-//   console.log(arguments)
-//   if (error) {
-//     process.exit(1)
-//   }
-// })
+const get = require('lodash/get')
 
 const init = (messaging, win) => {
   console.log('Dumper Initialized')
@@ -54,7 +27,17 @@ const init = (messaging, win) => {
     const dumperOptions = new Options(options)
     const dumper = new ElasticDump(dumperOptions.options)
 
-    dumper.on('error', error => messaging.send('dumper-error', error))
+    dumper.on('error', error => {
+      try {
+        const message = JSON.parse(error.message)
+        messaging.send(
+          'dumper-error',
+          get(message, 'error.reason', error.message)
+        )
+      } catch (e) {
+        messaging.send('dumper-error', error.message)
+      }
+    })
     dumper.on('log', message => messaging.send('dumper-log', message))
     dumper.on('debug', message => messaging.send('dumper-debug', message))
 

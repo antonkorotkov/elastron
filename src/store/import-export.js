@@ -1,12 +1,13 @@
 import ipcRenderer from '../api/ipc-renderer'
 import get from 'lodash/get'
+import { randomId } from '../utils/helpers'
 
 export const importExport = store => {
   store.on('@init', () => {
     ipcRenderer.listen('dumper-error', (__, error) => {
       store.dispatch('ie/log', {
         type: 'error',
-        message: error.message,
+        message: error,
       })
     })
 
@@ -66,7 +67,7 @@ export const importExport = store => {
   })
 
   store.on('ie/log', (state, log) => {
-    let logs = [...state.importExport.logs, log]
+    let logs = [...state.importExport.logs, { ...log, id: randomId() }]
 
     return {
       importExport: {

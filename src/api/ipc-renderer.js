@@ -1,4 +1,9 @@
-let ipcRenderer
+let ipcRenderer = {
+  on: () => {},
+  once: () => {},
+  send: () => {},
+  run: () => {},
+}
 
 if (typeof require === 'function') {
   ipcRenderer = require('electron').ipcRenderer

@@ -1,6 +1,4 @@
-function randomId() {
-  return Math.random().toString()
-}
+import { randomId } from '../utils/helpers'
 
 export const notifications = store => {
   store.on('@init', () => ({

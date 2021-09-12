@@ -60,6 +60,11 @@ export const isThemeToggleChecked = theme => {
   return theme === 'dark' ? true : false
 }
 
+/**
+ *
+ * @param {*} indexData
+ * @returns
+ */
 export const getIndexListFromIndexData = indexData => {
   return indexData.data.map(
     item =>
@@ -70,4 +75,34 @@ export const getIndexListFromIndexData = indexData => {
         )
       ]
   )
+}
+
+/**
+ *
+ * @returns
+ */
+export const randomId = () => {
+  return Math.random().toString()
+}
+
+/**
+ *
+ * @param {*} connection
+ */
+export const buildConnectionHeaders = connection => {
+  const { useAuth, user, password } = connection
+  if (useAuth) {
+    return {
+      Authorization: `Basic ${btoa(`${user}:${password}`)}`,
+    }
+  }
+}
+
+/**
+ *
+ * @param {*} connection
+ */
+export const buildConnectionUrl = connection => {
+  const { host, port } = connection
+  return `${host.replace(/\/+$/, '')}${Number(port) > 0 ? `:${port}` : ''}`
 }

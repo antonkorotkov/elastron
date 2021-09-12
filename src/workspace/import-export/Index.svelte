@@ -7,6 +7,7 @@
   import Options from './components/Options.svelte'
   import RemoteIndexSelector from './components/RemoteIndexSelector.svelte'
   import TypeSelector from './components/TypeSelector.svelte'
+  import LogOutput from './components/LogOutput.svelte'
 
   const { dispatch, app, importExport, connection } = useStoreon(
     'app',
@@ -229,21 +230,7 @@
   </div>
   <div class="nine wide column">
     <div class="ui segment" class:inverted>
-      <div class="ui divided selection list" class:inverted>
-        {#each $importExport.logs as log}
-          <a class="item" href>
-            <div
-              class="ui horizontal label"
-              class:red={log.type === 'error'}
-              class:blue={log.type === 'info'}
-              class:yellow={log.type === 'verbose'}
-            >
-              {log.type}
-            </div>
-            {log.message}
-          </a>
-        {/each}
-      </div>
+      <LogOutput />
     </div>
   </div>
 </div>

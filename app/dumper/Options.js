@@ -1,3 +1,8 @@
+const buildConnectionUrl = connection => {
+  const { host, port } = connection
+  return `${host.replace(/\/+$/, '')}${Number(port) > 0 ? `:${port}` : ''}`
+}
+
 class Options {
   defaults = {
     size: -1,
@@ -121,40 +126,68 @@ class Options {
     this.rendererOptions = rendererOptions
   }
 
+  getInputType() {
+    const {
+      importExport: {
+        input: { type },
+      },
+    } = this.rendererOptions
+
+    return type
+  }
+
+  getOutputType() {
+    const {
+      importExport: {
+        output: { type },
+      },
+    } = this.rendererOptions
+
+    return type
+  }
+
   get input() {
     const {
       importExport: { input },
+      connection,
     } = this.rendererOptions
 
-    const { type, file, index, connection, address } = input
-
-    switch (type) {
+    switch (this.getInputType()) {
       case 'manual':
+        const { address } = input
         return address
+
+      case 'index':
+        return buildConnectionUrl(connection)
     }
   }
 
   get output() {
     const {
       importExport: { output },
+      connection,
     } = this.rendererOptions
 
-    const { type, file, index, connection, address } = output
-
-    switch (type) {
+    switch (this.getOutputType()) {
       case 'manual':
+        const { address } = output
         return address
+
+      case 'index':
+        return buildConnectionUrl(connection)
     }
   }
 
   get options() {
     const {
-      importExport: { options: incomingOptions, type },
+      importExport: { options: incomingOptions, type, input, output },
     } = this.rendererOptions
-    const _options = { ...this.defaults }
 
-    _options.input = this.input
-    _options.output = this.output
+    const _options = {
+      ...this.defaults,
+      input: this.input,
+      output: this.output,
+    }
 
     for (let option of incomingOptions) {
       if (typeof _options[option.name] !== undefined) {
@@ -163,6 +196,18 @@ class Options {
     }
 
     _options.type = type
+
+    if (this.getInputType() === 'index') {
+      const { index } = input
+      _options['input-index'] = index
+    }
+
+    if (this.getOutputType() === 'index') {
+      const { index } = output
+      _options['output-index'] = index
+    }
+
+    console.log(_options)
 
     return _options
   }
