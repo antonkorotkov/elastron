@@ -9,16 +9,21 @@
   import TypeSelector from './components/TypeSelector.svelte'
   import LogOutput from './components/LogOutput.svelte'
 
-  const { dispatch, app, importExport, connection } = useStoreon(
+  const { dispatch, app, importExport, connection, history } = useStoreon(
     'app',
     'importExport',
-    'connection'
+    'connection',
+    'history'
   )
 
   let advancedOptionsActive = false
 
   const onRunClick = () =>
-    dispatch('ie/run', { importExport: $importExport, connection: $connection })
+    dispatch('ie/run', {
+      importExport: $importExport,
+      connection: $connection,
+      connections: $history.connection,
+    })
 
   const onSourceFileSelected = result => {
     const { canceled, filePaths } = result

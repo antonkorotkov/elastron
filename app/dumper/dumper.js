@@ -2,6 +2,7 @@ const ElasticDump = require('elasticdump')
 const { dialog } = require('electron')
 const { Options } = require('./Options')
 const get = require('lodash/get')
+const isArray = require('lodash/isArray')
 
 const init = (messaging, win) => {
   console.log('Dumper Initialized')
@@ -29,11 +30,22 @@ const init = (messaging, win) => {
 
     dumper.on('error', error => {
       try {
-        const message = JSON.parse(error.message)
-        messaging.send(
-          'dumper-error',
-          get(message, 'error.reason', error.message)
-        )
+        if (!error)
+          return messaging.send('dumper-error', 'Unknown error occured')
+
+        if (error.message) {
+          const message = JSON.parse(error.message)
+          messaging.send(
+            'dumper-error',
+            get(message, 'error.reason', error.message)
+          )
+        }
+
+        if (error.errors && isArray(error.errors)) {
+          for (let e of error.errors) {
+            messaging.send('dumper-error', e)
+          }
+        }
       } catch (e) {
         messaging.send('dumper-error', error.message)
       }

@@ -28,6 +28,10 @@
 </div>
 
 <style>
+  .ui.list {
+    max-height: 85vh;
+    overflow-y: auto;
+  }
   .ui.list .label {
     min-width: 6em;
   }
