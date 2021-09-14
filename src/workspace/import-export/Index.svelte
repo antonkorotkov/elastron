@@ -149,6 +149,7 @@
               />
             {:else if $importExport.output.type === 'index'}
               <IndexSelector
+                allowCustom={true}
                 currentlySelected={$importExport.output.index}
                 onSelect={e => dispatch('ie/output/index', e.detail.value)}
                 onClear={() => dispatch('ie/output/index', null)}

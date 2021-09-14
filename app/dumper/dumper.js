@@ -4,6 +4,8 @@ const { Options } = require('./Options')
 const get = require('lodash/get')
 const isArray = require('lodash/isArray')
 
+const logError = console.error
+
 const init = (messaging, win) => {
   console.log('Dumper Initialized')
 
@@ -24,6 +26,11 @@ const init = (messaging, win) => {
 
   messaging.respond('import-export-run', (__, options) => {
     console.log('Import Export Run command received')
+
+    console.error = error => {
+      if (get(error, 'error.reason'))
+        messaging.send('dumper-error', get(error, 'error.reason'))
+    }
 
     const dumperOptions = new Options(options)
     const dumper = new ElasticDump(dumperOptions.options)
@@ -55,6 +62,7 @@ const init = (messaging, win) => {
 
     return new Promise((resolve, reject) => {
       dumper.dump(function (error) {
+        console.error = logError
         if (error) return reject(false)
         return resolve(true)
       })
