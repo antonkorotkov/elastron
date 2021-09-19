@@ -1,13 +1,26 @@
 <script>
+  import { beforeUpdate, afterUpdate } from 'svelte'
   import { useStoreon } from '@storeon/svelte'
+
   import { isThemeToggleChecked } from '../../../utils/helpers'
+
+  let div
+  let autoscroll
+
+  beforeUpdate(() => {
+    autoscroll = div && div.offsetHeight + div.scrollTop > div.scrollHeight - 20
+  })
+
+  afterUpdate(() => {
+    if (autoscroll) div.scrollTo(0, div.scrollHeight)
+  })
 
   const { app, importExport } = useStoreon('app', 'importExport')
 
   $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
-<div class="ui divided selection list" class:inverted>
+<div class="ui divided selection list" class:inverted bind:this={div}>
   {#if $importExport.logs.length}
     {#each $importExport.logs as log (log.id)}
       <a class="item" href>
