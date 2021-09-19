@@ -25,48 +25,58 @@ const init = (messaging, win) => {
   })
 
   messaging.respond('import-export-run', (__, options) => {
-    console.log('Import Export Run command received')
+    try {
+      console.log('Import Export Run command received')
 
-    console.error = error => {
-      if (get(error, 'error.reason'))
-        messaging.send('dumper-error', get(error, 'error.reason'))
-    }
-
-    const dumperOptions = new Options(options)
-    const dumper = new ElasticDump(dumperOptions.options)
-
-    dumper.on('error', error => {
-      try {
-        if (!error)
-          return messaging.send('dumper-error', 'Unknown error occured')
-
-        if (error.message) {
-          const message = JSON.parse(error.message)
-          messaging.send(
-            'dumper-error',
-            get(message, 'error.reason', error.message)
-          )
-        }
-
-        if (error.errors && isArray(error.errors)) {
-          for (let e of error.errors) {
-            messaging.send('dumper-error', e)
-          }
-        }
-      } catch (e) {
-        messaging.send('dumper-error', error.message)
+      console.error = error => {
+        console.log(error)
+        if (get(error, 'error.reason'))
+          messaging.send('dumper-error', get(error, 'error.reason'))
       }
-    })
-    dumper.on('log', message => messaging.send('dumper-log', message))
-    dumper.on('debug', message => messaging.send('dumper-debug', message))
 
-    return new Promise((resolve, reject) => {
-      dumper.dump(function (error) {
-        console.error = logError
-        if (error) return reject(false)
-        return resolve(true)
+      const dumperOptions = new Options(options)
+      const dumper = new ElasticDump(dumperOptions.options)
+
+      dumper.on('error', error => {
+        try {
+          if (!error)
+            return messaging.send('dumper-error', 'Unknown error occured')
+
+          if (error.message) {
+            const message = JSON.parse(error.message)
+            messaging.send(
+              'dumper-error',
+              get(message, 'error.reason', error.message)
+            )
+          }
+
+          if (error.errors && isArray(error.errors)) {
+            for (let e of error.errors) {
+              messaging.send('dumper-error', e)
+            }
+          }
+        } catch (e) {
+          messaging.send('dumper-error', error.message)
+        }
       })
-    })
+      dumper.on('log', message => messaging.send('dumper-log', message))
+      dumper.on('debug', message => messaging.send('dumper-debug', message))
+
+      return new Promise((resolve, reject) => {
+        dumper.dump(function (error) {
+          console.error = logError
+          if (error) return reject(false)
+          return resolve(true)
+        })
+      })
+    } catch (e) {
+      console.error = logError
+      console.error(e)
+      messaging.send(
+        'dumper-error',
+        get(e, 'message', 'Error occured in main process')
+      )
+    }
   })
 }
 

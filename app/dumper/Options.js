@@ -1,3 +1,5 @@
+const btoa = require('btoa')
+
 const buildConnectionUrl = connection => {
   const { host, port } = connection
   return `${host.replace(/\/+$/, '')}${Number(port) > 0 ? `:${port}` : ''}`
@@ -126,6 +128,10 @@ class Options {
     this.rendererOptions = rendererOptions
   }
 
+  /**
+   * Get type of input
+   * @returns string
+   */
   getInputType() {
     const {
       importExport: {
@@ -136,6 +142,10 @@ class Options {
     return type
   }
 
+  /**
+   * get type of output
+   * @returns string
+   */
   getOutputType() {
     const {
       importExport: {
@@ -146,6 +156,9 @@ class Options {
     return type
   }
 
+  /**
+   * input getter
+   */
   get input() {
     const {
       importExport: { input },
@@ -173,6 +186,9 @@ class Options {
     return null
   }
 
+  /**
+   * output getter
+   */
   get output() {
     const {
       importExport: { output },
@@ -203,19 +219,22 @@ class Options {
     return null
   }
 
+  /**
+   * options getter
+   */
   get options() {
     const {
       importExport: { options: incomingOptions, type, input, output },
     } = this.rendererOptions
 
-    const _options = {
+    let _options = {
       ...this.defaults,
-      input: this.input,
-      output: this.output,
     }
 
+    // extend options with incoming options
     for (let option of incomingOptions) {
       if (typeof _options[option.name] !== undefined) {
+        // convert booleans to real booleans
         if (option.value === 'true') {
           _options[option.name] = true
           continue
@@ -230,8 +249,15 @@ class Options {
       }
     }
 
-    _options.type = type
+    // extend options with immutable options
+    _options = {
+      ..._options,
+      input: this.input,
+      output: this.output,
+      type,
+    }
 
+    // determine input index
     if (
       this.getInputType() === 'index' ||
       this.getInputType() === 'remote-index'
@@ -240,6 +266,7 @@ class Options {
       _options['input-index'] = index
     }
 
+    // determine output index
     if (
       this.getOutputType() === 'index' ||
       this.getOutputType() === 'remote-index'
@@ -248,9 +275,91 @@ class Options {
       _options['output-index'] = index
     }
 
+    _options['input-headers'] = this.getHeaders(
+      _options['input-headers'],
+      'input'
+    )
+    _options['output-headers'] = this.getHeaders(
+      _options['output-headers'],
+      'output'
+    )
+
     console.log(_options)
 
     return _options
+  }
+
+  /**
+   * Get auth header
+   * @param {*} user
+   * @param {*} password
+   * @returns
+   */
+  getAuthHeader(user, password) {
+    return {
+      Authorization: `Basic ${btoa(`${user}:${password}`)}`,
+    }
+  }
+
+  /**
+   * Get headers
+   * @param {*} current
+   * @param {*} way
+   * @returns
+   */
+  getHeaders(current, way) {
+    try {
+      const currectInputHeaders = JSON.parse(current)
+
+      const types = {
+        input: this.getInputType(),
+        output: this.getOutputType(),
+      }
+
+      if (types[way] === 'index') {
+        const { connection } = this.rendererOptions
+
+        if (connection.useAuth) {
+          const authHeaderObject = this.getAuthHeader(
+            connection.user,
+            connection.password
+          )
+          return {
+            ...currectInputHeaders,
+            ...authHeaderObject,
+          }
+        }
+
+        return currectInputHeaders
+      }
+
+      if (types[way] === 'remote-index') {
+        const {
+          importExport: {
+            [way]: { connection },
+          },
+          connections,
+        } = this.rendererOptions
+
+        const theConnection = connections[connection]
+
+        if (theConnection.useAuth) {
+          const authHeaderObject = this.getAuthHeader(
+            theConnection.user,
+            theConnection.password
+          )
+          return {
+            ...currectInputHeaders,
+            ...authHeaderObject,
+          }
+        }
+
+        return currectInputHeaders
+      }
+    } catch (e) {
+      console.log(e)
+      throw new Error(`Could not parse ${way} headers. Please use valid JSON.`)
+    }
   }
 }
 

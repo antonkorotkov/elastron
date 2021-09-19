@@ -209,26 +209,6 @@
             <option value="mapping" selected={$importExport.type === 'mapping'}
               >Mapping</option
             >
-            <option value="policy" selected={$importExport.type === 'policy'}
-              >Policy</option
-            >
-            <option value="alias" selected={$importExport.type === 'alias'}
-              >Alias</option
-            >
-            <option
-              value="template"
-              selected={$importExport.type === 'template'}>Template</option
-            >
-            <option
-              value="component_template"
-              selected={$importExport.type === 'component_template'}
-              >Component Template</option
-            >
-            <option
-              value="index_template"
-              selected={$importExport.type === 'index_template'}
-              >Index Template</option
-            >
           </select>
         </div>
       </div>

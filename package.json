@@ -58,10 +58,11 @@
     }
   },
   "dependencies": {
-    "@electron/remote": "^1.2.1",
+    "@electron/remote": "^2.0.1",
     "@storeon/router": "^2.0.1",
     "@storeon/svelte": "^1.0.0",
     "axios": "^0.21.1",
+    "btoa": "^1.2.1",
     "compare-versions": "^3.6.0",
     "elasticdump": "^6.68.1",
     "electron-log": "^4.3.4",

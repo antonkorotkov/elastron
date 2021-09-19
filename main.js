@@ -1,13 +1,12 @@
 const { app, BrowserWindow, Menu } = require('electron')
 
-require('@electron/remote/main').initialize()
-
 const pkg = require('./package.json')
 const { trackEvent } = require('./app/analytics')
 const updater = require('./app/updater')
 const messanger = require('./app/ipc-main')
 const dumper = require('./app/dumper/dumper')
 
+require('@electron/remote/main').initialize()
 global['trackEvent'] = trackEvent
 
 const createWindow = () => {
@@ -95,6 +94,8 @@ const createWindow = () => {
 app.whenReady().then(() => {
   const window = createWindow()
   const messaging = messanger(window)
+
+  require('@electron/remote/main').enable(window.webContents)
 
   updater.init(window)
   updater.checkForUpdates()
