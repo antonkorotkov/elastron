@@ -52,6 +52,7 @@ export const importExport = store => {
         type: 'data',
         isRunning: false,
         logs: [],
+        logFilter: ['info', 'error'],
       },
     }
   })
@@ -63,6 +64,33 @@ export const importExport = store => {
     ) {
       store.dispatch('ie/input/reset', null)
       store.dispatch('ie/output/reset', null)
+    }
+  })
+
+  store.on('ie/logFilter/on', (state, filter) => ({
+    importExport: {
+      ...state.importExport,
+      logFilter: Array.from(new Set([...state.importExport.logFilter, filter])),
+    },
+  }))
+
+  store.on('ie/logFilter/off', (state, filter) => {
+    if (state.importExport.logFilter.length === 1)
+      return {
+        importExport: {
+          ...state.importExport,
+        },
+      }
+
+    const logFilter = state.importExport.logFilter.filter(
+      item => item !== filter
+    )
+
+    return {
+      importExport: {
+        ...state.importExport,
+        logFilter,
+      },
     }
   })
 

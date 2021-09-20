@@ -7,7 +7,7 @@
   import Options from './components/Options.svelte'
   import RemoteIndexSelector from './components/RemoteIndexSelector.svelte'
   import TypeSelector from './components/TypeSelector.svelte'
-  import LogOutput from './components/LogOutput.svelte'
+  import Log from './components/Log.svelte'
 
   const { dispatch, app, importExport, connection, history } = useStoreon(
     'app',
@@ -216,7 +216,7 @@
   </div>
   <div class="nine wide column">
     <div class="ui segment" class:inverted>
-      <LogOutput />
+      <Log />
     </div>
   </div>
 </div>

@@ -18,11 +18,15 @@
   const { app, importExport } = useStoreon('app', 'importExport')
 
   $: inverted = isThemeToggleChecked($app.theme)
+
+  $: logs = $importExport.logs.filter(item =>
+    $importExport.logFilter.includes(item.type)
+  )
 </script>
 
 <div class="ui divided selection list" class:inverted bind:this={div}>
-  {#if $importExport.logs.length}
-    {#each $importExport.logs as log (log.id)}
+  {#if logs.length}
+    {#each logs as log (log.id)}
       <a class="item" href>
         <div
           class="ui horizontal label"
@@ -42,7 +46,7 @@
 
 <style>
   .ui.list {
-    max-height: 85vh;
+    max-height: 80vh;
     overflow-y: auto;
   }
   .ui.list .label {
