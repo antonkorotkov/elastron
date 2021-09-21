@@ -15,18 +15,35 @@
     if (autoscroll) div.scrollTo(0, div.scrollHeight)
   })
 
-  const { app, importExport } = useStoreon('app', 'importExport')
+  const { dispatch, app, importExport } = useStoreon('app', 'importExport')
 
   $: inverted = isThemeToggleChecked($app.theme)
 
-  $: logs = $importExport.logs
-    .filter(item => $importExport.logFilter.includes(item.type))
-    .splice(-Math.abs($importExport.logsPerPage))
+  $: filteredLogs = $importExport.logs.filter(item =>
+    $importExport.logFilter.includes(item.type)
+  )
+
+  $: logsToShow = filteredLogs.slice(
+    -Math.abs($importExport.logsPerPage * $importExport.logsShowPages)
+  )
 </script>
 
+{#if filteredLogs.length > logsToShow.length}
+  <div class="ui grid">
+    <div class="sixteen wide column center aligned">
+      <a
+        class="ui primary button basic mini"
+        class:inverted
+        href
+        on:click={() => dispatch('ie/logsShowMore')}>Show more</a
+      >
+    </div>
+  </div>
+{/if}
+
 <div class="ui divided selection list" class:inverted bind:this={div}>
-  {#if logs.length}
-    {#each logs as log (log.id)}
+  {#if logsToShow.length}
+    {#each logsToShow as log (log.id)}
       <a class="item" href>
         <div
           class="ui horizontal label"
@@ -46,7 +63,7 @@
 
 <style>
   .ui.list {
-    max-height: 80vh;
+    max-height: 75vh;
     overflow-y: auto;
   }
   .ui.list .label {

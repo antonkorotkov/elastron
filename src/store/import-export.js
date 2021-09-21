@@ -54,6 +54,7 @@ export const importExport = store => {
         logs: [],
         logFilter: ['info', 'error'],
         logsPerPage: 100,
+        logsShowPages: 1,
       },
     }
   })
@@ -72,6 +73,14 @@ export const importExport = store => {
     importExport: {
       ...state.importExport,
       logsPerPage,
+      logsShowPages: 1,
+    },
+  }))
+
+  store.on('ie/logsShowMore', state => ({
+    importExport: {
+      ...state.importExport,
+      logsShowPages: state.importExport.logsShowPages + 1,
     },
   }))
 
@@ -79,6 +88,7 @@ export const importExport = store => {
     importExport: {
       ...state.importExport,
       logFilter: Array.from(new Set([...state.importExport.logFilter, filter])),
+      logsShowPages: 1,
     },
   }))
 
@@ -98,6 +108,7 @@ export const importExport = store => {
       importExport: {
         ...state.importExport,
         logFilter,
+        logsShowPages: 1,
       },
     }
   })
@@ -118,6 +129,7 @@ export const importExport = store => {
       importExport: {
         ...state.importExport,
         logs: [],
+        logsShowPages: 1,
       },
     }
   })
@@ -331,6 +343,7 @@ export const importExport = store => {
         ...state.importExport,
         isRunning: true,
         logs: [],
+        logsShowPages: 1,
       },
     }
   })
