@@ -53,6 +53,7 @@ export const importExport = store => {
         isRunning: false,
         logs: [],
         logFilter: ['info', 'error'],
+        logsPerPage: 100,
       },
     }
   })
@@ -66,6 +67,13 @@ export const importExport = store => {
       store.dispatch('ie/output/reset', null)
     }
   })
+
+  store.on('ie/logsPerPage', (state, logsPerPage) => ({
+    importExport: {
+      ...state.importExport,
+      logsPerPage,
+    },
+  }))
 
   store.on('ie/logFilter/on', (state, filter) => ({
     importExport: {

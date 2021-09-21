@@ -19,9 +19,9 @@
 
   $: inverted = isThemeToggleChecked($app.theme)
 
-  $: logs = $importExport.logs.filter(item =>
-    $importExport.logFilter.includes(item.type)
-  )
+  $: logs = $importExport.logs
+    .filter(item => $importExport.logFilter.includes(item.type))
+    .splice(-Math.abs($importExport.logsPerPage))
 </script>
 
 <div class="ui divided selection list" class:inverted bind:this={div}>

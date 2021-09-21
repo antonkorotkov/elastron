@@ -11,6 +11,9 @@
       : dispatch('ie/logFilter/off', value)
   }
 
+  const onLogsShowChange = e =>
+    dispatch('ie/logsPerPage', parseInt(e.target.value))
+
   $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
@@ -44,6 +47,29 @@
         disabled={$importExport.logFilter.length === 1 &&
           $importExport.logFilter.includes('error')}
       />
+    </div>
+
+    <div class="field">
+      <select on:change={onLogsShowChange}>
+        <option value="0" selected={$importExport.logsPerPage === 0}
+          >Show all</option
+        >
+        <option value="10" selected={$importExport.logsPerPage === 10}
+          >Last 10</option
+        >
+        <option value="50" selected={$importExport.logsPerPage === 50}
+          >Last 50</option
+        >
+        <option value="100" selected={$importExport.logsPerPage === 100}
+          >Last 100</option
+        >
+        <option value="500" selected={$importExport.logsPerPage === 500}
+          >Last 500</option
+        >
+        <option value="1000" selected={$importExport.logsPerPage === 1000}
+          >Last 1000</option
+        >
+      </select>
     </div>
   </div>
 </div>
