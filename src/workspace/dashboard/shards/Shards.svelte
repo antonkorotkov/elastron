@@ -98,10 +98,6 @@
 </div>
 
 <style>
-  .refresh {
-    cursor: pointer;
-  }
-
   .search {
     display: inline-block;
   }
