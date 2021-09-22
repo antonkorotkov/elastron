@@ -8,6 +8,7 @@
     "dev": "rollup -c -w",
     "start-local": "sirv public",
     "start": "ENV=development electron .",
+    "start:prod": "electron .",
     "dist-mac": "electron-builder -m",
     "dist-win": "electron-builder -w",
     "dist": "electron-builder -mw",
