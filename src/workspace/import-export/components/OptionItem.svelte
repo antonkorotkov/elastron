@@ -1,5 +1,5 @@
 <script>
-  import { classToggle } from '../../../utils/helpers'
+  import IconButton from '../../../components/buttons/IconButton.svelte'
 
   export let name
   export let value
@@ -25,14 +25,15 @@
       on:change={onChangeValue}
     />
   </div>
-  <div class="one wide field">
-    <i
-      class="minus circle icon"
-      on:mouseover={e => classToggle(e, 'green')}
-      on:focus={e => classToggle(e, 'green')}
-      on:mouseout={e => classToggle(e, 'green')}
-      on:blur={e => classToggle(e, 'green')}
-      on:click={onDelete}
-    />
+  <div class="one wide field controls">
+    <IconButton className="minus circle" onClick={onDelete} />
   </div>
 </div>
+
+<style>
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+</style>

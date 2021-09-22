@@ -22,15 +22,6 @@ export const humanStoreSizeToPseudoBytes = size => {
 
 /**
  *
- * @param {*} e
- * @param {*} className
- */
-export const classToggle = (e, className) => {
-  e.target.classList.toggle(className)
-}
-
-/**
- *
  * @param {*} indexName
  */
 export const validateIndexName = indexName => {

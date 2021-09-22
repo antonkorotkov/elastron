@@ -9,6 +9,7 @@
   import Settings from './tabs/Settings.svelte'
   import { isThemeToggleChecked } from '../../utils/helpers'
   import IndexSelector from '../../components/inputs/IndexSelector.svelte'
+  import IconButton from '../../components/buttons/IconButton.svelte'
 
   const {
     dispatch,
@@ -47,11 +48,14 @@
       }}
       onClear={() => dispatch('elasticsearch/index/select', '')}
     />
-    <i
-      class="sync alternate icon refresh"
-      class:loading={$index.loading}
-      on:click={() => dispatch('elasticsearch/index/fetch')}
-    />
+
+    <span class="sync">
+      <IconButton
+        className="sync alternate refresh"
+        onClick={() => dispatch('elasticsearch/index/fetch')}
+        loading={$index.loading}
+      />
+    </span>
   </div>
 </div>
 
@@ -90,7 +94,6 @@
   }
   .sync {
     height: 18px;
-    cursor: pointer;
     margin-left: 1rem;
   }
 </style>

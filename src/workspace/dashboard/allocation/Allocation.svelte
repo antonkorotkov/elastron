@@ -7,10 +7,10 @@
   import Table from '../../../components/tables/Table.svelte'
   import {
     humanStoreSizeToPseudoBytes,
-    classToggle,
     filterArrayBy,
     isThemeToggleChecked,
   } from '../../../utils/helpers.js'
+  import IconButton from '../../../components/buttons/IconButton.svelte'
 
   const { dispatch, allocation, app } = useStoreon('allocation', 'app')
 
@@ -72,14 +72,10 @@
           </div>
         </div>
 
-        <i
-          class="sync alternate icon refresh"
-          class:loading={$allocation.loading}
-          on:mouseover={e => classToggle(e, 'green')}
-          on:mouseout={e => classToggle(e, 'green')}
-          on:focus={e => classToggle(e, 'green')}
-          on:blur={e => classToggle(e, 'green')}
-          on:click={() => dispatch('elasticsearch/allocation/fetch')}
+        <IconButton
+          className="sync alternate refresh"
+          loading={$allocation.loading}
+          onClick={() => dispatch('elasticsearch/allocation/fetch')}
         />
       </div>
     </div>

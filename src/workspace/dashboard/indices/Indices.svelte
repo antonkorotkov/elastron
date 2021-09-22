@@ -9,10 +9,10 @@
   import Cell from './Cell.svelte'
   import {
     humanStoreSizeToPseudoBytes,
-    classToggle,
     filterArrayBy,
   } from '../../../utils/helpers.js'
   import CreateIndexDialog from '../../../components/modal/CreateIndexDialog/CreateIndexDialog.svelte'
+  import IconButton from '../../../components/buttons/IconButton.svelte'
 
   const { dispatch, app, indices } = useStoreon('app', 'indices')
   const { open } = getContext('modal-window')
@@ -62,15 +62,13 @@
       <div class="eight wide column middle aligned">
         <h4>
           Indices
-          <i
-            class="plus circle icon add-index"
-            title="Create new index"
-            on:click={showCreateIndexDialog}
-            on:mouseover={e => classToggle(e, 'green')}
-            on:focus={e => classToggle(e, 'green')}
-            on:mouseout={e => classToggle(e, 'green')}
-            on:blur={e => classToggle(e, 'green')}
-          />
+          <span class="add-index">
+            <IconButton
+              className="plus circle"
+              title="Create new index"
+              onClick={showCreateIndexDialog}
+            />
+          </span>
         </h4>
       </div>
       <div class="eight wide column right aligned">
@@ -90,14 +88,10 @@
           </div>
         </div>
 
-        <i
-          class="sync alternate icon refresh"
-          class:loading={$indices.loading}
-          on:mouseover={e => classToggle(e, 'green')}
-          on:focus={e => classToggle(e, 'green')}
-          on:mouseout={e => classToggle(e, 'green')}
-          on:blur={e => classToggle(e, 'green')}
-          on:click={e => dispatch('elasticsearch/indices/fetch')}
+        <IconButton
+          className="sync alternate refresh"
+          loading={$indices.loading}
+          onClick={() => dispatch('elasticsearch/indices/fetch')}
         />
       </div>
     </div>
@@ -124,10 +118,6 @@
 </div>
 
 <style>
-  .refresh,
-  .add-index {
-    cursor: pointer;
-  }
   .add-index {
     margin-left: 0.5rem;
   }

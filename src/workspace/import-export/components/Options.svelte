@@ -1,6 +1,6 @@
 <script>
   import { useStoreon } from '@storeon/svelte'
-  import { classToggle } from '../../../utils/helpers'
+  import IconButton from '../../../components/buttons/IconButton.svelte'
   import OptionItem from './OptionItem.svelte'
 
   const { dispatch, importExport } = useStoreon('importExport')
@@ -26,12 +26,9 @@
       onChangeValue={onOptionChange.bind({ index, field: 'value' })}
     />
   {/each}
-  <i
-    class="plus circle icon"
-    on:mouseover={e => classToggle(e, 'green')}
-    on:focus={e => classToggle(e, 'green')}
-    on:mouseout={e => classToggle(e, 'green')}
-    on:blur={e => classToggle(e, 'green')}
-    on:click={() => dispatch('ie/add/option')}
+
+  <IconButton
+    className="plus circle"
+    onClick={() => dispatch('ie/add/option')}
   />
 </div>

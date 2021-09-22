@@ -7,10 +7,10 @@
   import Table from '../../../components/tables/Table.svelte'
   import {
     humanStoreSizeToPseudoBytes,
-    classToggle,
     filterArrayBy,
     isThemeToggleChecked,
   } from '../../../utils/helpers.js'
+  import IconButton from '../../../components/buttons/IconButton.svelte'
 
   const { dispatch, shards, app } = useStoreon('shards', 'app')
 
@@ -69,14 +69,10 @@
           </div>
         </div>
 
-        <i
-          class="sync alternate icon refresh"
-          class:loading={$shards.loading}
-          on:mouseover={e => classToggle(e, 'green')}
-          on:focus={e => classToggle(e, 'green')}
-          on:mouseout={e => classToggle(e, 'green')}
-          on:blur={e => classToggle(e, 'green')}
-          on:click={e => dispatch('elasticsearch/shards/fetch')}
+        <IconButton
+          className="sync alternate refresh"
+          loading={$shards.loading}
+          onClick={() => dispatch('elasticsearch/shards/fetch')}
         />
       </div>
     </div>
