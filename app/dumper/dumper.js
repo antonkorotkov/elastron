@@ -8,8 +8,6 @@ const { trackEvent } = require('../analytics')
 const logError = console.error
 
 const init = (messaging, win) => {
-  console.log('Dumper Initialized')
-
   messaging.respond('select-file', async (__, { extensions }) => {
     const result = await dialog.showOpenDialog(win, {
       properties: ['openFile'],
@@ -27,11 +25,9 @@ const init = (messaging, win) => {
 
   messaging.respond('import-export-run', (__, options) => {
     try {
-      console.log('Import Export Run command received')
       trackEvent('ImportExport', 'Start', options.importExport.type)
 
       console.error = error => {
-        console.log(error)
         if (get(error, 'error.reason'))
           messaging.send('dumper-error', get(error, 'error.reason'))
       }
@@ -68,7 +64,6 @@ const init = (messaging, win) => {
         dumper.dump(function (error) {
           console.error = logError
           if (error) {
-            console.log(error)
             trackEvent(
               'ImportExport',
               'Error',
@@ -83,7 +78,6 @@ const init = (messaging, win) => {
       })
     } catch (e) {
       console.error = logError
-      console.error(e)
       const message = get(e, 'message', 'Error occured in main process')
       messaging.send('dumper-error', message)
       trackEvent('ImportExport', 'Error', message)
