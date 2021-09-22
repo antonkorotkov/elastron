@@ -178,6 +178,14 @@
           >
             <i class="icon dropdown" />
             Advanced Options
+            <a
+              class="help-link"
+              title="Elasticdump options help"
+              href="https://www.npmjs.com/package/elasticdump#options"
+              target="_blank"
+            >
+              <i class="info circle icon" />
+            </a>
           </div>
           <div class="content" class:active={advancedOptionsActive}>
             <Options />

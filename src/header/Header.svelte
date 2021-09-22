@@ -55,6 +55,7 @@
       class:active={$route.match.page == 'import-export'}
     >
       Import/Export
+      <sup>beta</sup>
     </a>
     <div class="right menu">
       {#if $connection.name}
@@ -82,5 +83,8 @@
   }
   header {
     height: 4rem;
+  }
+  sup {
+    color: red;
   }
 </style>
