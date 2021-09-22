@@ -3,6 +3,7 @@ const { dialog } = require('electron')
 const { Options } = require('./Options')
 const get = require('lodash/get')
 const isArray = require('lodash/isArray')
+const { trackEvent } = require('../analytics')
 
 const logError = console.error
 
@@ -27,6 +28,7 @@ const init = (messaging, win) => {
   messaging.respond('import-export-run', (__, options) => {
     try {
       console.log('Import Export Run command received')
+      trackEvent('ImportExport', 'Start', options.importExport.type)
 
       console.error = error => {
         console.log(error)
@@ -65,17 +67,26 @@ const init = (messaging, win) => {
       return new Promise((resolve, reject) => {
         dumper.dump(function (error) {
           console.error = logError
-          if (error) return reject(false)
+          if (error) {
+            console.log(error)
+            trackEvent(
+              'ImportExport',
+              'Error',
+              get(error, 'message', 'Unknown')
+            )
+            return reject(false)
+          }
+
+          trackEvent('ImportExport', 'Finish', options.importExport.type)
           return resolve(true)
         })
       })
     } catch (e) {
       console.error = logError
       console.error(e)
-      messaging.send(
-        'dumper-error',
-        get(e, 'message', 'Error occured in main process')
-      )
+      const message = get(e, 'message', 'Error occured in main process')
+      messaging.send('dumper-error', message)
+      trackEvent('ImportExport', 'Error', message)
     }
   })
 }
