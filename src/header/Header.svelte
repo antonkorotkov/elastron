@@ -8,9 +8,9 @@
   import OnlineIndicator from './OnlineIndicator.svelte'
   import messanger from '../api/ipc-renderer'
 
-  let onHeaderDblClick = () => {
-    messanger.send('header-doubleclick')
-  }
+  const onHeaderDblClick = () => messanger.send('header-doubleclick')
+
+  const onDashboardClick = () => messanger.send('check-for-updates')
 
   const { open } = getContext('modal-window')
 
@@ -43,7 +43,12 @@
     <div class="logo item">
       <b>Elastron</b>
     </div>
-    <a class="item" href="/" class:active={$route.match.page == 'dashboard'}>
+    <a
+      class="item"
+      href="/"
+      class:active={$route.match.page == 'dashboard'}
+      on:click={onDashboardClick}
+    >
       Dashboard
     </a>
     <a class="item" href="/search" class:active={$route.match.page == 'search'}>

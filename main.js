@@ -108,5 +108,9 @@ app.whenReady().then(() => {
     return window.maximize()
   })
 
+  messaging.listen('check-for-updates', () => {
+    if (Math.floor(Math.random() * 10) > 7) updater.checkForUpdates()
+  })
+
   dumper.init(messaging, window)
 })
