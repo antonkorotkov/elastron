@@ -14,6 +14,7 @@ const init = window => {
   })
 
   autoUpdater.setFeedURL({
+    host: null,
     provider: 'github',
     token: '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',
     owner: 'antonkorotkov',
