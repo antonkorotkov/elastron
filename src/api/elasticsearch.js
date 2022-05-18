@@ -1,4 +1,5 @@
 import axios from 'axios'
+import https from 'https'
 import get from 'lodash/get'
 import { buildConnectionHeaders, buildConnectionUrl } from '../utils/helpers'
 
@@ -11,6 +12,9 @@ export default class API {
     this.client = axios.create({
       baseURL: buildConnectionUrl(connection),
       headers: buildConnectionHeaders(connection),
+      httpsAgent: new https.Agent({
+        rejectUnauthorized: false,
+      }),
     })
   }
 

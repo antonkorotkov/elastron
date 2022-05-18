@@ -4,6 +4,7 @@
 
   import API from '../../../api/elasticsearch'
   import { isThemeToggleChecked } from '../../../utils/helpers'
+  import Headers from './Headers.svelte'
 
   const { dispatch, connection, history, app } = useStoreon(
     'connection',
@@ -83,12 +84,38 @@
     }
   }
 
+  const onHeaderAdd = () => {
+    dispatch('connection/update', {
+      headers: [...$connection.headers, { name: '', value: '' }],
+    })
+  }
+
+  const onHeaderDelete = index => {
+    let headers = [...$connection.headers]
+    headers.splice(index, 1)
+
+    dispatch('connection/update', {
+      headers,
+    })
+  }
+
+  const onHeaderChange = (data, value) => {
+    const { index, field } = data
+    let headers = [...$connection.headers]
+
+    headers[index][field] = value
+
+    dispatch('connection/update', {
+      headers,
+    })
+  }
+
   $: inverted = isThemeToggleChecked($app.theme)
 </script>
 
 <div class="ui header">Connection Settings</div>
 
-<div class="content">
+<div class="scrolling content">
   {#if $history.connection.length}
     <div class="ui form" class:inverted>
       <div class="fields">
@@ -188,7 +215,7 @@
               useAuth: e.target.checked,
             })}
         />
-        <label for="auth">Authentication</label>
+        <label for="auth">Basic Auth</label>
       </div>
     </div>
     {#if $connection.useAuth}
@@ -220,6 +247,28 @@
           />
         </div>
       </div>
+    {/if}
+    <div class="field">
+      <div class="ui checkbox">
+        <input
+          id="headers"
+          type="checkbox"
+          checked={$connection.addHeaders}
+          on:change={e =>
+            dispatch('connection/update', {
+              addHeaders: e.target.checked,
+            })}
+        />
+        <label for="headers">Add Headers</label>
+      </div>
+    </div>
+    {#if $connection.addHeaders}
+      <Headers
+        headers={$connection.headers}
+        onAdd={onHeaderAdd}
+        onChange={onHeaderChange}
+        onDelete={onHeaderDelete}
+      />
     {/if}
   </form>
 </div>
