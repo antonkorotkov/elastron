@@ -7,7 +7,6 @@ import replace from 'rollup-plugin-replace'
 import css from 'rollup-plugin-css-only'
 import autoPreprocess from 'svelte-preprocess'
 import json from '@rollup/plugin-json'
-import nodePolyfills from 'rollup-plugin-polyfill-node'
 
 const production = !process.env.ROLLUP_WATCH
 
@@ -20,7 +19,6 @@ export default {
     file: 'public/build/bundle.js',
   },
   plugins: [
-    nodePolyfills({ include: 'node_modules/https/*.js' }),
     json(),
 
     svelte({

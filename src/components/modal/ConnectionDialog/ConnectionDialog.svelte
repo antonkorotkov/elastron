@@ -156,7 +156,7 @@
     </div>
   {/if}
   <form
-    class="ui form"
+    class="ui form segment"
     class:inverted
     on:submit|preventDefault={save}
     id="connection-form"
@@ -296,5 +296,11 @@
 <style>
   #previous {
     margin-right: 1rem;
+  }
+
+  .ui.form.segment {
+    padding: 0;
+    border: 0;
+    box-shadow: none;
   }
 </style>
