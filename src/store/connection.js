@@ -18,6 +18,8 @@ export const connection = store => {
         useAuth: false,
         user: '',
         password: '',
+        addHeaders: false,
+        headers: [{ name: '', value: '' }],
       },
     }
   })
@@ -31,6 +33,8 @@ export const connection = store => {
         useAuth: false,
         user: '',
         password: '',
+        addHeaders: false,
+        headers: [],
       },
     }
   })

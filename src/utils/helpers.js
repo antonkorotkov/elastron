@@ -81,12 +81,21 @@ export const randomId = () => {
  * @param {*} connection
  */
 export const buildConnectionHeaders = connection => {
-  const { useAuth, user, password } = connection
+  const { useAuth, user, password, addHeaders, headers } = connection
+
+  let headersObject = {}
+
   if (useAuth) {
-    return {
-      Authorization: `Basic ${btoa(`${user}:${password}`)}`,
+    headersObject.Authorization = `Basic ${btoa(`${user}:${password}`)}`
+  }
+
+  if (addHeaders && headers.length) {
+    for (const header of headers) {
+      headersObject[header.name] = header.value
     }
   }
+
+  return headersObject
 }
 
 /**
