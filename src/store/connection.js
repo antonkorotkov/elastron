@@ -3,24 +3,26 @@ import ls from 'local-storage'
 import API from '../api/elasticsearch'
 import { trackEvent } from '../utils/analitycs'
 
+const initial = {
+  name: 'Local Server',
+  host: 'http://localhost',
+  port: '9200',
+  useAuth: false,
+  user: '',
+  password: '',
+  addHeaders: false,
+  headers: [{ name: '', value: '' }],
+}
+
 export const connection = store => {
   store.on('@init', () => {
     const connections = ls('connection') || []
 
     if (connections.length)
-      return { connection: connections[connections.length - 1] }
+      return { connection: {...initial, ...connections[connections.length - 1]} }
 
     return {
-      connection: {
-        name: 'Local Server',
-        host: 'http://localhost',
-        port: '9200',
-        useAuth: false,
-        user: '',
-        password: '',
-        addHeaders: false,
-        headers: [{ name: '', value: '' }],
-      },
+      connection: initial,
     }
   })
 
@@ -34,7 +36,7 @@ export const connection = store => {
         user: '',
         password: '',
         addHeaders: false,
-        headers: [],
+        headers: [{ name: '', value: '' }],
       },
     }
   })
