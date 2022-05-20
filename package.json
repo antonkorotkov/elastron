@@ -14,7 +14,7 @@
     "dist": "electron-builder -mw",
     "release-mac": "electron-builder -m --publish=onTagOrDraft",
     "release-win": "electron-builder -w --publish=onTagOrDraft",
-    "upgrade": "yarn upgrade-interactive --latest"
+    "upgrade-all": "yarn upgrade-interactive --latest"
   },
   "repository": "https://github.com/antonkorotkov/elastron",
   "keywords": [
