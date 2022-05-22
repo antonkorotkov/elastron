@@ -9,8 +9,13 @@ autoUpdater.autoDownload = false
 let notifyUpdateNotAvailable = false
 
 const init = window => {
-  autoUpdater.on('error', e => {
+  autoUpdater.on('error', async e => {
     trackEvent('Error', 'Update', e.message || 'no message')
+
+    await dialog.showMessageBox(window, {
+      title: 'Oops...',
+      message: `Could not automatically update the app because: ${e.message || 'unknown error'}. Please, consider downloading the new version from https://elastron.eney.solutions`,
+    })
   })
 
   autoUpdater.setFeedURL({
