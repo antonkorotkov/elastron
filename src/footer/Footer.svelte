@@ -16,17 +16,21 @@
 
 <footer class="ui segment" class:inverted>
   <div class="ui grid">
-    <div class="eight wide column left aligned">
+    <div class="twelve wide column left aligned">
       <span>Version {pkg.version}</span>
-      |
+      -
       <span>
         Made with {#if !inverted}&#x1F5A4{:else}&#x1F49B{/if} by
         <a href="https://github.com/antonkorotkov" target="_blank">
           @antonkorotkov
         </a>
       </span>
+      -
+      <span>
+        🇺🇦 Слава Україні! Смерть ворогам! Рускій воєний корабль, іді нахуй! 🇺🇦
+      </span>
     </div>
-    <div class="eight wide column right aligned">
+    <div class="four wide column right aligned">
       <div class="ui toggle checkbox theme-toggle">
         <input
           id="theme-mode-toggler"
