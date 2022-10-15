@@ -25,6 +25,9 @@
   "author": "Anton Korotkov",
   "license": "MIT",
   "build": {
+    "files": [
+      "!.env"
+    ],
     "appId": "com.elastron.www",
     "afterSign": "notarize.js",
     "mac": {
