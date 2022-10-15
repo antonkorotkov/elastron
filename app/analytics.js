@@ -1,6 +1,6 @@
 const { app } = require('electron')
 const ua = require('universal-analytics')
-const uuid = require('uuid/v4')
+const { v4: uuid } = require('uuid')
 const { JSONStorage } = require('node-localstorage')
 
 const nodeStorage = new JSONStorage(app.getPath('userData'))
