@@ -284,8 +284,6 @@ class Options {
       'output'
     )
 
-    console.log(_options)
-
     return _options
   }
 
@@ -309,7 +307,7 @@ class Options {
    */
   getHeaders(current, way) {
     try {
-      const currectInputHeaders = JSON.parse(current)
+      const currentInputHeaders = JSON.parse(current)
 
       const types = {
         input: this.getInputType(),
@@ -325,12 +323,12 @@ class Options {
             connection.password
           )
           return {
-            ...currectInputHeaders,
+            ...currentInputHeaders,
             ...authHeaderObject,
           }
         }
 
-        return currectInputHeaders
+        return currentInputHeaders
       }
 
       if (types[way] === 'remote-index') {
@@ -349,15 +347,14 @@ class Options {
             theConnection.password
           )
           return {
-            ...currectInputHeaders,
+            ...currentInputHeaders,
             ...authHeaderObject,
           }
         }
 
-        return currectInputHeaders
+        return currentInputHeaders
       }
     } catch (e) {
-      console.log(e)
       throw new Error(`Could not parse ${way} headers. Please use valid JSON.`)
     }
   }
