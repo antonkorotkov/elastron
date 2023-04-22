@@ -71,15 +71,6 @@ const createWindow = () => {
             },
           },
           {
-            label: 'Become a Patron 💛',
-            click: async () => {
-              const { shell } = require('electron')
-              await shell.openExternal(
-                'https://www.patreon.com/bePatron?u=60793577'
-              )
-            },
-          },
-          {
             label: 'Check For Updates',
             click: () => updater.checkForUpdates(true),
           },
