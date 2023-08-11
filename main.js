@@ -3,8 +3,9 @@ const { app, BrowserWindow, Menu } = require('electron')
 const pkg = require('./package.json')
 const { trackEvent } = require('./app/analytics')
 const updater = require('./app/updater')
-const messanger = require('./app/ipc-main')
+const messenger = require('./app/ipc-main')
 const dumper = require('./app/dumper/dumper')
+const elasticProxy = require('./app/requests-node-proxy');
 
 require('@electron/remote/main').initialize()
 global['trackEvent'] = trackEvent
@@ -84,7 +85,7 @@ const createWindow = () => {
 
 app.whenReady().then(() => {
   const window = createWindow()
-  const messaging = messanger(window)
+  const messaging = messenger(window)
 
   require('@electron/remote/main').enable(window.webContents)
 
@@ -104,4 +105,5 @@ app.whenReady().then(() => {
   })
 
   dumper.init(messaging, window)
+  elasticProxy.init(messaging)
 })

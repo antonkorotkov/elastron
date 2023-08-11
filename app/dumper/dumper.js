@@ -4,7 +4,7 @@ const { Options } = require('./Options')
 const get = require('lodash/get')
 const isArray = require('lodash/isArray')
 const { trackEvent } = require('../analytics')
-
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 const logError = console.error
 
 const init = (messaging, win) => {

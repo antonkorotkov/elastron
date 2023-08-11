@@ -1,6 +1,5 @@
-import axios from 'axios'
 import get from 'lodash/get'
-import { buildConnectionHeaders, buildConnectionUrl } from '../utils/helpers'
+import ipcRenderer from '../api/ipc-renderer'
 
 export default class API {
   /**
@@ -8,10 +7,14 @@ export default class API {
    * @param {*} connection
    */
   constructor(connection) {
-    this.client = axios.create({
-      baseURL: buildConnectionUrl(connection),
-      headers: buildConnectionHeaders(connection),
-    })
+    ipcRenderer.run('elastic-request-client-init', connection);
+
+    this.client = {
+      get: (...args) => ipcRenderer.run('elastic-request', 'get', ...args),
+      post: (...args) => ipcRenderer.run('elastic-request', 'post', ...args),
+      put: (...args) => ipcRenderer.run('elastic-request', 'put', ...args),
+      delete: (...args) => ipcRenderer.run('elastic-request', 'delete', ...args),
+    };
   }
 
   /**

@@ -75,34 +75,3 @@ export const getIndexListFromIndexData = indexData => {
 export const randomId = () => {
   return Math.random().toString()
 }
-
-/**
- *
- * @param {*} connection
- */
-export const buildConnectionHeaders = connection => {
-  const { useAuth, user, password, addHeaders, headers } = connection
-
-  let headersObject = {}
-
-  if (useAuth) {
-    headersObject.Authorization = `Basic ${btoa(`${user}:${password}`)}`
-  }
-
-  if (addHeaders && headers.length) {
-    for (const header of headers) {
-      headersObject[header.name] = header.value
-    }
-  }
-
-  return headersObject
-}
-
-/**
- *
- * @param {*} connection
- */
-export const buildConnectionUrl = connection => {
-  const { host, port } = connection
-  return `${host.replace(/\/+$/, '')}${Number(port) > 0 ? `:${port}` : ''}`
-}
