@@ -81,8 +81,7 @@
         "percent-to-hex": "^1.0.1",
         "sirv-cli": "^2.0.2",
         "storeon": "^3.1.5",
-        "svelte-select": "^5.8.3",
-        "universal-analytics": "^0.5.3"
+        "svelte-select": "^5.8.3"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^28.0.0",
