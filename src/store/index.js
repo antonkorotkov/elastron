@@ -28,6 +28,6 @@ export const store = createStoreon([
   allocation,
   shards,
   index,
-  storeonDevtools,
   importExport,
+  storeonDevtools
 ])

@@ -2,8 +2,6 @@ import API from '../api/elasticsearch'
 import get from 'lodash/get'
 import isEmpty from 'lodash/isEmpty'
 
-import { trackEvent } from '../utils/analitycs'
-
 export const search = store => {
   store.on('@init', () => ({
     search: {
@@ -56,7 +54,6 @@ export const search = store => {
 
   store.on('search/documents/reindex', async (state, data) => {
     try {
-      trackEvent('Search', 'Update Document')
       store.dispatch('search/loading', true)
 
       const { _index, _type, _id } = state.search.editDoc
@@ -104,13 +101,11 @@ export const search = store => {
           get(error, 'response.data.error.reason', error.message)
         ),
       })
-      trackEvent('Error', 'Search Update Document', error.message || '')
     }
   })
 
   store.on('search/documents/update', async (state, data) => {
     try {
-      trackEvent('Search', 'Update Document')
       store.dispatch('search/loading', true)
 
       const { _index, _type, _id } = state.search.editDoc
@@ -158,13 +153,11 @@ export const search = store => {
           get(error, 'response.data.error.reason', error.message)
         ),
       })
-      trackEvent('Error', 'Search Update Document', error.message || '')
     }
   })
 
   store.on('search/documents/delete', async (state, index) => {
     try {
-      trackEvent('Search', 'Delete Document')
       store.dispatch('search/loading', true)
 
       const document = get(state.search.results, index, false)
@@ -206,7 +199,6 @@ export const search = store => {
           get(error, 'response.data.error.reason', error.message)
         ),
       })
-      trackEvent('Error', 'Search Delete Document', error.message || '')
     }
   })
 
@@ -228,8 +220,6 @@ export const search = store => {
 
   store.on('search/run', async state => {
     try {
-      trackEvent('Search', 'Run', state.search.type)
-
       store.dispatch('search/loading', true)
 
       const buildSearchParams = () => ({
@@ -295,7 +285,6 @@ export const search = store => {
           get(error, 'response.data.error.reason', error.message)
         ),
       })
-      trackEvent('Error', 'Search', error.message)
     }
   })
 }

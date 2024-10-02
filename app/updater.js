@@ -1,6 +1,5 @@
 const { autoUpdater } = require('electron-updater')
 
-const { trackEvent } = require('./analytics')
 const pkg = require('../package.json')
 const { dialog } = require('electron')
 
@@ -10,8 +9,6 @@ let notifyUpdateNotAvailable = false
 
 const init = window => {
   autoUpdater.on('error', async e => {
-    trackEvent('Error', 'Update', e.message || 'no message')
-
     await dialog.showMessageBox(window, {
       type: 'error',
       title: 'Oops...',
@@ -28,8 +25,6 @@ const init = window => {
   })
 
   autoUpdater.on('update-available', async () => {
-    trackEvent('App', 'Update Available', `${process.platform}:${pkg.version}`)
-
     const answer = await dialog.showMessageBox(window, {
       type: 'info',
       title: 'Found Updates',
@@ -41,12 +36,6 @@ const init = window => {
   })
 
   autoUpdater.on('update-not-available', async () => {
-    trackEvent(
-      'App',
-      'Update Not Available',
-      `${process.platform}:${pkg.version}`
-    )
-
     if (!notifyUpdateNotAvailable) return
 
     await dialog.showMessageBox(window, {
@@ -56,8 +45,6 @@ const init = window => {
   })
 
   autoUpdater.on('update-downloaded', async () => {
-    trackEvent('App', 'Update Downloaded', `${process.platform}:${pkg.version}`)
-
     await dialog.showMessageBox(window, {
       title: 'Install Updates',
       message: 'Updates downloaded. Application will be restarted.',
@@ -69,7 +56,6 @@ const init = window => {
 const checkForUpdates = (notify = false) => {
   notifyUpdateNotAvailable = notify
   autoUpdater.checkForUpdates()
-  trackEvent('App', 'Update Check', `${process.platform}:${pkg.version}`)
 }
 
 module.exports = { init, checkForUpdates }

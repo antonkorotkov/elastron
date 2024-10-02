@@ -1,7 +1,6 @@
 import ls from 'local-storage'
 
 import API from '../api/elasticsearch'
-import { trackEvent } from '../utils/analitycs'
 
 const initial = {
   name: 'Local Server',
@@ -51,7 +50,6 @@ export const connection = store => {
         store.dispatch('server/update', {
           version: test.version,
         })
-        trackEvent('ElasticSearch', 'Version', test.version.number || 'Unknown')
       } else {
         store.dispatch('disconnected')
       }

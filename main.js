@@ -1,14 +1,12 @@
 const { app, BrowserWindow, Menu } = require('electron')
 
 const pkg = require('./package.json')
-const { trackEvent } = require('./app/analytics')
 const updater = require('./app/updater')
 const messenger = require('./app/ipc-main')
 const dumper = require('./app/dumper/dumper')
 const elasticProxy = require('./app/requests-node-proxy');
 
 require('@electron/remote/main').initialize()
-global['trackEvent'] = trackEvent
 
 const createWindow = () => {
     // Create the browser window.
@@ -25,11 +23,9 @@ const createWindow = () => {
             enableRemoteModule: true,
             contextIsolation: false,
             nativeWindowOpen: true,
-            devTools: process.env.ENV === 'development',
+            devTools: true //process.env.ENV === 'development',
         },
     })
-
-    trackEvent('App', 'Open', `${process.platform}:${pkg.version}`)
 
     // and load the index.html of the app.
     mainWindow.loadFile('public/index.html')
@@ -39,7 +35,6 @@ const createWindow = () => {
 
     mainWindow.webContents.on('new-window', function (e, url) {
         e.preventDefault()
-        trackEvent('App', 'Open Link', url)
         require('electron').shell.openExternal(url)
     })
 

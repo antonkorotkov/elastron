@@ -1,7 +1,5 @@
 import API from '../../api/elasticsearch'
 
-import { trackEvent } from '../../utils/analitycs'
-
 export const shards = store => {
   store.on('@init', () => ({
     shards: {
@@ -55,7 +53,6 @@ export const shards = store => {
       store.dispatch('elasticsearch/shards/update', {
         loading: false,
       })
-      trackEvent('Error', 'Shards', error.message)
     }
   })
 

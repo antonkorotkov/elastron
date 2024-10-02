@@ -1,8 +1,6 @@
 import API from '../api/elasticsearch'
 import get from 'lodash/get'
 
-import { trackEvent } from '../utils/analitycs'
-
 export const server = store => {
   store.on('@init', () => {
     return {
@@ -16,8 +14,6 @@ export const server = store => {
     try {
       const api = new API(state.connection)
       const { version } = await api.test()
-
-      trackEvent('ElasticSearch', 'Version', version.number || 'Unknown')
 
       store.dispatch('server/update', {
         version,

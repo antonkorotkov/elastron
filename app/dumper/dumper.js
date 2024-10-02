@@ -3,7 +3,6 @@ const { dialog } = require('electron')
 const { Options } = require('./Options')
 const get = require('lodash/get')
 const isArray = require('lodash/isArray')
-const { trackEvent } = require('../analytics')
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 const logError = console.error
 
@@ -25,8 +24,6 @@ const init = (messaging, win) => {
 
   messaging.respond('import-export-run', (__, options) => {
     try {
-      trackEvent('ImportExport', 'Start', options.importExport.type)
-
       console.error = error => {
         if (get(error, 'error.reason'))
           messaging.send('dumper-error', get(error, 'error.reason'))
@@ -64,15 +61,8 @@ const init = (messaging, win) => {
         dumper.dump(function (error) {
           console.error = logError
           if (error) {
-            trackEvent(
-              'ImportExport',
-              'Error',
-              get(error, 'message', 'Unknown')
-            )
             return reject(false)
           }
-
-          trackEvent('ImportExport', 'Finish', options.importExport.type)
           return resolve(true)
         })
       })
@@ -80,7 +70,6 @@ const init = (messaging, win) => {
       console.error = logError
       const message = get(e, 'message', 'Error occured in main process')
       messaging.send('dumper-error', message)
-      trackEvent('ImportExport', 'Error', message)
     }
   })
 }

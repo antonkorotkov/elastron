@@ -2,8 +2,6 @@ import ls from 'local-storage'
 import some from 'lodash/some'
 import isEqual from 'lodash/isEqual'
 
-import { trackEvent } from '../utils/analitycs'
-
 export const history = store => {
   store.on('@init', () => ({
     history: {
@@ -13,8 +11,6 @@ export const history = store => {
 
   store.on('history/connection/clear', state => {
     ls('connection', [])
-
-    trackEvent('History', 'Clear Connections')
 
     return {
       history: {
@@ -35,8 +31,6 @@ export const history = store => {
     savedConnections.push(connection)
     ls('connection', savedConnections)
 
-    trackEvent('History', 'New Connection', `Total: ${savedConnections.length}`)
-
     return {
       history: {
         ...state.history,
@@ -56,12 +50,6 @@ export const history = store => {
       return !isEqual(c, connection)
     })
     ls('connection', savedConnections)
-
-    trackEvent(
-      'History',
-      'Removed Connection',
-      `Total: ${savedConnections.length}`
-    )
 
     return {
       history: {

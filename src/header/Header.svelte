@@ -6,11 +6,11 @@
 
   import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
   import OnlineIndicator from './OnlineIndicator.svelte'
-  import messanger from '../api/ipc-renderer'
+  import messenger from '../api/ipc-renderer'
 
-  const onHeaderDblClick = () => messanger.send('header-doubleclick')
+  const onHeaderDblClick = () => messenger.send('header-doubleclick')
 
-  const onDashboardClick = () => messanger.send('check-for-updates')
+  const onDashboardClick = () => messenger.send('check-for-updates')
 
   const { open } = getContext('modal-window')
 
@@ -39,9 +39,9 @@
 </script>
 
 <header on:dblclick={onHeaderDblClick}>
-  <div style="-webkit-app-region: drag" class="ui menu inverted fixed">
-    <div class="logo item">
-      <b>Elastron</b>
+  <div class="ui menu inverted fixed">
+    <div class="logo item" style="-webkit-app-region: drag;">
+      <b style="cursor: move;">Elastron</b>
     </div>
     <a
       class="item"

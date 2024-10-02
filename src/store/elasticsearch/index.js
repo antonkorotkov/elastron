@@ -1,7 +1,5 @@
 import API from '../../api/elasticsearch'
 
-import { trackEvent } from '../../utils/analitycs'
-
 export const index = store => {
   store.on('@init', () => ({
     index: {
@@ -70,7 +68,6 @@ export const index = store => {
         message: error.message,
       })
       store.dispatch('elasticsearch/index/loading', false)
-      trackEvent('Error', 'Index', error.message)
     }
   })
 }
