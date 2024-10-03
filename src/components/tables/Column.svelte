@@ -1,5 +1,5 @@
 <script>
-  export let column = ''
+	export let column = ''
 </script>
 
 {column.toUpperCase()}

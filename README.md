@@ -2,7 +2,9 @@
 
 Desktop Elasticsearch client.
 
-The project is NOT actively maintained. It has bugs, smelling code, and ugly code formatting. 🤓 So, please, feel free to create issues, PRs, and maybe I will find some time to keep this project alive.
+The project is NOT actively maintained. It has bugs, smelling code, and ugly code formatting. 🤓
+
+So, please, feel free to create issues, PRs, and maybe I will find some time to keep this project alive.
 
 ### Install
 
@@ -14,7 +16,7 @@ yarn
 yarn build
 ```
 
-Development in browser: 
+Development in browser: (no interaction with real elastic server)
 
 ```sh
 yarn dev
@@ -29,14 +31,8 @@ yarn start
 App build:
 
 ```sh
-yarn dist-mac #for mac
-yarn dist-win #for windows
-yarn dist     #for both
-```
-
-App relase
-
-```sh
-GH_TOKEN=<github token> yarn release-mac
-GH_TOKEN=<github token> yarn release-win
+yarn dist-mac
+yarn dist-win
+yarn dist-linux
+yarn dist #for all
 ```

@@ -1,5 +1,5 @@
 <script>
-  export let notification
+	export let notification
 </script>
 
 <div class="header">Success</div>

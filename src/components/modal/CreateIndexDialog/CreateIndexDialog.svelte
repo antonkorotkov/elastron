@@ -1,138 +1,145 @@
 <script>
-  import { useStoreon } from '@storeon/svelte'
-  import { onMount, getContext } from 'svelte'
-  import JSONEditor from 'jsoneditor'
+	import { useStoreon } from '@storeon/svelte'
+	import { onMount, getContext } from 'svelte'
+	import JSONEditor from 'jsoneditor'
 
-  import API from '../../../api/elasticsearch'
-  import {
-    isThemeToggleChecked,
-    validateIndexName,
-  } from '../../../utils/helpers.js'
+	import API from '../../../api/elasticsearch'
+	import {
+		isThemeToggleChecked,
+		validateIndexName,
+	} from '../../../utils/helpers.js'
 
-  const { close } = getContext('modal-window')
-  const { dispatch, connection, indices, app } = useStoreon(
-    'connection',
-    'indices',
-    'app'
-  )
+	const { close } = getContext('modal-window')
+	const { dispatch, connection, indices, app } = useStoreon(
+		'connection',
+		'indices',
+		'app'
+	)
 
-  export let onCancel = () => {}
+	export let onCancel = () => {}
 
-  let indexName = '',
-    isLoading = false,
-    canCreate = true,
-    settingsEditor,
-    sEditor
+	let indexName = '',
+		isLoading = false,
+		canCreate = true,
+		settingsEditor,
+		sEditor
 
-  let _indices =
-    $indices.data.map(
-      item =>
-        item[
-          $indices.columns.reduce(
-            (i, item, index) => (item === 'index' ? index : i),
-            0
-          )
-        ]
-    ) || []
+	let _indices =
+		$indices.data.map(
+			item =>
+				item[
+					$indices.columns.reduce(
+						(i, item, index) => (item === 'index' ? index : i),
+						0
+					)
+				]
+		) || []
 
-  onMount(() => {
-    document.getElementById('index-name').focus()
+	onMount(() => {
+		document.getElementById('index-name').focus()
 
-    if (settingsEditor) {
-      sEditor = new JSONEditor(
-        settingsEditor,
-        {
-          mode: 'code',
-          onChange: () => {
-            try {
-              sEditor.get()
-              canCreate = true
-            } catch (e) {
-              canCreate = false
-            }
-          },
-        },
-        {}
-      )
-      sEditor.aceEditor.setOptions({ maxLines: 32 })
-    }
-  })
+		if (settingsEditor) {
+			sEditor = new JSONEditor(
+				settingsEditor,
+				{
+					mode: 'code',
+					onChange: () => {
+						try {
+							sEditor.get()
+							canCreate = true
+						} catch (e) {
+							canCreate = false
+						}
+					},
+				},
+				{}
+			)
+			sEditor.aceEditor.setOptions({ maxLines: 32 })
+		}
+	})
 
-  const _onCancel = () => {
-    onCancel()
-    close()
-  }
+	const _onCancel = () => {
+		onCancel()
+		close()
+	}
 
-  const create = async () => {
-    isLoading = true
+	const create = async () => {
+		isLoading = true
 
-    try {
-      const api = new API($connection)
-      const result = await api.createIndex(indexName, sEditor.get())
+		try {
+			const api = new API($connection)
+			const result = await api.createIndex(indexName, sEditor.get())
 
-      if (result.acknowledged) {
-        dispatch('notification/add', {
-          type: 'success',
-          message: `Index ${indexName} has been created`,
-        })
-        dispatch('elasticsearch/indices/fetch')
-        dispatch('elasticsearch/shards/fetch')
-        dispatch('elasticsearch/allocation/fetch')
-        close()
-      } else {
-        dispatch('notification/add', {
-          type: 'error',
-          message: `Something went wrong while creating the index`,
-        })
-      }
-    } catch (e) {
-      dispatch('notification/add', {
-        type: 'error',
-        message: e.message,
-      })
-    }
+			if (result.acknowledged) {
+				dispatch('notification/add', {
+					type: 'success',
+					message: `Index ${indexName} has been created`,
+				})
+				dispatch('elasticsearch/indices/fetch')
+				dispatch('elasticsearch/shards/fetch')
+				dispatch('elasticsearch/allocation/fetch')
+				close()
+			} else {
+				dispatch('notification/add', {
+					type: 'error',
+					message: `Something went wrong while creating the index`,
+				})
+			}
+		} catch (e) {
+			dispatch('notification/add', {
+				type: 'error',
+				message: e.message,
+			})
+		}
 
-    isLoading = false
-  }
+		isLoading = false
+	}
 
-  const isIndexNameAllowed = name =>
-    validateIndexName(name) && !_indices.includes(name)
+	const isIndexNameAllowed = name =>
+		validateIndexName(name) && !_indices.includes(name)
 
-  $: inverted = isThemeToggleChecked($app.theme)
+	$: inverted = isThemeToggleChecked($app.theme)
 </script>
 
 <div class="ui header">Create New Index</div>
 
 <div class="content">
-  <form
-    class="ui form"
-    class:inverted
-    on:submit|preventDefault={create}
-    id="create-index-form"
-  >
-    <div class="field">
-      <label for="index-name">Index Name</label>
-      <input type="text" id="index-name" bind:value={indexName} />
-    </div>
-    <div class="field">
-      <label for="settings-editor">Index Configuration</label>
-      <div id="settings-editor" bind:this={settingsEditor} />
-    </div>
-  </form>
+	<form
+		class="ui form"
+		class:inverted
+		on:submit|preventDefault={create}
+		id="create-index-form"
+	>
+		<div class="field">
+			<label for="index-name">Index Name</label>
+			<input type="text" id="index-name" bind:value={indexName} />
+		</div>
+		<div class="field">
+			<label for="settings-editor">Index Configuration</label>
+			<div id="settings-editor" bind:this={settingsEditor} />
+		</div>
+	</form>
 </div>
 
 <div class="actions">
-  <div class="ui black deny button right" class:inverted on:click={_onCancel}>
-    Cancel
-  </div>
-  <button
-    class:inverted
-    disabled={!isIndexNameAllowed(indexName) || isLoading || !canCreate}
-    type="submit"
-    class="ui green right button"
-    class:loading={isLoading}
-    form="create-index-form"
-  >
-    Create
-  </button>
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div
+		class="ui black deny button right"
+		class:inverted
+		on:click={_onCancel}
+		role="button"
+		tabindex="0"
+	>
+		Cancel
+	</div>
+	<button
+		class:inverted
+		disabled={!isIndexNameAllowed(indexName) || isLoading || !canCreate}
+		type="submit"
+		class="ui green right button"
+		class:loading={isLoading}
+		form="create-index-form"
+	>
+		Create
+	</button>
 </div>
