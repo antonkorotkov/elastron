@@ -47,7 +47,7 @@
 		<div class="edit-doc">
 			Editing: &nbsp;
 			<span class="ui label">
-				{$search.editDoc._type}:{$search.editDoc._id}
+				{$search.editDoc._type ?? 'doc'}:{$search.editDoc._id}
 			</span>
 			of index
 			<span class="ui label">{$search.editDoc._index}</span>

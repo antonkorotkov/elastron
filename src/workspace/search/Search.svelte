@@ -249,6 +249,7 @@
 				<div class="field themed" id="indexSelect">
 					<label for="index">Index</label>
 					<IndexSelector
+						containerStyle="min-width:300px;"
 						allowCustom={true}
 						currentlySelected={$search.index}
 						onSelect={e => onStateFieldChange({ index: e.detail.value })}

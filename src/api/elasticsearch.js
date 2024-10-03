@@ -139,7 +139,7 @@ export default class API {
 	 * @param {*} id
 	 * @param {*} params
 	 */
-	async deleteDocument(index, type, id, params = {}) {
+	async deleteDocument(index, type = '_doc', id, params = {}) {
 		const response = await this.client.delete(`${index}/${type}/${id}`, {
 			params,
 		})
@@ -152,10 +152,10 @@ export default class API {
 	 * @param {*} id
 	 * @param {*} fields
 	 */
-	async updateDocument(index, type, id, fields = {}) {
+	async updateDocument(index, type = '_doc', id, fields = {}) {
 		try {
 			const response = await this.client.post(
-				`${index}/${type}/${id}/_update?refresh=true`,
+				`${index}/_update/${id}?refresh=true`,
 				{
 					doc: fields,
 				}
@@ -172,7 +172,7 @@ export default class API {
 	 * @param {*} id
 	 * @param {*} fields
 	 */
-	async indexDocument(index, type, id, fields = {}) {
+	async indexDocument(index, type = '_doc', id, fields = {}) {
 		const response = await this.client.put(`${index}/${type}/${id}`, fields)
 		return response.data
 	}

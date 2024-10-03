@@ -39,7 +39,7 @@
 	<div class="ui segment top-bar" class:inverted>
 		<IndexSelector
 			allowClear={false}
-			containerStyle="display:inline-block;min-width:100px;"
+			containerStyle="display:inline-block;min-width:400px;"
 			currentlySelected={$index.selected}
 			isDisabled={$index.loading}
 			onSelect={e => {

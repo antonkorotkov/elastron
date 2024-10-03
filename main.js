@@ -23,15 +23,12 @@ const createWindow = () => {
 			enableRemoteModule: true,
 			contextIsolation: false,
 			nativeWindowOpen: true,
-			devTools: true //process.env.ENV === 'development',
+			devTools: true
 		},
 	})
 
 	// and load the index.html of the app.
 	mainWindow.loadFile('public/index.html')
-
-	// Open the DevTools.
-	mainWindow.webContents.openDevTools()
 
 	mainWindow.webContents.on('new-window', function (e, url) {
 		e.preventDefault()
@@ -70,6 +67,12 @@ const createWindow = () => {
 						label: 'Check For Updates',
 						click: () => updater.checkForUpdates(true),
 					},
+					{
+						label: 'Debug',
+						click: () => {
+							mainWindow.webContents.openDevTools()
+						}
+					}
 				],
 			},
 		])
