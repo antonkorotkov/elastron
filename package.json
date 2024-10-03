@@ -11,9 +11,9 @@
         "start:prod": "electron .",
         "dist-mac": "electron-builder -m",
         "dist-win": "electron-builder -w",
-        "dist": "electron-builder -mw",
-        "release-mac": "electron-builder -m --publish=onTagOrDraft",
-        "release-win": "electron-builder -w --publish=onTagOrDraft",
+        "dist-linux": "electron-builder -l",
+        "dist": "electron-builder -mwl",
+        "release": "electron-builder -mwl --publish=onTagOrDraft",
         "upgrade-all": "yarn upgrade-interactive --latest"
     },
     "repository": "https://github.com/antonkorotkov/elastron",
@@ -46,11 +46,11 @@
             "publish": {
                 "provider": "github",
                 "repo": "elastron",
-                "owner": "antonkorotkov",
-                "private": true
+                "owner": "antonkorotkov"
             }
         },
         "win": {
+            "icon": "public/icon.png",
             "target": [
                 {
                     "target": "nsis",
@@ -63,8 +63,16 @@
             "publish": {
                 "provider": "github",
                 "repo": "elastron",
-                "owner": "antonkorotkov",
-                "private": true
+                "owner": "antonkorotkov"
+            }
+        },
+        "linux": {
+            "icon": "public/icon.png",
+            "category": "Utility",
+            "publish": {
+                "provider": "github",
+                "repo": "elastron",
+                "owner": "antonkorotkov"
             }
         }
     },
