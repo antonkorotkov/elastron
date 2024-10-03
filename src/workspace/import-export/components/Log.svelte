@@ -1,9 +1,9 @@
 <script>
-  import LogControls from './LogControls.svelte'
-  import LogOutput from './LogOutput.svelte'
+	import LogControls from './LogControls.svelte'
+	import LogOutput from './LogOutput.svelte'
 </script>
 
 <div class="log">
-  <LogControls />
-  <LogOutput />
+	<LogControls />
+	<LogOutput />
 </div>

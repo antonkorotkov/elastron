@@ -1,25 +1,25 @@
 <script>
-  import { useStoreon } from '@storeon/svelte'
+	import { useStoreon } from '@storeon/svelte'
 
-  import Notification from './Notification.svelte'
+	import Notification from './Notification.svelte'
 
-  const { notifications } = useStoreon('notifications')
+	const { notifications } = useStoreon('notifications')
 </script>
 
 {#if $notifications.length}
-  <div class="notifications">
-    {#each $notifications as notification (notification.id)}
-      <Notification {notification} />
-    {/each}
-  </div>
+	<div class="notifications">
+		{#each $notifications as notification (notification.id)}
+			<Notification {notification} />
+		{/each}
+	</div>
 {/if}
 
 <style>
-  .notifications {
-    position: fixed;
-    top: 4rem;
-    right: 1rem;
-    width: 30rem;
-    z-index: 1001;
-  }
+	.notifications {
+		position: fixed;
+		top: 4rem;
+		right: 1rem;
+		width: 30rem;
+		z-index: 1001;
+	}
 </style>

@@ -1,48 +1,50 @@
 <script>
-  import { fly } from 'svelte/transition'
-  import { useStoreon } from '@storeon/svelte'
-  import { onMount } from 'svelte'
+	import { fly } from 'svelte/transition'
+	import { useStoreon } from '@storeon/svelte'
+	import { onMount } from 'svelte'
 
-  import Error from './Error.svelte'
-  import Success from './Success.svelte'
+	import Error from './Error.svelte'
+	import Success from './Success.svelte'
 
-  const { dispatch } = useStoreon()
+	const { dispatch } = useStoreon()
 
-  export let notification
-  let timeout
+	export let notification
+	let timeout
 
-  const scheduleHide = () => {
-    timeout = setTimeout(() => {
-      dispatch('notification/delete', notification.id)
-    }, 5000)
-  }
+	const scheduleHide = () => {
+		timeout = setTimeout(() => {
+			dispatch('notification/delete', notification.id)
+		}, 5000)
+	}
 
-  const onNotificationMouseEnter = () => {
-    clearTimeout(timeout)
-  }
+	const onNotificationMouseEnter = () => {
+		clearTimeout(timeout)
+	}
 
-  onMount(scheduleHide)
+	onMount(scheduleHide)
 </script>
 
+<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
 <div
-  on:click={() => dispatch('notification/delete', notification.id)}
-  on:mouseenter={onNotificationMouseEnter}
-  on:mouseleave={scheduleHide}
-  class="ui message"
-  class:negative={notification.type === 'error'}
-  class:positive={notification.type === 'success'}
-  transition:fly={{ x: 500, duration: 500 }}
+	on:click={() => dispatch('notification/delete', notification.id)}
+	on:mouseenter={onNotificationMouseEnter}
+	on:mouseleave={scheduleHide}
+	class="ui message"
+	class:negative={notification.type === 'error'}
+	class:positive={notification.type === 'success'}
+	transition:fly={{ x: 500, duration: 500 }}
+	role="alert"
 >
-  {#if notification.type === 'error'}
-    <Error {notification} />
-  {/if}
-  {#if notification.type === 'success'}
-    <Success {notification} />
-  {/if}
+	{#if notification.type === 'error'}
+		<Error {notification} />
+	{/if}
+	{#if notification.type === 'success'}
+		<Success {notification} />
+	{/if}
 </div>
 
 <style>
-  .message {
-    cursor: pointer;
-  }
+	.message {
+		cursor: pointer;
+	}
 </style>

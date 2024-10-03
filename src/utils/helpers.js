@@ -3,21 +3,21 @@
  * @param {*} size
  */
 export const humanStoreSizeToPseudoBytes = size => {
-  const multipliers = {
-    b: 1,
-    kb: 1000,
-    mb: Math.pow(1000, 2),
-    gb: Math.pow(1000, 3),
-    tb: Math.pow(1000, 4),
-  }
+	const multipliers = {
+		b: 1,
+		kb: 1000,
+		mb: Math.pow(1000, 2),
+		gb: Math.pow(1000, 3),
+		tb: Math.pow(1000, 4),
+	}
 
-  if (typeof size !== 'string') return size
+	if (typeof size !== 'string') return size
 
-  for (let i in multipliers) {
-    const [_, sizeValue] = new RegExp(`^([0-9\.]+?)${i}$`).exec(size) || []
+	for (let i in multipliers) {
+		const [_, sizeValue] = new RegExp(`^([0-9\.]+?)${i}$`).exec(size) || []
 
-    if (sizeValue) return parseFloat(sizeValue) * multipliers[i]
-  }
+		if (sizeValue) return parseFloat(sizeValue) * multipliers[i]
+	}
 }
 
 /**
@@ -25,7 +25,7 @@ export const humanStoreSizeToPseudoBytes = size => {
  * @param {*} indexName
  */
 export const validateIndexName = indexName => {
-  return /^[^-_+ A-Z:\.][a-z0-9\-]*$/.test(indexName)
+	return /^[^-_+ A-Z:\.][a-z0-9\-]*$/.test(indexName)
 }
 
 /**
@@ -35,12 +35,12 @@ export const validateIndexName = indexName => {
  * @returns
  */
 export const filterArrayBy = (data, search) =>
-  data.filter(item => {
-    for (let col of item) {
-      if (col.toLowerCase().indexOf(search.toLowerCase()) > -1) return true
-    }
-    return false
-  })
+	data.filter(item => {
+		for (let col of item) {
+			if (col.toLowerCase().indexOf(search.toLowerCase()) > -1) return true
+		}
+		return false
+	})
 
 /**
  *
@@ -48,7 +48,7 @@ export const filterArrayBy = (data, search) =>
  * @returns
  */
 export const isThemeToggleChecked = theme => {
-  return theme === 'dark' ? true : false
+	return theme === 'dark' ? true : false
 }
 
 /**
@@ -57,15 +57,9 @@ export const isThemeToggleChecked = theme => {
  * @returns
  */
 export const getIndexListFromIndexData = indexData => {
-  return indexData.data.map(
-    item =>
-      item[
-        indexData.columns.reduce(
-          (i, item, index) => (item === 'index' ? index : i),
-          0
-        )
-      ]
-  )
+	return indexData.data.map(
+		item => item[indexData.columns.reduce((i, item, index) => (item === 'index' ? index : i), 0)]
+	)
 }
 
 /**
@@ -73,5 +67,5 @@ export const getIndexListFromIndexData = indexData => {
  * @returns
  */
 export const randomId = () => {
-  return Math.random().toString()
+	return Math.random().toString()
 }

@@ -16,18 +16,18 @@ import { index } from './elasticsearch/index'
 import { importExport } from './import-export'
 
 export const store = createStoreon([
-  app,
-  server,
-  internet,
-  history,
-  connection,
-  routes,
-  notifications,
-  search,
-  indices,
-  allocation,
-  shards,
-  index,
-  importExport,
-  storeonDevtools
+	app,
+	server,
+	internet,
+	history,
+	connection,
+	routes,
+	notifications,
+	search,
+	indices,
+	allocation,
+	shards,
+	index,
+	importExport,
+	storeonDevtools
 ])
