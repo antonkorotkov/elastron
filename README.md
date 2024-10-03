@@ -2,7 +2,7 @@
 
 Desktop Elasticsearch client.
 
-The project is NOT actively maintained. It has bugs, smelling code, and ugly code formatting. 🤓
+The project is NOT actively maintained. It has bugs, smelling code, and ugly code formatting. 🤓 And it has no tests.
 
 So, please, feel free to create issues, PRs, and maybe I will find some time to keep this project alive.
 
