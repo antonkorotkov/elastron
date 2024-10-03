@@ -1,4 +1,4 @@
-// Not notarize for now.
+// Sorry, I don't want to pay for this. To open on mac use open-anyway.
 
 // require('dotenv').config()
 // const { notarize } = require('electron-notarize')
