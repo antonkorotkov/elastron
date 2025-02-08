@@ -1,7 +1,6 @@
-<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
 <script>
 	import JSONEditor from 'jsoneditor'
-	import { onMount, onDestroy, afterUpdate, getContext } from 'svelte'
+	import { onMount, onDestroy } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import get from 'lodash/get'
 	import pick from 'lodash/pick'
@@ -40,8 +39,8 @@
 	]
 
 	let settingsPreviewEditor, spEditor
-	let isLoading = false,
-		canUpdate = true
+	let isLoading = $state(false),
+		canUpdate = $state(true)
 
 	const refreshDashboard = () => {
 		dispatch('elasticsearch/indices/fetch')
@@ -82,7 +81,7 @@
 		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
 	})
 
-	afterUpdate(() => {
+	$effect(() => {
 		const settings = get(
 			$index.info,
 			[$index.selected, $index.selected, 'settings'],
@@ -143,7 +142,7 @@
 	<div class="ui tiny buttons">
 		<button
 			class="ui green basic button"
-			on:click={e => onUpdateSettingsClick($index.selected)}
+			onclick={e => onUpdateSettingsClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading || !canUpdate}
 		>

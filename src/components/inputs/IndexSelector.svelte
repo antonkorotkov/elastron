@@ -3,6 +3,7 @@
 	import { useStoreon } from '@storeon/svelte'
 	import { getIndexListFromIndexData } from '../../utils/helpers'
 	import AdvancedDropdown from './AdvancedDropdown.svelte'
+
 	/**
 	 * @typedef {Object} Props
 	 * @property {string} [containerStyle]

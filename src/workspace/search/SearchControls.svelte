@@ -25,16 +25,16 @@
 		dispatch('search/update', { view })
 	}
 
-	const onUriPaginationChanged = ({ detail }) => {
-		dispatch('search/update', { from: $search.size * detail })
+	const onUriPaginationChanged = page => {
+		dispatch('search/update', { from: $search.size * page })
 		dispatch('search/run')
 	}
 
-	const onBodyPaginationChanged = ({ detail }) => {
+	const onBodyPaginationChanged = page => {
 		try {
 			const requestBody = qEditor.get()
 			const size = get(requestBody, 'size', 10)
-			requestBody.from = size * detail
+			requestBody.from = size * page
 			qEditor.set(requestBody)
 			dispatch('search/update', { requestBody })
 			dispatch('search/run')
@@ -119,7 +119,7 @@
 				offset={$search.from}
 				items_per_page={$search.size}
 				total_items={$search.stats.total_results}
-				on:change={onUriPaginationChanged}
+				change={onUriPaginationChanged}
 			/>
 		{/if}
 
@@ -131,7 +131,7 @@
 				offset={bodyPaginationOffset()}
 				items_per_page={bodyPaginationItemsPerPage()}
 				total_items={$search.stats.total_results}
-				on:change={onBodyPaginationChanged}
+				change={onBodyPaginationChanged}
 			/>
 		{/if}
 	</div>

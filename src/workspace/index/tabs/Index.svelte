@@ -1,7 +1,6 @@
-<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
 <script>
 	import JSONEditor from 'jsoneditor'
-	import { onMount, onDestroy, afterUpdate, getContext } from 'svelte'
+	import { onMount, onDestroy, getContext } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import { routerNavigate } from '@storeon/router'
 	import get from 'lodash/get'
@@ -11,14 +10,14 @@
 
 	const { open } = getContext('modal-window')
 
-	const { dispatch, index, connection, indices } = useStoreon(
+	const { dispatch, index, connection } = useStoreon(
 		'index',
 		'connection',
 		'indices'
 	)
 
 	let indexPreviewEditor, ipEditor
-	let isLoading = false
+	let isLoading = $state(false)
 
 	onMount(() => {
 		if (indexPreviewEditor) {
@@ -32,7 +31,7 @@
 		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
 	})
 
-	afterUpdate(() => {
+	$effect(() => {
 		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
 
 		const info = get($index.info, [$index.selected, $index.selected], false)
@@ -253,7 +252,7 @@
 	<div class="ui tiny buttons">
 		<button
 			class="ui tiny blue basic button"
-			on:click={e => onOpenIndexClick($index.selected)}
+			onclick={e => onOpenIndexClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading}
 		>
@@ -261,7 +260,7 @@
 		</button>
 		<button
 			class="ui tiny blue basic button"
-			on:click={e => onCloseIndexClick($index.selected)}
+			onclick={e => onCloseIndexClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading}
 		>
@@ -270,7 +269,7 @@
 
 		<button
 			class="ui tiny teal basic button"
-			on:click={e => onFreezeIndexClick($index.selected)}
+			onclick={e => onFreezeIndexClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading}
 		>
@@ -278,7 +277,7 @@
 		</button>
 		<button
 			class="ui tiny teal basic button"
-			on:click={e => onUnfreezeIndexClick($index.selected)}
+			onclick={e => onUnfreezeIndexClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading}
 		>
@@ -287,7 +286,7 @@
 
 		<button
 			class="ui tiny green basic button"
-			on:click={showCloneIndexDialog}
+			onclick={showCloneIndexDialog}
 			class:loading={isLoading}
 			disabled={isLoading}
 		>
@@ -297,7 +296,7 @@
 	<div class="ui right floated tiny buttons">
 		<button
 			class="ui orange basic button"
-			on:click={e => onWipeIndexClick($index.selected)}
+			onclick={e => onWipeIndexClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading}
 		>
@@ -305,7 +304,7 @@
 		</button>
 		<button
 			class="ui red basic button"
-			on:click={e => onDeleteIndexClick($index.selected)}
+			onclick={e => onDeleteIndexClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading}
 		>

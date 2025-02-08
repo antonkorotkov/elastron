@@ -1,7 +1,4 @@
 <script>
-	import { createEventDispatcher } from 'svelte'
-	const trigger = createEventDispatcher()
-
 	/**
 	 * @typedef {Object} Props
 	 * @property {number} [current_page]
@@ -19,7 +16,8 @@
 		items_per_page = 10,
 		disable = false,
 		offset = 0,
-		className = ''
+		className = '',
+		change
 	} = $props();
 
 	let page = $derived(current_page + 1)
@@ -37,28 +35,24 @@
 		page <= total_pages &&
 		offset % items_per_page == 0)
 
-	const onClickPrev = event => {
+	const onClickPrev = () => {
 		if (prevDisabled) return
-		trigger('prev', --current_page)
-		trigger('change', current_page)
+		change(--current_page)
 	}
 
-	const onClickNext = event => {
+	const onClickNext = () => {
 		if (nextDisabled) return
-		trigger('next', ++current_page)
-		trigger('change', current_page)
+		change(++current_page)
 	}
 
-	const onClickFirst = event => {
+	const onClickFirst = () => {
 		if (prevDisabled) return
-		trigger('first', (current_page = 0))
-		trigger('change', current_page)
+		change((current_page = 0))
 	}
 
-	const onClickLast = event => {
+	const onClickLast = () => {
 		if (nextDisabled) return
-		trigger('last', (current_page = total_pages - 1))
-		trigger('change', current_page)
+		change((current_page = total_pages - 1))
 	}
 </script>
 

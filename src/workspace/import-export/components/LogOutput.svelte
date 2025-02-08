@@ -1,32 +1,26 @@
-<!-- @migration-task Error while migrating Svelte code: Can't migrate code with beforeUpdate and afterUpdate. Please migrate by hand. -->
 <script>
-	import { beforeUpdate, afterUpdate } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 
 	import { isThemeToggleChecked } from '../../../utils/helpers'
 
 	let div
-	let autoscroll
-
-	beforeUpdate(() => {
-		autoscroll = div && div.offsetHeight + div.scrollTop > div.scrollHeight - 20
-	})
-
-	afterUpdate(() => {
-		if (autoscroll) div.scrollTo(0, div.scrollHeight)
-	})
+	let autoscroll = $derived(div && div.offsetHeight + div.scrollTop > div.scrollHeight - 20);
 
 	const { dispatch, app, importExport } = useStoreon('app', 'importExport')
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 
-	$: filteredLogs = $importExport.logs.filter(item =>
+	let filteredLogs = $derived($importExport.logs.filter(item =>
 		$importExport.logFilter.includes(item.type)
-	)
+	))
 
-	$: logsToShow = filteredLogs.slice(
+	let logsToShow = $derived(filteredLogs.slice(
 		-Math.abs($importExport.logsPerPage * $importExport.logsShowPages)
-	)
+	))
+
+	$effect(() => {
+		if (logsToShow && autoscroll) div.scrollTo(0, div.scrollHeight)
+	})
 </script>
 
 {#if filteredLogs.length > logsToShow.length}
@@ -36,7 +30,7 @@
 				class="ui primary button basic mini"
 				class:inverted
 				href
-				on:click={() => dispatch('ie/logsShowMore')}>Show more</a
+				onclick={() => dispatch('ie/logsShowMore')}>Show more</a
 			>
 		</div>
 	</div>
