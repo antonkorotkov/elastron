@@ -1,30 +1,31 @@
 <script>
+	import Collector from './Collector.svelte';
 	import { useStoreon } from '@storeon/svelte'
 	import profiling, { getTimeMillis, getTimeColor } from './'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
 
 	const { server, app } = useStoreon('server', 'app')
 
-	export let collector, collectors
+	let { collector, collectors } = $props();
 
-	let active = false
+	let active = $state(false)
 
-	$: timeInNanos = profiling
+	let timeInNanos = $derived(profiling
 		.collector(collector)
-		.getNanos($server.version.number)
+		.getNanos($server.version.number))
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <div
 	class="title"
 	class:inverted
 	class:active
-	on:click={() => (active = !active)}
+	onclick={() => (active = !active)}
 	role="navigation"
 >
-	<i class="dropdown icon" />
+	<i class="dropdown icon"></i>
 	{profiling.collector(collector).getName($server.version.number)}
 	<small
 		class="ui label"
@@ -45,7 +46,7 @@
 	{#if collector.children && collector.children.length}
 		<div class="ui fluid accordion styled" class:inverted>
 			{#each collector.children as q, i}
-				<svelte:self collector={q} collectors={collector.children} />
+				<Collector collector={q} collectors={collector.children} />
 			{/each}
 		</div>
 	{/if}

@@ -8,7 +8,7 @@
 
 	const { dispatch } = useStoreon()
 
-	export let notification
+	let { notification } = $props();
 	let timeout
 
 	const scheduleHide = () => {
@@ -24,11 +24,11 @@
 	onMount(scheduleHide)
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <div
-	on:click={() => dispatch('notification/delete', notification.id)}
-	on:mouseenter={onNotificationMouseEnter}
-	on:mouseleave={scheduleHide}
+	onclick={() => dispatch('notification/delete', notification.id)}
+	onmouseenter={onNotificationMouseEnter}
+	onmouseleave={scheduleHide}
 	class="ui message"
 	class:negative={notification.type === 'error'}
 	class:positive={notification.type === 'success'}

@@ -35,10 +35,10 @@
 		server,
 	} = useStoreon(routerKey, 'connection', 'server')
 
-	$: version = get($server, 'version.number', false)
+	let version = $derived(get($server, 'version.number', false))
 </script>
 
-<header on:dblclick={onHeaderDblClick} role="navigation">
+<header ondblclick={onHeaderDblClick} role="navigation">
 	<div class="ui menu inverted fixed">
 		<div class="logo item" style="-webkit-app-region: drag;">
 			<b style="cursor: move;">Elastron</b>
@@ -47,7 +47,7 @@
 			class="item"
 			href="/"
 			class:active={$route.match.page == 'dashboard'}
-			on:click={onDashboardClick}
+			onclick={onDashboardClick}
 		>
 			Dashboard
 		</a>
@@ -69,7 +69,7 @@
 			{#if version}
 				<span class="item" title="ElasticSearch version">v{version}</span>
 			{/if}
-			<a class="item" on:click={showConnectionDialog} href>
+			<a class="item" onclick={showConnectionDialog} href>
 				Connection
 				<OnlineIndicator />
 			</a>

@@ -1,4 +1,6 @@
 <script>
+	import { preventDefault } from 'svelte/legacy';
+
 	import { useStoreon } from '@storeon/svelte'
 	import { onMount, getContext } from 'svelte'
 	import JSONEditor from 'jsoneditor'
@@ -16,12 +18,12 @@
 		'app'
 	)
 
-	export let onCancel = () => {}
+	let { onCancel = () => {} } = $props();
 
-	let indexName = '',
-		isLoading = false,
-		canCreate = true,
-		settingsEditor,
+	let indexName = $state(''),
+		isLoading = $state(false),
+		canCreate = $state(true),
+		settingsEditor = $state(),
 		sEditor
 
 	let _indices =
@@ -98,7 +100,7 @@
 	const isIndexNameAllowed = name =>
 		validateIndexName(name) && !_indices.includes(name)
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui header">Create New Index</div>
@@ -107,7 +109,7 @@
 	<form
 		class="ui form"
 		class:inverted
-		on:submit|preventDefault={create}
+		onsubmit={preventDefault(create)}
 		id="create-index-form"
 	>
 		<div class="field">
@@ -116,17 +118,17 @@
 		</div>
 		<div class="field">
 			<label for="settings-editor">Index Configuration</label>
-			<div id="settings-editor" bind:this={settingsEditor} />
+			<div id="settings-editor" bind:this={settingsEditor}></div>
 		</div>
 	</form>
 </div>
 
 <div class="actions">
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="ui black deny button right"
 		class:inverted
-		on:click={_onCancel}
+		onclick={_onCancel}
 		role="button"
 		tabindex="0"
 	>

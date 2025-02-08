@@ -8,9 +8,9 @@
 
 	const { dispatch, index, connection } = useStoreon('index', 'connection')
 
-	let mappingPreviewEditor, mpEditor
-	let isLoading = false,
-		canUpdate = true
+	let mappingPreviewEditor = $state(), mpEditor
+	let isLoading = $state(false),
+		canUpdate = $state(true)
 
 	const updateEditorContent = () => {
 		const mappings = get(
@@ -118,16 +118,16 @@
 	<div class="ui tiny buttons">
 		<button
 			class="ui green basic button"
-			on:click={e => onUpdateMappingClick($index.selected)}
+			onclick={e => onUpdateMappingClick($index.selected)}
 			class:loading={isLoading}
 			disabled={isLoading || !canUpdate}
 		>
 			Update
 		</button>
 	</div>
-	<div class="ui right floated tiny buttons" />
+	<div class="ui right floated tiny buttons"></div>
 </div>
 
 <div class="ui vertical segment">
-	<div id="mapping-preview" bind:this={mappingPreviewEditor} />
+	<div id="mapping-preview" bind:this={mappingPreviewEditor}></div>
 </div>

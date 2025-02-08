@@ -1,5 +1,5 @@
 <script>
-	export let notification
+	let { notification } = $props();
 </script>
 
 <div class="header">Success</div>

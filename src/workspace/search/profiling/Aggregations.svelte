@@ -1,13 +1,13 @@
 <script>
-	export let aggregations
 
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
 	import Query from './Query.svelte'
+	let { aggregations } = $props();
 
 	const { app } = useStoreon('app')
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 {#if aggregations && aggregations.length}

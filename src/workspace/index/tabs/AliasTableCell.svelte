@@ -1,7 +1,4 @@
 <script>
-	export let cell = ''
-	export let i = 0
-	export let columns
 
 	import { useStoreon } from '@storeon/svelte'
 	import { getContext } from 'svelte'
@@ -10,10 +7,19 @@
 	import ViewAliasFilterDialog from '../../../components/modal/ViewAliasFilterDialog/ViewAliasFilterDialog.svelte'
 	import EditAliasDialog from '../../../components/modal/EditAliasDialog/EditAliasDialog.svelte'
 	import API from '../../../api/elasticsearch'
+	/**
+	 * @typedef {Object} Props
+	 * @property {string} [cell]
+	 * @property {number} [i]
+	 * @property {any} columns
+	 */
+
+	/** @type {Props} */
+	let { cell = '', i = 0, columns } = $props();
 
 	const { open } = getContext('modal-window')
 	const { dispatch, connection, index } = useStoreon('connection', 'index')
-	let loading = false
+	let loading = $state(false)
 
 	const onViewFilterClick = () => {
 		open(ViewAliasFilterDialog, { filter: cell })
@@ -63,21 +69,21 @@
 {#if columns[i] === 'Filter'}
 	{#if cell.length}
 		{`${cell.slice(0, 50)} ...`}
-		<button class="mini ui primary basic button" on:click={onViewFilterClick}>
+		<button class="mini ui primary basic button" onclick={onViewFilterClick}>
 			View
 		</button>
 	{/if}
 {:else if columns[i] === 'Actions'}
 	<button
 		class="mini ui primary basic button"
-		on:click={onUpdateClick}
+		onclick={onUpdateClick}
 		class:disabled={loading}
 	>
 		Update
 	</button>
 	<button
 		class="mini ui red basic button"
-		on:click={onDeleteClick}
+		onclick={onDeleteClick}
 		class:disabled={loading}
 	>
 		Delete

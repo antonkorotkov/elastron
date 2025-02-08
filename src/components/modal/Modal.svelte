@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: can't migrate `let Component = null` to `$state` because there's a variable named state.
+     Rename the variable and try again or migrate by hand. -->
 <script>
 	import { setContext as baseSetContext } from 'svelte'
 	import { fly, fade } from 'svelte/transition'

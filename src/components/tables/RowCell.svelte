@@ -1,7 +1,13 @@
 <script>
-	export let cell = ''
-	export let columns = []
-	export let i = 0
+	/**
+	 * @typedef {Object} Props
+	 * @property {string} [cell]
+	 * @property {any} [columns]
+	 * @property {number} [i]
+	 */
+
+	/** @type {Props} */
+	let { cell = '', columns = [], i = 0 } = $props();
 
 	columns
 	i

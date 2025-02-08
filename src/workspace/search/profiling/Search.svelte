@@ -1,14 +1,14 @@
 <script>
-	export let search
 
 	import Query from './Query.svelte'
 	import Collector from './Collector.svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
+	let { search } = $props();
 
 	const { app } = useStoreon('app')
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="profile-table__search">

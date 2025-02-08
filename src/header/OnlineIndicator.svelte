@@ -5,7 +5,7 @@
 </script>
 
 {#if $internet.online}
-	<span class="ui green empty circular label tiny" title="Online" />
+	<span class="ui green empty circular label tiny" title="Online"></span>
 {:else}
-	<span class="ui red empty circular label tiny" title="Offline" />
+	<span class="ui red empty circular label tiny" title="Offline"></span>
 {/if}

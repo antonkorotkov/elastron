@@ -1,3 +1,4 @@
+<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
 <script>
 	import isEqual from 'lodash/isEqual'
 	import JSONEditor from 'jsoneditor'
@@ -375,7 +376,7 @@
 				{/if}
 			</div>
 			<div class="field" class:hidden={$search.type !== 'body'}>
-				<div id="request-body-editor" bind:this={requestBodyEditor} />
+				<div id="request-body-editor" bind:this={requestBodyEditor}></div>
 			</div>
 			{#if $search.type === 'body'}
 				<button
@@ -425,7 +426,7 @@
 			hidden={$search.view === 'profile'}
 			id="results-editor"
 			bind:this={resultsEditor}
-		/>
+		></div>
 	</div>
 </div>
 

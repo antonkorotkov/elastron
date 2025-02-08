@@ -1,6 +1,6 @@
 <script>
-	export let aliases = {}
-	export let alias = {}
+	import { preventDefault } from 'svelte/legacy';
+
 
 	import { useStoreon } from '@storeon/svelte'
 	import JSONEditor from 'jsoneditor'
@@ -17,15 +17,15 @@
 		'app'
 	)
 
-	export let onCancel = () => {}
+	let { aliases = {}, alias = {}, onCancel = () => {} } = $props();
 
-	let indexRouting = '',
-		searchRouting = '',
-		isWriteIndex = false,
-		canSave = true,
-		filterEditor,
+	let indexRouting = $state(''),
+		searchRouting = $state(''),
+		isWriteIndex = $state(false),
+		canSave = $state(true),
+		filterEditor = $state(),
 		fEditor,
-		isLoading = false
+		isLoading = $state(false)
 
 	const { close } = getContext('modal-window')
 
@@ -121,7 +121,7 @@
 		}
 	})
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui header">Update New Alias</div>
@@ -130,7 +130,7 @@
 	<form
 		class="ui form"
 		class:inverted
-		on:submit|preventDefault={save}
+		onsubmit={preventDefault(save)}
 		id="alias-form"
 	>
 		<div class="field">
@@ -153,18 +153,18 @@
 		</div>
 		<div class="field">
 			<label for="filter-editor">Filter</label>
-			<div id="filter-editor" bind:this={filterEditor} />
+			<div id="filter-editor" bind:this={filterEditor}></div>
 		</div>
 	</form>
 </div>
 
 <div class="actions">
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class:inverted
 		class="ui black deny right button"
 		disabled={isLoading}
-		on:click={_onCancel}
+		onclick={_onCancel}
 		role="button"
 		tabindex="0"
 	>

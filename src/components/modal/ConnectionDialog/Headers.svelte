@@ -2,7 +2,12 @@
 	import IconButton from '../../../components/buttons/IconButton.svelte'
 	import HeaderItem from './HeaderItem.svelte'
 
-	export let onAdd, onDelete, onChange, headers
+	let {
+		onAdd,
+		onDelete,
+		onChange,
+		headers
+	} = $props();
 </script>
 
 <div class="headers">

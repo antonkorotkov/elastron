@@ -14,7 +14,7 @@
 	const onLogsShowChange = e =>
 		dispatch('ie/logsPerPage', parseInt(e.target.value))
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui grid">
@@ -55,7 +55,7 @@
 			</div>
 		</div>
 		<div class="eight wide right aligned column">
-			<select on:change={onLogsShowChange}>
+			<select onchange={onLogsShowChange}>
 				<option value="0" selected={$importExport.logsPerPage === 0}
 					>Show all</option
 				>

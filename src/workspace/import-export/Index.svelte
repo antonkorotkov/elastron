@@ -16,7 +16,7 @@
 		'history'
 	)
 
-	let advancedOptionsActive = false
+	let advancedOptionsActive = $state(false)
 
 	const onRunClick = () =>
 		dispatch('ie/run', {
@@ -35,7 +35,7 @@
 		if (!canceled) dispatch('ie/output/file', filePaths[0])
 	}
 
-	$: canRun = () => {
+	let canRun = $derived(() => {
 		if ($importExport.isRunning) return false
 
 		if (
@@ -88,9 +88,9 @@
 		}
 
 		return true
-	}
+	})
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui grid">
@@ -125,7 +125,7 @@
 							<input
 								class="ui input"
 								placeholder="Input address..."
-								on:change={e => dispatch('ie/input/address', e.target.value)}
+								onchange={e => dispatch('ie/input/address', e.target.value)}
 								value={$importExport.input.address}
 							/>
 						{/if}
@@ -160,7 +160,7 @@
 							<input
 								class="ui input"
 								placeholder="Output address..."
-								on:change={e => dispatch('ie/output/address', e.target.value)}
+								onchange={e => dispatch('ie/output/address', e.target.value)}
 								value={$importExport.output.address}
 							/>
 						{/if}
@@ -171,23 +171,24 @@
 					class:inverted
 					class:active={advancedOptionsActive}
 				>
-					<!-- svelte-ignore a11y-click-events-have-key-events -->
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
 					<div
 						class="title"
 						class:active={advancedOptionsActive}
-						on:click={() => (advancedOptionsActive = !advancedOptionsActive)}
+						onclick={() => (advancedOptionsActive = !advancedOptionsActive)}
 						role="button"
 						tabindex="0"
 					>
-						<i class="icon dropdown" />
+						<i class="icon dropdown"></i>
 						Advanced Options
 						<a
+							aria-label="Elasticdump options help"
 							class="help-link"
 							title="Elasticdump options help"
 							href="https://www.npmjs.com/package/elasticdump#options"
 							target="_blank"
 						>
-							<i class="info circle icon" />
+							<i class="info circle icon"></i>
 						</a>
 					</div>
 					<div class="content" class:active={advancedOptionsActive}>
@@ -199,12 +200,12 @@
 						class="green ui button"
 						class:inverted
 						class:loading={$importExport.isRunning}
-						on:click={onRunClick}
+						onclick={onRunClick}
 						disabled={!canRun()}>Run</button
 					>
 					<select
 						class="dump-type-dropdown"
-						on:change={e => dispatch('ie/type', e.target.value)}
+						onchange={e => dispatch('ie/type', e.target.value)}
 					>
 						<option
 							value="settings"

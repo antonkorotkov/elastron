@@ -1,13 +1,26 @@
 <script>
-	export let containerStyle = ''
-	export let allowClear = true
-	export let isDisabled = false
-	export let currentlySelected
-	export let onSelect = () => {}
-	export let onClear = () => {}
 
 	import { useStoreon } from '@storeon/svelte'
 	import AdvancedDropdown from './AdvancedDropdown.svelte'
+	/**
+	 * @typedef {Object} Props
+	 * @property {string} [containerStyle]
+	 * @property {boolean} [allowClear]
+	 * @property {boolean} [isDisabled]
+	 * @property {any} currentlySelected
+	 * @property {any} [onSelect]
+	 * @property {any} [onClear]
+	 */
+
+	/** @type {Props} */
+	let {
+		containerStyle = '',
+		allowClear = true,
+		isDisabled = false,
+		currentlySelected,
+		onSelect = () => {},
+		onClear = () => {}
+	} = $props();
 
 	const { history } = useStoreon('history')
 </script>

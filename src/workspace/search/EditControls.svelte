@@ -1,7 +1,7 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
 
-	export let canEditDoc, rEditor
+	let { canEditDoc, rEditor } = $props();
 
 	const { dispatch, search } = useStoreon('search')
 
@@ -56,21 +56,21 @@
 				<button
 					class="mini ui button green"
 					disabled={!canEditDoc || $search.loading}
-					on:click={saveEditDoc('update')}
+					onclick={saveEditDoc('update')}
 				>
 					Update
 				</button>
 				<button
 					class="mini ui button blue"
 					disabled={!canEditDoc || $search.loading}
-					on:click={saveEditDoc('reindex')}
+					onclick={saveEditDoc('reindex')}
 				>
 					Reindex
 				</button>
 				<button
 					class="mini ui button red"
 					disabled={$search.loading}
-					on:click={() => dispatch('search/update', { view: 'hits' })}
+					onclick={() => dispatch('search/update', { view: 'hits' })}
 				>
 					Cancel
 				</button>

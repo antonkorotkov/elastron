@@ -22,7 +22,7 @@
 		'Actions',
 	]
 
-	$: rows = () => {
+	let rows = $derived(() => {
 		const _rows = []
 		const aliases = get(
 			$index,
@@ -44,7 +44,7 @@
 		}
 
 		return _rows
-	}
+	})
 
 	const onCreateClick = () => {
 		open(CreateAliasDialog, {
@@ -60,7 +60,7 @@
 <div class="ui tiny buttons">
 	<button
 		class="ui tiny blue basic button"
-		on:click={onCreateClick}
+		onclick={onCreateClick}
 		class:loading={isLoading}
 		disabled={isLoading}
 	>

@@ -2,27 +2,40 @@
 	import { createEventDispatcher } from 'svelte'
 	const trigger = createEventDispatcher()
 
-	export let current_page = 0
-	export let total_items = 0
-	export let items_per_page = 10
-	export let disable = false
-	export let offset = 0
-	export let className = ''
+	/**
+	 * @typedef {Object} Props
+	 * @property {number} [current_page]
+	 * @property {number} [total_items]
+	 * @property {number} [items_per_page]
+	 * @property {boolean} [disable]
+	 * @property {number} [offset]
+	 * @property {string} [className]
+	 */
 
-	$: page = current_page + 1
-	$: total_pages = total_items > 0 ? Math.ceil(total_items / items_per_page) : 0
+	/** @type {Props} */
+	let {
+		current_page = $bindable(0),
+		total_items = 0,
+		items_per_page = 10,
+		disable = false,
+		offset = 0,
+		className = ''
+	} = $props();
 
-	$: prevDisabled = disable || current_page == 0
-	$: nextDisabled = disable || current_page == total_pages - 1
+	let page = $derived(current_page + 1)
+	let total_pages = $derived(total_items > 0 ? Math.ceil(total_items / items_per_page) : 0)
 
-	$: firstDisabled = prevDisabled
-	$: lastDisabled = nextDisabled
+	let prevDisabled = $derived(disable || current_page == 0)
+	let nextDisabled = $derived(disable || current_page == total_pages - 1)
 
-	$: shouldDisplay =
-		total_items > items_per_page &&
+	let firstDisabled = $derived(prevDisabled)
+	let lastDisabled = $derived(nextDisabled)
+
+	let shouldDisplay =
+		$derived(total_items > items_per_page &&
 		!isNaN(current_page) &&
 		page <= total_pages &&
-		offset % items_per_page == 0
+		offset % items_per_page == 0)
 
 	const onClickPrev = event => {
 		if (prevDisabled) return
@@ -53,36 +66,40 @@
 	Page {page} of {total_pages}
 	<div class="ui pagination menu {className}">
 		<a
+			aria-label="First"
 			class="icon item"
 			class:disabled={firstDisabled}
-			on:click={onClickFirst}
+			onclick={onClickFirst}
 			href
 		>
-			<i class="angle double left icon" />
+			<i class="angle double left icon"></i>
 		</a>
 		<a
+			aria-label="Previous"
 			class="icon item"
 			class:disabled={prevDisabled}
-			on:click={onClickPrev}
+			onclick={onClickPrev}
 			href
 		>
-			<i class="left chevron icon" />
+			<i class="left chevron icon"></i>
 		</a>
 		<a
+			aria-label="Next"
 			class="icon item"
 			class:disabled={nextDisabled}
-			on:click={onClickNext}
+			onclick={onClickNext}
 			href
 		>
-			<i class="right chevron icon" />
+			<i class="right chevron icon"></i>
 		</a>
 		<a
+			aria-label="Last"
 			class="icon item"
 			class:disabled={lastDisabled}
-			on:click={onClickLast}
+			onclick={onClickLast}
 			href
 		>
-			<i class="angle double right icon" />
+			<i class="angle double right icon"></i>
 		</a>
 	</div>
 {/if}

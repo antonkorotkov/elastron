@@ -7,19 +7,19 @@
 	import get from 'lodash/get'
 	import { isThemeToggleChecked } from '../../utils/helpers'
 
-	export let qEditor
+	let { qEditor } = $props();
 
 	const { dispatch, search, app } = useStoreon('search', 'app')
 
-	$: uriPaginationCurrentPage = () => Math.round($search.from / $search.size)
-	$: bodyPaginationOffset = () => get($search.requestBody, 'from', 0)
-	$: bodyPaginationItemsPerPage = () => get($search.requestBody, 'size', 10)
-	$: bodyPaginationCurrentPage = () => {
+	let uriPaginationCurrentPage = $derived(() => Math.round($search.from / $search.size))
+	let bodyPaginationOffset = $derived(() => get($search.requestBody, 'from', 0))
+	let bodyPaginationItemsPerPage = $derived(() => get($search.requestBody, 'size', 10))
+	let bodyPaginationCurrentPage = $derived(() => {
 		const body = $search.requestBody
 		const from = get(body, 'from', 0)
 		const size = get(body, 'size', 10)
 		return Math.round(from / size)
-	}
+	})
 
 	const switchView = view => {
 		dispatch('search/update', { view })
@@ -46,7 +46,7 @@
 		}
 	}
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui grid">
@@ -76,7 +76,7 @@
 					class="mini ui button"
 					class:active={$search.view == 'hits'}
 					class:disabled={isEmpty($search.results)}
-					on:click={() => switchView('hits')}
+					onclick={() => switchView('hits')}
 				>
 					Hits
 				</button>
@@ -85,7 +85,7 @@
 					class="mini ui button"
 					class:active={$search.view == 'aggs'}
 					class:disabled={isEmpty($search.aggs)}
-					on:click={() => switchView('aggs')}
+					onclick={() => switchView('aggs')}
 				>
 					Aggs
 				</button>
@@ -94,7 +94,7 @@
 					class="mini ui button"
 					class:active={$search.view == 'raw'}
 					class:disabled={isEmpty($search.response)}
-					on:click={() => switchView('raw')}
+					onclick={() => switchView('raw')}
 				>
 					Raw
 				</button>
@@ -102,7 +102,7 @@
 					<button
 						class:inverted
 						class="mini ui button blue"
-						on:click={() => switchView('profile')}
+						onclick={() => switchView('profile')}
 					>
 						Profile
 					</button>

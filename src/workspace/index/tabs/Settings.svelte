@@ -1,3 +1,4 @@
+<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
 <script>
 	import JSONEditor from 'jsoneditor'
 	import { onMount, onDestroy, afterUpdate, getContext } from 'svelte'
@@ -150,17 +151,18 @@
 		</button>
 	</div>
 	<a
+		aria-label="List of settings that can be updated"
 		class="help-link"
 		title="List of settings that can be updated"
 		href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules.html#dynamic-index-settings"
 		target="_blank"
 	>
-		<i class="info circle icon" />
+		<i class="info circle icon"></i>
 	</a>
 </div>
 
 <div class="ui vertical segment">
-	<div id="settings-preview" bind:this={settingsPreviewEditor} />
+	<div id="settings-preview" bind:this={settingsPreviewEditor}></div>
 </div>
 
 <style>

@@ -1,3 +1,4 @@
+<!-- @migration-task Error while migrating Svelte code: Can't migrate code with afterUpdate. Please migrate by hand. -->
 <script>
 	import JSONEditor from 'jsoneditor'
 	import { onMount, onDestroy, afterUpdate, getContext } from 'svelte'
@@ -314,5 +315,5 @@
 </div>
 
 <div class="ui vertical segment">
-	<div id="index-preview" bind:this={indexPreviewEditor} />
+	<div id="index-preview" bind:this={indexPreviewEditor}></div>
 </div>

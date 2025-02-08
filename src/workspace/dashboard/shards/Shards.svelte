@@ -14,7 +14,7 @@
 
 	const { dispatch, shards, app } = useStoreon('shards', 'app')
 
-	let search = $shards.search
+	let search = $state($shards.search)
 
 	const onTableSort = (column, index, direction) => {
 		const sort = o => {
@@ -37,13 +37,13 @@
 		if (!$shards.data.length) dispatch('elasticsearch/shards/fetch')
 	})
 
-	$: filterRows = data => {
+	let filterRows = $derived(data => {
 		if (isEmpty(search)) return data
 
 		return filterArrayBy(data, search)
-	}
+	})
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui segments">
@@ -58,7 +58,7 @@
 						<div class="field">
 							<input
 								bind:value={search}
-								on:change={e =>
+								onchange={e =>
 									dispatch('elasticsearch/shards/update', {
 										search,
 									})}

@@ -14,7 +14,7 @@
 
 	const { dispatch, allocation, app } = useStoreon('allocation', 'app')
 
-	let search = $allocation.search
+	let search = $state($allocation.search)
 
 	const onTableSort = (column, index, direction) => {
 		const sort = o => {
@@ -36,13 +36,13 @@
 		dispatch('elasticsearch/allocation/update', { data: sorted })
 	}
 
-	$: filterRows = data => {
+	let filterRows = $derived(data => {
 		if (isEmpty(search)) return data
 
 		return filterArrayBy(data, search)
-	}
+	})
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 
 	onMount(async () => {
 		if (!$allocation.data.length) dispatch('elasticsearch/allocation/fetch')
@@ -61,7 +61,7 @@
 						<div class="field">
 							<input
 								bind:value={search}
-								on:change={e =>
+								onchange={e =>
 									dispatch('elasticsearch/allocation/update', {
 										search,
 									})}

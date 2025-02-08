@@ -10,8 +10,8 @@
 		dispatch('app/toggleTheme', theme)
 	}
 
-	$: toggleChecked = isThemeToggleChecked($app.theme)
-	$: inverted = isThemeToggleChecked($app.theme)
+	let toggleChecked = $derived(isThemeToggleChecked($app.theme))
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <footer class="ui segment" class:inverted>
@@ -36,7 +36,7 @@
 					id="theme-mode-toggler"
 					type="checkbox"
 					name="theme"
-					on:change={e => onThemeChange(e.target.checked)}
+					onchange={e => onThemeChange(e.target.checked)}
 					checked={toggleChecked}
 				/>
 				<label for="theme-mode-toggler">🌗</label>

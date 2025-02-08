@@ -1,4 +1,5 @@
 <script>
+	import Query from './Query.svelte';
 	import isEmpty from 'lodash/isEmpty'
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
@@ -6,24 +7,24 @@
 
 	const { server, app } = useStoreon('server', 'app')
 
-	export let query, queries
+	let { query, queries } = $props();
 
-	let active = false
+	let active = $state(false)
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 
-	$: timeInNanos = profiling.query(query).getNanos($server.version.number)
+	let timeInNanos = $derived(profiling.query(query).getNanos($server.version.number))
 </script>
 
-<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <div
 	class="title"
 	class:inverted
 	class:active
-	on:click={() => (active = !active)}
+	onclick={() => (active = !active)}
 	role="navigation"
 >
-	<i class="dropdown icon" />
+	<i class="dropdown icon"></i>
 	{profiling.query(query).getType($server.version.number)}
 	<small class="ui label">
 		{profiling.query(query).getDescription($server.version.number)}
@@ -53,7 +54,7 @@
 	{#if query.children && query.children.length}
 		<div class="ui fluid accordion styled" class:inverted>
 			{#each query.children as q, i}
-				<svelte:self query={q} queries={query.children} />
+				<Query query={q} queries={query.children} />
 			{/each}
 		</div>
 	{/if}
