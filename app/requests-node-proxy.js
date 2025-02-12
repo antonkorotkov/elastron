@@ -1,6 +1,7 @@
-const { default: axios } = require("axios")
-const { Agent } = require("https")
-const get = require("lodash/get")
+import { default as axios } from "axios"
+import btoa from "btoa"
+import { Agent } from "https"
+import get from "lodash/get.js"
 
 /**
  * @param {*} connection
@@ -61,4 +62,4 @@ const init = messaging => {
 	})
 }
 
-module.exports = { init }
+export default { init }

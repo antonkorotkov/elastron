@@ -2,6 +2,7 @@
     "name": "Elastron",
     "version": "1.6.0",
     "description": "Full featured elasticsearch client",
+    "type": "module",
     "main": "main.js",
     "scripts": {
         "build": "rollup -c --bundleConfigAsCjs",

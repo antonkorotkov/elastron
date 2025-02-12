@@ -1,12 +1,12 @@
-const { app, BrowserWindow, Menu } = require('electron')
+import { app, BrowserWindow, Menu } from 'electron'
 
-const pkg = require('./package.json')
-const updater = require('./app/updater')
-const messenger = require('./app/ipc-main')
-const dumper = require('./app/dumper/dumper')
-const elasticProxy = require('./app/requests-node-proxy');
+import updater from './app/updater.js'
+import messenger from './app/ipc-main.js'
+import dumper from './app/dumper/dumper.js'
+import elasticProxy from './app/requests-node-proxy.js'
 
-require('@electron/remote/main').initialize()
+import electronRemoteMain from '@electron/remote/main/index.js'
+electronRemoteMain.initialize()
 
 const createWindow = () => {
 	// Create the browser window.
@@ -65,7 +65,7 @@ const createWindow = () => {
 					},
 					{
 						label: 'Check For Updates',
-						click: () => updater.checkForUpdates(true),
+						click: () => checkForUpdates(true),
 					},
 					{
 						label: 'Debug',
@@ -85,7 +85,7 @@ app.whenReady().then(() => {
 	const window = createWindow()
 	const messaging = messenger(window)
 
-	require('@electron/remote/main').enable(window.webContents)
+	electronRemoteMain.enable(window.webContents)
 
 	updater.init(window)
 	updater.checkForUpdates()

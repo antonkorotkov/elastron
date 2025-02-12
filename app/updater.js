@@ -1,5 +1,7 @@
-const { autoUpdater } = require('electron-updater')
-const { dialog } = require('electron')
+import electronUpdater from 'electron-updater'
+import { dialog } from 'electron'
+
+const { autoUpdater } = electronUpdater
 
 autoUpdater.autoDownload = false
 
@@ -55,4 +57,4 @@ const checkForUpdates = (notify = false) => {
 	autoUpdater.checkForUpdates()
 }
 
-module.exports = { init, checkForUpdates }
+export default { init, checkForUpdates }
