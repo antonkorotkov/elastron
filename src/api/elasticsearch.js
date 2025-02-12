@@ -262,32 +262,6 @@ export default class API {
 	 *
 	 * @param {*} index
 	 */
-	async freezeIndex(index) {
-		try {
-			const response = await this.client.post(`/${index}/_freeze`)
-			return response.data
-		} catch (err) {
-			throw new ConnectionError(err)
-		}
-	}
-
-	/**
-	 *
-	 * @param {*} index
-	 */
-	async unfreezeIndex(index) {
-		try {
-			const response = await this.client.post(`/${index}/_unfreeze`)
-			return response.data
-		} catch (err) {
-			throw new ConnectionError(err)
-		}
-	}
-
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async wipeIndex(index) {
 		try {
 			const response = await this.client.post(

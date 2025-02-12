@@ -152,66 +152,6 @@
 		isLoading = false
 	}
 
-	const onFreezeIndexClick = async indexName => {
-		isLoading = true
-
-		try {
-			const api = new API($connection)
-			const result = await api.freezeIndex(indexName)
-
-			if (result.acknowledged) {
-				dispatch('notification/add', {
-					type: 'success',
-					message: `Index ${indexName} has been frozen`,
-				})
-				refreshDashboard()
-				dispatch('elasticsearch/index/fetch')
-			} else {
-				dispatch('notification/add', {
-					type: 'error',
-					message: `Something went wrong while freezing the index`,
-				})
-			}
-		} catch (e) {
-			dispatch('notification/add', {
-				type: 'error',
-				message: e.message,
-			})
-		}
-
-		isLoading = false
-	}
-
-	const onUnfreezeIndexClick = async indexName => {
-		isLoading = true
-
-		try {
-			const api = new API($connection)
-			const result = await api.unfreezeIndex(indexName)
-
-			if (result.acknowledged) {
-				dispatch('notification/add', {
-					type: 'success',
-					message: `Index ${indexName} has been unfrozen`,
-				})
-				refreshDashboard()
-				dispatch('elasticsearch/index/fetch')
-			} else {
-				dispatch('notification/add', {
-					type: 'error',
-					message: `Something went wrong while unfreezing the index`,
-				})
-			}
-		} catch (e) {
-			dispatch('notification/add', {
-				type: 'error',
-				message: e.message,
-			})
-		}
-
-		isLoading = false
-	}
-
 	const onWipeIndexClick = async indexName => {
 		if (
 			!confirm(
@@ -265,23 +205,6 @@
 			disabled={isLoading}
 		>
 			Close
-		</button>
-
-		<button
-			class="ui tiny teal basic button"
-			onclick={e => onFreezeIndexClick($index.selected)}
-			class:loading={isLoading}
-			disabled={isLoading}
-		>
-			Freeze
-		</button>
-		<button
-			class="ui tiny teal basic button"
-			onclick={e => onUnfreezeIndexClick($index.selected)}
-			class:loading={isLoading}
-			disabled={isLoading}
-		>
-			Unfreeze
 		</button>
 
 		<button
