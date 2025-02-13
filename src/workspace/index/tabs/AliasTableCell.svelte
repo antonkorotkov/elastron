@@ -1,5 +1,4 @@
 <script>
-
 	import { useStoreon } from '@storeon/svelte'
 	import { getContext } from 'svelte'
 	import get from 'lodash/get'

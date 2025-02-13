@@ -17,7 +17,8 @@
 	const { dispatch, search, app } = useStoreon('search', 'app')
 
 	let requestBodyEditor, resultsEditor
-	let qEditor, rEditor
+	let qEditor = $state()
+	let rEditor = $state()
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 

@@ -22,7 +22,7 @@
 	/** @type {Props} */
 	let {
 		isClearable = true,
-		inputStyles = 'height:36px;background:transparent;',
+		inputStyles = 'height:36px;background:transparent;border:none;',
 		items = [],
 		isCreatable = true,
 		selectedValue = null,
@@ -37,18 +37,20 @@
 </script>
 
 <div class="advanced-selector" class:inverted>
-	<Select
-		{labelIdentifier}
-		{placeholder}
-		{isClearable}
-		{inputStyles}
-		{items}
-		{isCreatable}
-		value={selectedValue}
-		{isDisabled}
-		on:select={onSelect}
-		on:clear={onClear}
-	/>
+	{#key selectedValue}
+		<Select
+			{labelIdentifier}
+			{placeholder}
+			{isClearable}
+			{inputStyles}
+			{items}
+			{isCreatable}
+			value={selectedValue}
+			{isDisabled}
+			on:select={onSelect}
+			on:clear={onClear}
+		></Select>
+	{/key}
 
 	<style>
 		.inverted.advanced-selector .selection {

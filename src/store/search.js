@@ -74,7 +74,7 @@ export const search = store => {
 					message: `Document with id '${_id}' in index '${_index}' was successfully reindexed`,
 				})
 
-				const results = state.search.results.map((doc, index) => {
+				const results = state.search.results.map((doc) => {
 					if (doc._id === _id && doc._index === _index) {
 						return {
 							...doc,

@@ -93,7 +93,7 @@
         "node-localstorage": "^3.0.5",
         "percent-to-hex": "^1.0.1",
         "storeon": "^3.1.5",
-        "svelte-select": "5.8.3"
+        "svelte-select": "^4.4.7"
     },
     "devDependencies": {
         "@eslint/js": "^9.20.0",
