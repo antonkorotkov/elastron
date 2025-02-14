@@ -1,6 +1,4 @@
 <script>
-	import { preventDefault } from 'svelte/legacy';
-
 	import { useStoreon } from '@storeon/svelte'
 	import { onMount, getContext } from 'svelte'
 
@@ -48,7 +46,8 @@
 		close()
 	}
 
-	const clone = async () => {
+	const clone = async e => {
+		e.preventDefault();
 		isLoading = true
 
 		try {
@@ -95,7 +94,7 @@
 	<form
 		class="ui form"
 		class:inverted
-		onsubmit={preventDefault(clone)}
+		onsubmit={clone}
 		id="create-index-form"
 	>
 		<div class="fields">

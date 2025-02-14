@@ -12,7 +12,7 @@ const init = window => {
 		await dialog.showMessageBox(window, {
 			type: 'error',
 			title: 'Oops...',
-			message: `Could not automatically update the app because: ${e.message || 'unknown error'}. Please, consider downloading the new version from https://elastron.eney.solutions`,
+			message: `Could not automatically update the app because: ${e.message || 'unknown error'}. Please, consider downloading the new version from https://github.com/antonkorotkov/elastron/releases/latest`,
 		})
 	})
 

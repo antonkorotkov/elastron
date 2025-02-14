@@ -1,6 +1,4 @@
 <script>
-	import { preventDefault } from 'svelte/legacy';
-
 	import { useStoreon } from '@storeon/svelte'
 	import { getContext } from 'svelte'
 
@@ -63,7 +61,9 @@
 		}
 	}
 
-	const save = () => {
+	const save = e => {
+		e.preventDefault();
+
 		if (!$connection.useAuth) {
 			dispatch('connection/update', {
 				user: '',
@@ -163,7 +163,7 @@
 	<form
 		class="ui form segment"
 		class:inverted
-		onsubmit={preventDefault(save)}
+		onsubmit={save}
 		id="connection-form"
 	>
 		<div class="fields">

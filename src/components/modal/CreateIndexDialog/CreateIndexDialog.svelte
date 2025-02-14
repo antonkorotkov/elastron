@@ -1,6 +1,4 @@
 <script>
-	import { preventDefault } from 'svelte/legacy';
-
 	import { useStoreon } from '@storeon/svelte'
 	import { onMount, getContext } from 'svelte'
 	import JSONEditor from 'jsoneditor'
@@ -65,7 +63,8 @@
 		close()
 	}
 
-	const create = async () => {
+	const create = async e => {
+		e.preventDefault();
 		isLoading = true
 
 		try {
@@ -109,7 +108,7 @@
 	<form
 		class="ui form"
 		class:inverted
-		onsubmit={preventDefault(create)}
+		onsubmit={create}
 		id="create-index-form"
 	>
 		<div class="field">

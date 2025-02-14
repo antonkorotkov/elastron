@@ -147,12 +147,11 @@ export default class API {
 	}
 
 	/**
-	 *
 	 * @param {*} index
 	 * @param {*} id
 	 * @param {*} fields
 	 */
-	async updateDocument(index, type = '_doc', id, fields = {}) {
+	async updateDocument(index, id, fields = {}) {
 		try {
 			const response = await this.client.post(
 				`${index}/_update/${id}?refresh=true`,

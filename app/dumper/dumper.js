@@ -3,11 +3,7 @@ import { dialog } from 'electron'
 import { Options } from './Options.js'
 import get from 'lodash/get.js'
 import isArray from 'lodash/isArray.js'
-
-// eslint-disable-next-line no-undef
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-
-// eslint-disable-next-line no-undef
 const logError = console.error
 
 const init = (messaging, win) => {
@@ -28,7 +24,6 @@ const init = (messaging, win) => {
 
 	messaging.respond('import-export-run', (__, options) => {
 		try {
-			// eslint-disable-next-line no-undef
 			console.error = error => {
 				if (get(error, 'error.reason'))
 					messaging.send('dumper-error', get(error, 'error.reason'))
@@ -56,6 +51,7 @@ const init = (messaging, win) => {
 						}
 					}
 				} catch (e) {
+					console.debug(e);
 					messaging.send('dumper-error', error.message)
 				}
 			})

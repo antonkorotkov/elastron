@@ -1,7 +1,4 @@
 <script>
-	import { preventDefault } from 'svelte/legacy';
-
-
 	import { useStoreon } from '@storeon/svelte'
 	import JSONEditor from 'jsoneditor'
 	import { getContext, onMount, onDestroy } from 'svelte'
@@ -34,7 +31,8 @@
 		close()
 	}
 
-	const save = async () => {
+	const save = async e => {
+		e.preventDefault()
 		isLoading = true
 
 		try {
@@ -130,7 +128,7 @@
 	<form
 		class="ui form"
 		class:inverted
-		onsubmit={preventDefault(save)}
+		onsubmit={save}
 		id="alias-form"
 	>
 		<div class="field">
