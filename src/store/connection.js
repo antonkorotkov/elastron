@@ -25,7 +25,7 @@ export const connection = store => {
 		}
 	})
 
-	store.on('connection/clear', _state => {
+	store.on('connection/clear', () => {
 		return {
 			connection: {
 				name: '',
@@ -54,6 +54,7 @@ export const connection = store => {
 				store.dispatch('disconnected')
 			}
 		} catch (error) {
+			console.error(error.message);
 			store.dispatch('disconnected')
 		}
 		callback()

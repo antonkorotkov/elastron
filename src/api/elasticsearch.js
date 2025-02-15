@@ -1,5 +1,5 @@
-import get from 'lodash/get'
 import ipcRenderer from '../api/ipc-renderer'
+import { getMessageFromError } from '../utils/helpers';
 
 export default class API {
 	/**
@@ -348,12 +348,9 @@ export default class API {
 
 class ConnectionError extends Error {
 	constructor(error) {
-		const message = get(
-			error,
-			'response.data.error.root_cause[0].reason',
-			get(error, 'response.data.error.reason', error.message)
-		)
+		const message = getMessageFromError(error);
 		super(message)
+
 		this.type = 'ConnectionError'
 		this.message = message
 	}

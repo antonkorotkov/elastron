@@ -1,6 +1,7 @@
+import { get } from "lodash"
+
 /**
- *
- * @param {*} size
+ * @param {string} size
  */
 export const humanStoreSizeToPseudoBytes = size => {
 	const multipliers = {
@@ -14,25 +15,23 @@ export const humanStoreSizeToPseudoBytes = size => {
 	if (typeof size !== 'string') return size
 
 	for (let i in multipliers) {
-		const [_, sizeValue] = new RegExp(`^([0-9\.]+?)${i}$`).exec(size) || []
+		const [, sizeValue] = new RegExp(`^([0-9\\.]+?)${i}$`).exec(size) ?? []
 
 		if (sizeValue) return parseFloat(sizeValue) * multipliers[i]
 	}
 }
 
 /**
- *
- * @param {*} indexName
+ * @param {string} indexName
  */
 export const validateIndexName = indexName => {
-	return /^[^-_+ A-Z:\.][a-z0-9\-]*$/.test(indexName)
+	return /^[^-_+ A-Z:\\.][a-z0-9\\-]*$/.test(indexName)
 }
 
 /**
- *
- * @param {*} data
- * @param {*} search
- * @returns
+ * @param {array} data
+ * @param {string} search
+ * @returns {array}
  */
 export const filterArrayBy = (data, search) =>
 	data.filter(item => {
@@ -43,16 +42,14 @@ export const filterArrayBy = (data, search) =>
 	})
 
 /**
- *
- * @param {*} theme
- * @returns
+ * @param {string} theme
+ * @returns {boolean}
  */
 export const isThemeToggleChecked = theme => {
 	return theme === 'dark' ? true : false
 }
 
 /**
- *
  * @param {*} indexData
  * @returns
  */
@@ -63,9 +60,22 @@ export const getIndexListFromIndexData = indexData => {
 }
 
 /**
- *
- * @returns
+ * @returns {string}
  */
 export const randomId = () => {
 	return Math.random().toString()
+}
+
+/**
+ * @param {Error} error
+ * @returns {string}
+ */
+export const getMessageFromError = error => {
+	const message = get(
+		error,
+		'response.data.error.root_cause[0].reason',
+		get(error, 'response.data.error.reason', error.message)
+	).replace("Error invoking remote method 'elastic-request': ", '');
+
+	return message;
 }

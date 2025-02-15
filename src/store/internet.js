@@ -5,13 +5,13 @@ export const internet = store => {
 		},
 	}))
 
-	store.on('internet/online', _state => ({
+	store.on('internet/online', () => ({
 		internet: {
 			online: true,
 		},
 	}))
 
-	store.on('internet/offline', _state => ({
+	store.on('internet/offline', () => ({
 		internet: {
 			online: false,
 		},

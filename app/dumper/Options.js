@@ -167,20 +167,23 @@ class Options {
 		} = this.rendererOptions
 
 		switch (this.getInputType()) {
-			case 'file':
+			case 'file': {
 				const { file } = input
 				return file
+			}
 
-			case 'manual':
+			case 'manual': {
 				const { address } = input
 				return address
+			}
 
 			case 'index':
 				return buildConnectionUrl(connection)
 
-			case 'remote-index':
+			case 'remote-index': {
 				const { connection: connectionIndex } = input
 				return buildConnectionUrl(connections[connectionIndex])
+			}
 		}
 
 		return null
@@ -197,23 +200,26 @@ class Options {
 		} = this.rendererOptions
 
 		switch (this.getOutputType()) {
-			case 'file':
+			case 'file': {
 				const { file } = output
 				return `${file}/dump-${new Date()
 					.toISOString()
 					.replaceAll(' ', '-')
 					.toLowerCase()}.json`
+			}
 
-			case 'manual':
+			case 'manual': {
 				const { address } = output
 				return address
+			}
 
 			case 'index':
 				return buildConnectionUrl(connection)
 
-			case 'remote-index':
+			case 'remote-index': {
 				const { connection: connectionIndex } = output
 				return buildConnectionUrl(connections[connectionIndex])
+			}
 		}
 
 		return null
