@@ -24,9 +24,7 @@ export const humanStoreSizeToPseudoBytes = size => {
 /**
  * @param {string} indexName
  */
-export const validateIndexName = indexName => {
-	return /^[^-_+ A-Z:\\.][a-z0-9\\-]*$/.test(indexName)
-}
+export const isIndexNameValid = indexName => /^[a-z0-9\-_]+$/.test(indexName)
 
 /**
  * @param {array} data

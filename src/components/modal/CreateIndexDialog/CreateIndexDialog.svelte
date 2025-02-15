@@ -6,7 +6,7 @@
 	import API from '../../../api/elasticsearch'
 	import {
 		isThemeToggleChecked,
-		validateIndexName,
+		isIndexNameValid,
 	} from '../../../utils/helpers.js'
 
 	const { close } = getContext('modal-window')
@@ -97,7 +97,7 @@
 	}
 
 	const isIndexNameAllowed = name =>
-		validateIndexName(name) && !_indices.includes(name)
+		isIndexNameValid(name) && !_indices.includes(name)
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
