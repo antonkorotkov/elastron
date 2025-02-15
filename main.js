@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
 
 import updater from './app/updater.js'
 import messenger from './app/ipc-main.js'
@@ -32,7 +32,7 @@ const createWindow = () => {
 
 	mainWindow.webContents.on('new-window', function (e, url) {
 		e.preventDefault()
-		require('electron').shell.openExternal(url)
+		shell.openExternal(url)
 	})
 
 	Menu.setApplicationMenu(
@@ -59,13 +59,12 @@ const createWindow = () => {
 					{
 						label: 'Learn More',
 						click: async () => {
-							const { shell } = require('electron')
 							await shell.openExternal('https://elastron.eney.solutions')
 						},
 					},
 					{
 						label: 'Check For Updates',
-						click: () => checkForUpdates(true),
+						click: () => updater.checkForUpdates(true),
 					},
 					{
 						label: 'Debug',
