@@ -1,5 +1,7 @@
-const { autoUpdater } = require('electron-updater')
-const { dialog } = require('electron')
+import electronUpdater from 'electron-updater'
+import { dialog } from 'electron'
+
+const { autoUpdater } = electronUpdater
 
 autoUpdater.autoDownload = false
 
@@ -10,7 +12,7 @@ const init = window => {
 		await dialog.showMessageBox(window, {
 			type: 'error',
 			title: 'Oops...',
-			message: `Could not automatically update the app because: ${e.message || 'unknown error'}. Please, consider downloading the new version from https://elastron.eney.solutions`,
+			message: `Could not automatically update the app because: ${e.message || 'unknown error'}. Please, consider downloading the new version from https://github.com/antonkorotkov/elastron/releases/latest`,
 		})
 	})
 
@@ -55,4 +57,4 @@ const checkForUpdates = (notify = false) => {
 	autoUpdater.checkForUpdates()
 }
 
-module.exports = { init, checkForUpdates }
+export default { init, checkForUpdates }

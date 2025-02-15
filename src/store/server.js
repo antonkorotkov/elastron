@@ -1,5 +1,5 @@
 import API from '../api/elasticsearch'
-import get from 'lodash/get'
+import { getMessageFromError } from '../utils/helpers'
 
 export const server = store => {
 	store.on('@init', () => {
@@ -21,11 +21,7 @@ export const server = store => {
 		} catch (error) {
 			store.dispatch('notification/add', {
 				type: 'error',
-				message: get(
-					error,
-					'response.data.error.root_cause[0].reason',
-					get(error, 'response.data.error.reason', error.message)
-				),
+				message: getMessageFromError(error)
 			})
 		}
 	})

@@ -1,4 +1,4 @@
-const btoa = require('btoa')
+import btoa from 'btoa'
 
 const buildConnectionUrl = connection => {
 	const { host, port } = connection
@@ -167,20 +167,23 @@ class Options {
 		} = this.rendererOptions
 
 		switch (this.getInputType()) {
-			case 'file':
+			case 'file': {
 				const { file } = input
 				return file
+			}
 
-			case 'manual':
+			case 'manual': {
 				const { address } = input
 				return address
+			}
 
 			case 'index':
 				return buildConnectionUrl(connection)
 
-			case 'remote-index':
+			case 'remote-index': {
 				const { connection: connectionIndex } = input
 				return buildConnectionUrl(connections[connectionIndex])
+			}
 		}
 
 		return null
@@ -197,23 +200,26 @@ class Options {
 		} = this.rendererOptions
 
 		switch (this.getOutputType()) {
-			case 'file':
+			case 'file': {
 				const { file } = output
 				return `${file}/dump-${new Date()
 					.toISOString()
 					.replaceAll(' ', '-')
 					.toLowerCase()}.json`
+			}
 
-			case 'manual':
+			case 'manual': {
 				const { address } = output
 				return address
+			}
 
 			case 'index':
 				return buildConnectionUrl(connection)
 
-			case 'remote-index':
+			case 'remote-index': {
 				const { connection: connectionIndex } = output
 				return buildConnectionUrl(connections[connectionIndex])
+			}
 		}
 
 		return null
@@ -233,7 +239,7 @@ class Options {
 
 		// extend options with incoming options
 		for (let option of incomingOptions) {
-			if (typeof _options[option.name] !== undefined) {
+			if (typeof _options[option.name] !== 'undefined') {
 				// convert booleans to real booleans
 				if (option.value === 'true') {
 					_options[option.name] = true
@@ -355,9 +361,9 @@ class Options {
 				return currentInputHeaders
 			}
 		} catch (e) {
-			throw new Error(`Could not parse ${way} headers. Please use valid JSON.`)
+			throw new Error(`Could not parse ${way} headers. Please use valid JSON.`, { cause: e })
 		}
 	}
 }
 
-module.exports.Options = Options
+export { Options }

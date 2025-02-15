@@ -2,7 +2,7 @@
 	import isEqual from 'lodash/isEqual'
 	import JSONEditor from 'jsoneditor'
 	import { useStoreon } from '@storeon/svelte'
-	import { onMount, onDestroy, afterUpdate } from 'svelte'
+	import { onMount, onDestroy } from 'svelte'
 	import isEmpty from 'lodash/isEmpty'
 	import isNumber from 'lodash/isNumber'
 
@@ -17,9 +17,10 @@
 	const { dispatch, search, app } = useStoreon('search', 'app')
 
 	let requestBodyEditor, resultsEditor
-	let qEditor, rEditor
+	let qEditor = $state()
+	let rEditor = $state()
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 
 	const onEditorChange = () => {
 		try {
@@ -72,7 +73,7 @@
 			dispatch('search/documents/delete', index)
 	}
 
-	let canEditDoc = false
+	let canEditDoc = $state(false)
 	const onClickEditDocument = index => {
 		if (isEmpty($search.results[index]._source)) {
 			return dispatch('notification/add', {
@@ -152,7 +153,7 @@
 	})
 
 	let prevView = 'hits'
-	afterUpdate(() => {
+	$effect(() => {
 		try {
 			if (rEditor) {
 				let json = {}
@@ -239,7 +240,7 @@
 					<select
 						id="type"
 						class="ui dropdown"
-						on:change={e => onStateFieldChange({ type: e.target.value })}
+						onchange={e => onStateFieldChange({ type: e.target.value })}
 						value={$search.type}
 					>
 						<option value="uri">URI Search</option>
@@ -263,7 +264,7 @@
 						<input
 							type="number"
 							id="size"
-							on:change={onSizeChange}
+							onchange={onSizeChange}
 							value={$search.size}
 						/>
 					</div>
@@ -272,7 +273,7 @@
 						<input
 							type="number"
 							id="from"
-							on:change={onFromChange}
+							onchange={onFromChange}
 							value={$search.from}
 						/>
 					</div>
@@ -281,7 +282,7 @@
 						<input
 							type="text"
 							id="sort"
-							on:change={e =>
+							onchange={e =>
 								onStateFieldChange({
 									sort: e.target.value.trim(),
 								})}
@@ -295,7 +296,7 @@
 							<input
 								id="source"
 								type="checkbox"
-								on:change={e =>
+								onchange={e =>
 									onStateFieldChange({
 										useSource: e.target.checked,
 									})}
@@ -311,7 +312,7 @@
 							<input
 								type="text"
 								id="source-value"
-								on:change={e => onStateFieldChange({ _source: e.target.value })}
+								onchange={e => onStateFieldChange({ _source: e.target.value })}
 								value={$search._source}
 							/>
 						</div>
@@ -324,7 +325,7 @@
 						<input
 							id="use-doc-type"
 							type="checkbox"
-							on:change={e =>
+							onchange={e =>
 								onStateFieldChange({
 									useDocType: e.target.checked,
 								})}
@@ -340,7 +341,7 @@
 						<input
 							type="text"
 							id="type-value"
-							on:change={onDocTypeChange}
+							onchange={onDocTypeChange}
 							value={$search.docType}
 						/>
 					</div>
@@ -352,7 +353,7 @@
 						<input
 							id="explain"
 							type="checkbox"
-							on:change={e => onExplainChanged(e.target.checked)}
+							onchange={e => onExplainChanged(e.target.checked)}
 							checked={$search.explain}
 						/>
 						<label for="explain">Enable</label>
@@ -366,7 +367,7 @@
 							<input
 								id="profiling"
 								type="checkbox"
-								on:change={e => onProfilingChanged(e.target.checked)}
+								onchange={e => onProfilingChanged(e.target.checked)}
 								checked={$search.profiling}
 							/>
 							<label for="profiling">Enable</label>
@@ -375,7 +376,7 @@
 				{/if}
 			</div>
 			<div class="field" class:hidden={$search.type !== 'body'}>
-				<div id="request-body-editor" bind:this={requestBodyEditor} />
+				<div id="request-body-editor" bind:this={requestBodyEditor}></div>
 			</div>
 			{#if $search.type === 'body'}
 				<button
@@ -383,7 +384,7 @@
 					class:inverted
 					class:loading={$search.loading}
 					disabled={$search.loading}
-					on:click={onSearchRun}
+					onclick={onSearchRun}
 				>
 					Run
 				</button>
@@ -394,8 +395,8 @@
 					<input
 						id="uri"
 						type="text"
-						on:change={e => onStateFieldChange({ uriQuery: e.target.value })}
-						on:keyup={e => (e.keyCode == 13 ? onSearchRun() : null)}
+						onchange={e => onStateFieldChange({ uriQuery: e.target.value })}
+						onkeyup={e => (e.keyCode == 13 ? onSearchRun() : null)}
 						value={$search.uriQuery}
 					/>
 					<button
@@ -403,7 +404,7 @@
 						class:inverted
 						class:loading={$search.loading}
 						disabled={$search.loading}
-						on:click={onSearchRun}
+						onclick={onSearchRun}
 					>
 						Run
 					</button>
@@ -425,7 +426,7 @@
 			hidden={$search.view === 'profile'}
 			id="results-editor"
 			bind:this={resultsEditor}
-		/>
+		></div>
 	</div>
 </div>
 

@@ -1,11 +1,13 @@
 <script>
 	import IconButton from '../../../components/buttons/IconButton.svelte'
 
-	export let name
-	export let value
-	export let onDelete = () => {}
-	export let onChangeName = () => {}
-	export let onChangeValue = () => {}
+	let {
+		name,
+		value,
+		onDelete = () => {},
+		onChangeName = () => {},
+		onChangeValue = () => {}
+	} = $props();
 </script>
 
 <div class="fields">
@@ -14,7 +16,7 @@
 			type="text"
 			placeholder="Option Name"
 			value={name}
-			on:change={onChangeName}
+			onchange={onChangeName}
 		/>
 	</div>
 	<div class="eight wide field">
@@ -22,7 +24,7 @@
 			type="text"
 			placeholder="Option Value"
 			{value}
-			on:change={onChangeValue}
+			onchange={onChangeValue}
 		/>
 	</div>
 	<div class="one wide field controls">

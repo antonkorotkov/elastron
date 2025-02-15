@@ -17,7 +17,7 @@
 	const { dispatch, app, indices } = useStoreon('app', 'indices')
 	const { open } = getContext('modal-window')
 
-	let search = $indices.search
+	let search = $state($indices.search)
 
 	const onTableSort = (column, index, direction) => {
 		const sort = o => {
@@ -47,13 +47,13 @@
 		open(CreateIndexDialog)
 	}
 
-	$: filterRows = data => {
+	let filterRows = $derived(data => {
 		if (isEmpty(search)) return data
 
 		return filterArrayBy(data, search)
-	}
+	})
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui segments">
@@ -77,7 +77,7 @@
 						<div class="field">
 							<input
 								bind:value={search}
-								on:change={e =>
+								onchange={e =>
 									dispatch('elasticsearch/indices/update', {
 										search,
 									})}

@@ -26,7 +26,7 @@
 
 	dispatch('server/info')
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <Modal>

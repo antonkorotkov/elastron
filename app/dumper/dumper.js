@@ -1,8 +1,8 @@
-const ElasticDump = require('elasticdump')
-const { dialog } = require('electron')
-const { Options } = require('./Options')
-const get = require('lodash/get')
-const isArray = require('lodash/isArray')
+import ElasticDump from 'elasticdump'
+import { dialog } from 'electron'
+import { Options } from './Options.js'
+import get from 'lodash/get.js'
+import isArray from 'lodash/isArray.js'
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
 const logError = console.error
 
@@ -35,7 +35,7 @@ const init = (messaging, win) => {
 			dumper.on('error', error => {
 				try {
 					if (!error)
-						return messaging.send('dumper-error', 'Unknown error occured')
+						return messaging.send('dumper-error', 'Unknown error occurred')
 
 					if (error.message) {
 						const message = JSON.parse(error.message)
@@ -51,6 +51,7 @@ const init = (messaging, win) => {
 						}
 					}
 				} catch (e) {
+					console.debug(e);
 					messaging.send('dumper-error', error.message)
 				}
 			})
@@ -74,4 +75,4 @@ const init = (messaging, win) => {
 	})
 }
 
-module.exports = { init }
+export default { init }

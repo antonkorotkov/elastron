@@ -1,6 +1,7 @@
 import API from '../api/elasticsearch'
 import get from 'lodash/get'
 import isEmpty from 'lodash/isEmpty'
+import { getMessageFromError } from '../utils/helpers'
 
 export const search = store => {
 	store.on('@init', () => ({
@@ -74,7 +75,7 @@ export const search = store => {
 					message: `Document with id '${_id}' in index '${_index}' was successfully reindexed`,
 				})
 
-				const results = state.search.results.map((doc, index) => {
+				const results = state.search.results.map((doc) => {
 					if (doc._id === _id && doc._index === _index) {
 						return {
 							...doc,
@@ -95,11 +96,7 @@ export const search = store => {
 			store.dispatch('search/loading', false)
 			store.dispatch('notification/add', {
 				type: 'error',
-				message: get(
-					error,
-					'response.data.error.root_cause[0].reason',
-					get(error, 'response.data.error.reason', error.message)
-				),
+				message: getMessageFromError(error)
 			})
 		}
 	})
@@ -108,11 +105,10 @@ export const search = store => {
 		try {
 			store.dispatch('search/loading', true)
 
-			const { _index, _type, _id } = state.search.editDoc
+			const { _index, _id } = state.search.editDoc
 
 			const response = await new API(state.connection).updateDocument(
 				_index,
-				_type,
 				_id,
 				data
 			)
@@ -147,11 +143,7 @@ export const search = store => {
 			store.dispatch('search/loading', false)
 			store.dispatch('notification/add', {
 				type: 'error',
-				message: get(
-					error,
-					'response.data.error.root_cause[0].reason',
-					get(error, 'response.data.error.reason', error.message)
-				),
+				message: getMessageFromError(error)
 			})
 		}
 	})
@@ -193,11 +185,7 @@ export const search = store => {
 			store.dispatch('search/loading', false)
 			store.dispatch('notification/add', {
 				type: 'error',
-				message: get(
-					error,
-					'response.data.error.root_cause[0].reason',
-					get(error, 'response.data.error.reason', error.message)
-				),
+				message: getMessageFromError(error)
 			})
 		}
 	})
@@ -279,11 +267,7 @@ export const search = store => {
 			store.dispatch('search/loading', false)
 			store.dispatch('notification/add', {
 				type: 'error',
-				message: get(
-					error,
-					'response.data.error.root_cause[0].reason',
-					get(error, 'response.data.error.reason', error.message)
-				),
+				message: getMessageFromError(error)
 			})
 		}
 	})

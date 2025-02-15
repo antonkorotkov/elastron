@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron')
+import { ipcMain } from 'electron'
 
 class MessagingAPI {
 	constructor(mainWindow) {
@@ -22,4 +22,4 @@ const init = mainWindow => {
 	return new MessagingAPI(mainWindow)
 }
 
-module.exports = init
+export default init

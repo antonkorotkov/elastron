@@ -14,7 +14,7 @@
 
 	const currentConnection = { ...$connection }
 
-	export let onCancel = () => {}
+	let { onCancel = () => {} } = $props();
 	export const onOkay = () => {}
 
 	const { close } = getContext('modal-window')
@@ -61,7 +61,9 @@
 		}
 	}
 
-	const save = () => {
+	const save = e => {
+		e.preventDefault();
+
 		if (!$connection.useAuth) {
 			dispatch('connection/update', {
 				user: '',
@@ -110,7 +112,7 @@
 		})
 	}
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui header">Connection Settings</div>
@@ -125,7 +127,7 @@
 						<select
 							id="previous"
 							class="ui dropdown"
-							on:change={onPreviousChange}
+							onchange={onPreviousChange}
 						>
 							<option value="-2">Select Connection</option>
 							<option value="-1">New Connection</option>
@@ -143,13 +145,13 @@
 								{/each}
 							{/if}
 						</select>
-						<!-- svelte-ignore a11y-click-events-have-key-events -->
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
 						<div
 							role="button"
 							tabindex="0"
 							class="ui button"
 							class:inverted
-							on:click={onClearHistoryClick}
+							onclick={onClearHistoryClick}
 						>
 							Clear
 						</div>
@@ -161,7 +163,7 @@
 	<form
 		class="ui form segment"
 		class:inverted
-		on:submit|preventDefault={save}
+		onsubmit={save}
 		id="connection-form"
 	>
 		<div class="fields">
@@ -171,7 +173,7 @@
 					type="text"
 					id="name"
 					required={true}
-					on:change={e =>
+					onchange={e =>
 						dispatch('connection/update', {
 							name: e.target.value,
 						})}
@@ -187,7 +189,7 @@
 					type="url"
 					id="host"
 					required={true}
-					on:change={e =>
+					onchange={e =>
 						dispatch('connection/update', {
 							host: e.target.value,
 						})}
@@ -199,7 +201,7 @@
 				<input
 					type="number"
 					id="port"
-					on:change={e =>
+					onchange={e =>
 						dispatch('connection/update', {
 							port: e.target.value,
 						})}
@@ -213,7 +215,7 @@
 					id="auth"
 					type="checkbox"
 					checked={$connection.useAuth}
-					on:change={e =>
+					onchange={e =>
 						dispatch('connection/update', {
 							useAuth: e.target.checked,
 						})}
@@ -229,7 +231,7 @@
 						required={$connection.useAuth}
 						type="text"
 						id="user"
-						on:change={e =>
+						onchange={e =>
 							dispatch('connection/update', {
 								user: e.target.value,
 							})}
@@ -242,7 +244,7 @@
 						required={$connection.useAuth}
 						type="password"
 						id="password"
-						on:change={e =>
+						onchange={e =>
 							dispatch('connection/update', {
 								password: e.target.value,
 							})}
@@ -257,7 +259,7 @@
 					id="headers"
 					type="checkbox"
 					checked={$connection.addHeaders}
-					on:change={e =>
+					onchange={e =>
 						dispatch('connection/update', {
 							addHeaders: e.target.checked,
 						})}
@@ -277,31 +279,31 @@
 </div>
 
 <div class="actions">
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="ui black deny button right"
 		class:inverted
-		on:click={_onCancel}
+		onclick={_onCancel}
 		role="button"
 		tabindex="0"
 	>
 		Cancel
 	</div>
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="ui red right button"
 		class:inverted
-		on:click={deleteConnection}
+		onclick={deleteConnection}
 		role="button"
 		tabindex="0"
 	>
 		Delete
 	</div>
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="ui right button"
 		class:inverted
-		on:click={testConnection}
+		onclick={testConnection}
 		role="button"
 		tabindex="0"
 	>

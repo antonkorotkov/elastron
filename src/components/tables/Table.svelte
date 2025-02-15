@@ -4,15 +4,29 @@
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '../../utils/helpers'
 
-	export let columns
-	export let rows
-	export let sortable = false
-	export let selectable = false
-	export let emptyMessage = 'No data'
-	export let Cell = null
-	export let sorter = false
+	/**
+	 * @typedef {Object} Props
+	 * @property {any} columns
+	 * @property {any} rows
+	 * @property {boolean} [sortable]
+	 * @property {boolean} [selectable]
+	 * @property {string} [emptyMessage]
+	 * @property {any} [Cell]
+	 * @property {boolean} [sorter]
+	 */
 
-	let sorted = {}
+	/** @type {Props} */
+	let {
+		columns,
+		rows,
+		sortable = false,
+		selectable = false,
+		emptyMessage = 'No data',
+		Cell = null,
+		sorter = false
+	} = $props();
+
+	let sorted = $state({})
 
 	let CellRenderer = Cell ? Cell : RowCell
 
@@ -37,7 +51,7 @@
 		return 1
 	}
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <table
@@ -50,7 +64,7 @@
 		<tr>
 			{#each columns as column, i}
 				<th
-					on:click={e => onColumnClick.call(e, column, i)}
+					onclick={e => onColumnClick.call(e, column, i)}
 					class:sorted={sorted[i]}
 					class:ascending={sorted[i] === 'asc'}
 					class:descending={sorted[i] === 'desc'}

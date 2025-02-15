@@ -7,7 +7,7 @@
 
 	const { app, search } = useStoreon('search', 'app')
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="profile-table">

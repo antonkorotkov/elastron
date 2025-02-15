@@ -4,10 +4,23 @@
 	import { isThemeToggleChecked } from '../../utils/helpers'
 	import { useStoreon } from '@storeon/svelte'
 
-	export let key = 'modal-window'
-	export let closeOnEsc = true
-	export let closeOnOuterClick = true
-	export let setContext = baseSetContext
+	/**
+	 * @typedef {Object} Props
+	 * @property {string} [key]
+	 * @property {boolean} [closeOnEsc]
+	 * @property {boolean} [closeOnOuterClick]
+	 * @property {any} [setContext]
+	 * @property {import('svelte').Snippet} [children]
+	 */
+
+	/** @type {Props} */
+	let {
+		key = 'modal-window',
+		closeOnEsc = true,
+		closeOnOuterClick = true,
+		setContext = baseSetContext,
+		children
+	} = $props();
 
 	const { app } = useStoreon('app')
 
@@ -16,33 +29,33 @@
 		closeOnOuterClick,
 	}
 
-	let state = { ...defaultState }
+	let theState = { ...defaultState }
 
-	let Component = null
-	let props = null
+	let Component = $state(null)
+	let theProps = $state(null)
 
-	let background
+	let background = $state()
 
 	const open = (NewComponent, newProps = {}, options = {}) => {
 		Component = NewComponent
-		props = newProps
-		state = { ...defaultState, ...options }
+		theProps = newProps
+		theState = { ...defaultState, ...options }
 	}
 
 	const close = () => {
 		Component = null
-		props = null
+		theProps = null
 	}
 
-	const handleKeyup = ({ key }) => {
-		if (state.closeOnEsc && Component && key === 'Escape') {
+	const handleKeyup = event => {
+		if (theState.closeOnEsc && Component && event.key === 'Escape') {
 			event.preventDefault()
 			close()
 		}
 	}
 
 	const handleOuterClick = event => {
-		if (state.closeOnOuterClick && event.target === background) {
+		if (theState.closeOnOuterClick && event.target === background) {
 			event.preventDefault()
 			close()
 		}
@@ -50,16 +63,16 @@
 
 	setContext(key, { open, close })
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
-<svelte:window on:keyup={handleKeyup} />
+<svelte:window onkeyup={handleKeyup} />
 
 {#if Component}
-	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 	<div
 		transition:fade={{ duration: 300 }}
-		on:click={handleOuterClick}
+		onclick={handleOuterClick}
 		bind:this={background}
 		class="ui dimmer modals page hidden flex active"
 		role="alertdialog"
@@ -69,7 +82,7 @@
 			transition:fly={{ y: -500, duration: 300 }}
 			class:inverted
 		>
-			<svelte:component this={Component} {...props} />
+			<Component {...theProps} />
 		</div>
 	</div>
 
@@ -92,4 +105,4 @@
 	</style>
 {/if}
 
-<slot />
+{@render children?.()}

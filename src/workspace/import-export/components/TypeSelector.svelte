@@ -1,8 +1,14 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
 
-	export let direction
-	export let isFileDisabled = false
+	/**
+	 * @typedef {Object} Props
+	 * @property {any} direction
+	 * @property {boolean} [isFileDisabled]
+	 */
+
+	/** @type {Props} */
+	let { direction, isFileDisabled = false } = $props();
 
 	const { dispatch, importExport } = useStoreon('importExport')
 
@@ -14,7 +20,7 @@
 
 <select
 	value={$importExport[direction].type}
-	on:change={onChange}
+	onchange={onChange}
 	id="{direction}-select"
 >
 	<option value="file" disabled={isFileDisabled}>File</option>

@@ -1,4 +1,6 @@
 <script>
+	import { run } from 'svelte/legacy';
+
 	import { useStoreon } from '@storeon/svelte'
 	import API from '../../../api/elasticsearch'
 
@@ -6,10 +8,10 @@
 	import ConnectionSelector from '../../../components/inputs/ConnectionSelector.svelte'
 	import { getIndexListFromIndexData } from '../../../utils/helpers'
 
-	export let direction
+	let { direction } = $props();
 
-	let selectedConnection = null
-	let indicesLoading = false
+	let selectedConnection = $state(null)
+	let indicesLoading = $state(false)
 
 	const { dispatch, importExport, history } = useStoreon(
 		'importExport',
@@ -59,17 +61,17 @@
 
 	const onIndexClear = () => dispatch(`ie/${direction}/index`, null)
 
-	$: getIndexSelectorPlaceholder = () => {
+	let getIndexSelectorPlaceholder = $derived(() => {
 		if (!selectedConnection) return 'Select connection first...'
 		if (indicesLoading) return 'Loading...'
 		return 'Select Index...'
-	}
+	})
 
-	$: isIndexSelectorDisabled = () => {
+	let isIndexSelectorDisabled = $derived(() => {
 		return !selectedConnection || indicesLoading
-	}
+	})
 
-	$: {
+	run(() => {
 		if (
 			$importExport[direction].connection !== null &&
 			getConnectionByArrayIndex($importExport[direction].connection) !== null
@@ -80,7 +82,7 @@
 					.name,
 			}
 		} else selectedConnection = null
-	}
+	});
 </script>
 
 <div class="remote-index-selector">

@@ -1,10 +1,16 @@
 <script>
-	export let filter = ''
-	export let onCancel = () => {}
 
 	import { useStoreon } from '@storeon/svelte'
 	import { getContext } from 'svelte'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
+	/**
+	 * @typedef {Object} Props
+	 * @property {string} [filter]
+	 * @property {any} [onCancel]
+	 */
+
+	/** @type {Props} */
+	let { filter = '', onCancel = () => {} } = $props();
 
 	const { app } = useStoreon('app')
 
@@ -15,7 +21,7 @@
 		close()
 	}
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui header">Alias Filter</div>
@@ -25,11 +31,11 @@
 </div>
 
 <div class="actions">
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="ui black deny button right"
 		class:inverted
-		on:click={_onCancel}
+		onclick={_onCancel}
 		role="button"
 		tabindex="0"
 	>

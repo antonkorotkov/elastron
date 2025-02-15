@@ -5,7 +5,7 @@
 	import API from '../../../api/elasticsearch'
 	import {
 		isThemeToggleChecked,
-		validateIndexName,
+		isIndexNameValid,
 	} from '../../../utils/helpers.js'
 
 	const { close } = getContext('modal-window')
@@ -16,11 +16,10 @@
 		'app'
 	)
 
-	export let onCancel = () => {}
-	export let onOkay = () => {}
+	let { onCancel = () => {}, onOkay = () => {} } = $props();
 
-	let newIndex = ''
-	let isLoading = false
+	let newIndex = $state('')
+	let isLoading = $state(false)
 
 	let _indices =
 		$indices.data.map(
@@ -47,7 +46,8 @@
 		close()
 	}
 
-	const clone = async () => {
+	const clone = async e => {
+		e.preventDefault();
 		isLoading = true
 
 		try {
@@ -83,9 +83,9 @@
 	}
 
 	const isIndexNameAllowed = name =>
-		validateIndexName(name) && !_indices.includes(name)
+		isIndexNameValid(name) && !_indices.includes(name)
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="ui header">Clone The Index</div>
@@ -94,7 +94,7 @@
 	<form
 		class="ui form"
 		class:inverted
-		on:submit|preventDefault={clone}
+		onsubmit={clone}
 		id="create-index-form"
 	>
 		<div class="fields">
@@ -107,11 +107,11 @@
 </div>
 
 <div class="actions">
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		class="ui black deny button right"
 		class:inverted
-		on:click={_onCancel}
+		onclick={_onCancel}
 		role="button"
 		tabindex="0"
 	>

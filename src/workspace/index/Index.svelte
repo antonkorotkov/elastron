@@ -18,7 +18,7 @@
 		app,
 	} = useStoreon(routerKey, 'index', 'app')
 
-	let activeTab
+	let activeTab = $state()
 
 	const tabs = [
 		{ slug: 'index', name: 'Index', Component: Index },
@@ -27,7 +27,7 @@
 		{ slug: 'aliases', name: 'Aliases', Component: Aliases },
 	]
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 
 	onMount(() => {
 		dispatch('elasticsearch/index/select', $route.match.index || '')
@@ -68,7 +68,7 @@
 						class="item"
 						class:active={activeTab === tab.slug}
 						href="#0"
-						on:click={e => (activeTab = tab.slug)}
+						onclick={e => (activeTab = tab.slug)}
 					>
 						{tab.name}
 					</a>
@@ -79,7 +79,7 @@
 			<div class="ui segment" class:inverted>
 				{#each tabs as tab}
 					{#if activeTab === tab.slug}
-						<svelte:component this={tab.Component} />
+						<tab.Component />
 					{/if}
 				{/each}
 			</div>

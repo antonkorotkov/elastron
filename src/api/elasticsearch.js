@@ -1,5 +1,5 @@
-import get from 'lodash/get'
 import ipcRenderer from '../api/ipc-renderer'
+import { getMessageFromError } from '../utils/helpers';
 
 export default class API {
 	/**
@@ -147,12 +147,11 @@ export default class API {
 	}
 
 	/**
-	 *
 	 * @param {*} index
 	 * @param {*} id
 	 * @param {*} fields
 	 */
-	async updateDocument(index, type = '_doc', id, fields = {}) {
+	async updateDocument(index, id, fields = {}) {
 		try {
 			const response = await this.client.post(
 				`${index}/_update/${id}?refresh=true`,
@@ -262,32 +261,6 @@ export default class API {
 	 *
 	 * @param {*} index
 	 */
-	async freezeIndex(index) {
-		try {
-			const response = await this.client.post(`/${index}/_freeze`)
-			return response.data
-		} catch (err) {
-			throw new ConnectionError(err)
-		}
-	}
-
-	/**
-	 *
-	 * @param {*} index
-	 */
-	async unfreezeIndex(index) {
-		try {
-			const response = await this.client.post(`/${index}/_unfreeze`)
-			return response.data
-		} catch (err) {
-			throw new ConnectionError(err)
-		}
-	}
-
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async wipeIndex(index) {
 		try {
 			const response = await this.client.post(
@@ -375,12 +348,9 @@ export default class API {
 
 class ConnectionError extends Error {
 	constructor(error) {
-		const message = get(
-			error,
-			'response.data.error.root_cause[0].reason',
-			get(error, 'response.data.error.reason', error.message)
-		)
+		const message = getMessageFromError(error);
 		super(message)
+
 		this.type = 'ConnectionError'
 		this.message = message
 	}

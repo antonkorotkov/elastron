@@ -1,7 +1,13 @@
 <script>
-	export let cell = ''
-	export let i = 0
-	export let columns
+	/**
+	 * @typedef {Object} Props
+	 * @property {string} [cell]
+	 * @property {number} [i]
+	 * @property {any} columns
+	 */
+
+	/** @type {Props} */
+	let { cell = '', i = 0, columns } = $props();
 </script>
 
 {#if columns[i] === 'health'}

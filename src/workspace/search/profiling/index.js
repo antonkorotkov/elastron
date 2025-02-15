@@ -36,8 +36,8 @@ export default {
 	},
 	collector(c) {
 		return {
-			getName: v => c.name,
-			getReason: v => c.reason,
+			getName: () => c.name,
+			getReason: () => c.reason,
 			getNanos: v =>
 				compare(v, '5.0.0', '<')
 					? getNanosFromMsString(c.time)
