@@ -30,7 +30,6 @@
             "!.env"
         ],
         "appId": "com.elastron.www",
-        "afterSign": "notarize.js",
         "mac": {
             "category": "db.development.tools",
             "icon": "public/icon.icns",
