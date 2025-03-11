@@ -4,7 +4,7 @@ import API from '../api/elasticsearch'
 
 const initial = {
 	name: 'Local Server',
-	host: 'http://localhost',
+	host: 'https://localhost',
 	port: '9200',
 	useAuth: false,
 	user: '',
@@ -16,9 +16,11 @@ const initial = {
 export const connection = store => {
 	store.on('@init', () => {
 		const connections = ls('connection') || []
+		const lastConnection = ls('lastConnection');
+		const currentConnection = lastConnection ?? connections[connections.length - 1] ?? initial;
 
 		if (connections.length)
-			return { connection: { ...initial, ...connections[connections.length - 1] } }
+			return { connection: { ...initial, ...currentConnection } }
 
 		return {
 			connection: initial,
@@ -50,6 +52,7 @@ export const connection = store => {
 				store.dispatch('server/update', {
 					version: test.version,
 				})
+				ls('lastConnection', state.connection);
 			} else {
 				store.dispatch('disconnected')
 			}
