@@ -2,35 +2,43 @@ import API from '../api/elasticsearch'
 import get from 'lodash/get'
 import isEmpty from 'lodash/isEmpty'
 import { getMessageFromError } from '../utils/helpers'
+import ls from 'local-storage'
+import omit from 'lodash/omit'
+
+const initialState = ls('lastSearch') ?? {
+	profiling: false,
+	explain: false,
+	type: 'uri',
+	index: '_all',
+	useDocType: false,
+	docType: '_doc',
+	useSource: false,
+	_source: '',
+	requestBody: {
+		query: {
+			bool: {
+				must: {
+					match_all: {},
+				},
+			},
+		},
+		size: 10,
+		from: 0,
+		_source: true,
+	},
+	uriQuery: '*',
+	sort: '',
+	size: 10,
+	from: 0,
+	view: 'hits',
+};
 
 export const search = store => {
 	store.on('@init', () => ({
 		search: {
+			...initialState,
+			editDoc: null,
 			loading: false,
-			profiling: false,
-			explain: false,
-			type: 'uri',
-			index: '_all',
-			useDocType: false,
-			docType: '_doc',
-			useSource: false,
-			_source: '',
-			requestBody: {
-				query: {
-					bool: {
-						must: {
-							match_all: {},
-						},
-					},
-				},
-				size: 10,
-				from: 0,
-				_source: true,
-			},
-			uriQuery: '*',
-			sort: '',
-			size: 10,
-			from: 0,
 			response: {},
 			aggs: {},
 			results: [],
@@ -43,8 +51,6 @@ export const search = store => {
 				skipped_shards: 0,
 				failed_shards: 0,
 			},
-			view: 'hits',
-			editDoc: null,
 		},
 	}))
 
@@ -191,12 +197,14 @@ export const search = store => {
 	})
 
 	store.on('search/update', (state, data) => {
-		return {
-			search: {
-				...state.search,
-				...data,
-			},
+		const search = {
+			...state.search,
+			...data,
 		}
+
+		ls('lastSearch', omit(search, ['response', 'aggs', 'results', 'profile', 'stats', 'loading', 'editDoc']))
+
+		return { search }
 	})
 
 	store.on('search/loading', (state, loading) => ({
@@ -213,10 +221,7 @@ export const search = store => {
 			const buildSearchParams = () => ({
 				index: state.search.index,
 				type: state.search.useDocType ? state.search.docType : false,
-				query:
-					state.search.type === 'uri'
-						? state.search.uriQuery
-						: state.search.requestBody,
+				query: state.search.type === 'uri' ? state.search.uriQuery : state.search.requestBody,
 				size: state.search.size,
 				from: state.search.from,
 				sort: state.search.sort,
