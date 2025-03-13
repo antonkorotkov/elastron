@@ -1,5 +1,4 @@
 import { default as axios } from "axios"
-import btoa from "btoa"
 import { Agent } from "https"
 import get from "lodash/get.js"
 
