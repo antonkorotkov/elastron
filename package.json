@@ -78,9 +78,9 @@
     },
     "dependencies": {
         "@electron/remote": "^2.1.2",
-        "axios": "^1.7.9",
+        "axios": "^1.8.3",
         "call-bind-apply-helpers": "^1.0.2",
-        "elasticdump": "^6.118.0",
+        "elasticdump": "^6.119.1",
         "electron-updater": "^6.3.9",
         "lodash": "^4.17.21"
     },
