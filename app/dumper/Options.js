@@ -1,5 +1,3 @@
-import btoa from 'btoa'
-
 const buildConnectionUrl = connection => {
 	const { host, port } = connection
 	return `${host.replace(/\/+$/, '')}${Number(port) > 0 ? `:${port}` : ''}`
