@@ -77,3 +77,23 @@ export const getMessageFromError = error => {
 
 	return message;
 }
+
+/**
+ * @param {string} column
+ * @param {number} index
+ * @returns {(o: object) => number}
+ */
+export const indicesSortPredicate = (column, index) => o => {
+	switch (column) {
+		case 'docs.count':
+		case 'docs.deleted':
+		case 'pri':
+		case 'rep':
+			return Number(o[index])
+		case 'pri.store.size':
+		case 'store.size':
+			return humanStoreSizeToPseudoBytes(o[index])
+		default:
+			return o[index]
+	}
+}

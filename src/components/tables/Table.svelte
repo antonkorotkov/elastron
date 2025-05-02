@@ -62,7 +62,7 @@
 >
 	<thead>
 		<tr>
-			{#each columns as column, i}
+			{#each columns as column, i (column.id || i)}
 				<th
 					onclick={e => onColumnClick.call(e, column, i)}
 					class:sorted={sorted[i]}
@@ -76,9 +76,9 @@
 	</thead>
 	<tbody>
 		{#if rows.length}
-			{#each rows as row}
+			{#each rows as row, rowIndex (row.id || rowIndex)}
 				<tr>
-					{#each row as cell, i}
+					{#each row as cell, i (cell.id || i)}
 						<td colspan={getColspan(row.length, i, columns.length)}>
 							<CellRenderer {cell} {i} {columns} />
 						</td>

@@ -7,6 +7,7 @@ export const indices = store => {
             data: [],
             loading: false,
             search: '',
+			sorting: [] // [ direction, column, index ]
         },
     }))
 
@@ -19,6 +20,8 @@ export const indices = store => {
             columns: [],
             data: [],
             loading: false,
+			search: '',
+			sorting: []
         })
     })
 
