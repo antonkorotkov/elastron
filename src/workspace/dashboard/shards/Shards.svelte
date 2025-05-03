@@ -76,14 +76,17 @@
 		</div>
 	</div>
 	{#if $shards.columns.length}
-		<Table
-			columns={$shards.columns}
-			rows={data}
-			{onSort}
-			{sorting}
-			emptyMessage="No shards found"
-			selectable
-		/>
+		<div class="scrollable">
+			<Table
+				columns={$shards.columns}
+				rows={data}
+				{onSort}
+				{sorting}
+				emptyMessage="No shards found"
+				selectable
+				footerColumns
+			/>
+		</div>
 	{:else}
 		<div class="ui segment" class:inverted>
 			<p>

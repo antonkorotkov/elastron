@@ -76,14 +76,17 @@
 		</div>
 	</div>
 	{#if $allocation.columns.length}
-		<Table
-			columns={$allocation.columns}
-			rows={data}
-			emptyMessage="No allocations found"
-			{onSort}
-			{sorting}
-			selectable
-		/>
+		<div class="scrollable">
+			<Table
+				columns={$allocation.columns}
+				rows={data}
+				emptyMessage="No allocations found"
+				{onSort}
+				{sorting}
+				selectable
+				footerColumns
+			/>
+		</div>
 	{:else}
 		<div class="ui segment" class:inverted>
 			<p>

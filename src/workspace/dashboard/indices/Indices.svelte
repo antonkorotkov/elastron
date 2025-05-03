@@ -89,15 +89,18 @@
 		</div>
 	</div>
 	{#if $indices.columns.length}
-		<Table
-			columns={$indices.columns}
-			rows={data}
-			{onSort}
-			{sorting}
-			emptyMessage="No indices found"
-			selectable
-			{Cell}
-		/>
+		<div class="scrollable">
+			<Table
+				columns={$indices.columns}
+				rows={data}
+				{onSort}
+				{sorting}
+				emptyMessage="No indices found"
+				selectable
+				footerColumns
+				{Cell}
+			/>
+		</div>
 	{:else}
 		<div class="ui segment" class:inverted>
 			<p>

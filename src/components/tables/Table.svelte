@@ -13,6 +13,7 @@
 	 * @property {string} [emptyMessage]
 	 * @property {any} [Cell]
 	 * @property {(col: string, index: number, dir: 'asc' | 'desc') => void} [onSort]
+	 * @property {boolean} [footerColumns]
 	 */
 
 	/** @type {Props} */
@@ -23,6 +24,7 @@
 		selectable = false,
 		emptyMessage = 'No data',
 		Cell = null,
+		footerColumns = false,
 		onSort
 	} = $props();
 
@@ -86,4 +88,20 @@
 			</tr>
 		{/if}
 	</tbody>
+	{#if footerColumns}
+		<thead>
+			<tr>
+				{#each columns as column, i (column)}
+					<th
+						onclick={e => onColumnClick.call(e, column, i)}
+						class:sorted={i === index}
+						class:ascending={direction === 'asc'}
+						class:descending={direction === 'desc'}
+					>
+						<Column {column} />
+					</th>
+				{/each}
+			</tr>
+		</thead>
+	{/if}
 </table>
