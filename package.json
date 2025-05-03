@@ -94,6 +94,7 @@
         "@rollup/plugin-node-resolve": "^16.0.1",
         "@storeon/router": "~2.0.1",
         "@storeon/svelte": "~1.0.0",
+        "@types/lodash": "^4.17.16",
         "compare-versions": "~6.1.1",
         "electron": "^34.2.0",
         "electron-builder": "^25.1.8",

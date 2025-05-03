@@ -8,40 +8,35 @@
 	 * @typedef {Object} Props
 	 * @property {any} columns
 	 * @property {any} rows
-	 * @property {boolean} [sortable]
+	 * @property {['asc' | 'desc', string, number]} [sorting]
 	 * @property {boolean} [selectable]
 	 * @property {string} [emptyMessage]
 	 * @property {any} [Cell]
-	 * @property {boolean} [sorter]
+	 * @property {(col: string, index: number, dir: 'asc' | 'desc') => void} [onSort]
 	 */
 
 	/** @type {Props} */
 	let {
 		columns,
 		rows,
-		sortable = false,
+		sorting = [],
 		selectable = false,
 		emptyMessage = 'No data',
 		Cell = null,
-		sorter = false
+		onSort
 	} = $props();
-
-	let sorted = $state({})
 
 	let CellRenderer = Cell ? Cell : RowCell
 
 	const { app } = useStoreon('app')
+	const [direction,, index] = $derived(sorting)
 
 	const onColumnClick = (column, index) => {
-		if (!sortable) return
+		if (typeof onSort !== 'function')
+			return
 
-		sorted = sorted[index]
-			? { [index]: sorted[index] === 'asc' ? 'desc' : 'asc' }
-			: { [index]: 'asc' }
-
-		if (typeof sorter === 'function') {
-			sorter(column, index, sorted[index])
-		}
+		const newDirection = direction ? (direction === 'asc' ? 'desc' : 'asc') : 'asc';
+		onSort(column, index, newDirection)
 	}
 
 	const getColspan = (row, i, total) => {
@@ -57,17 +52,17 @@
 <table
 	class="ui attached table"
 	class:selectable
-	class:sortable={!!sorter}
+	class:sortable={!!onSort}
 	class:inverted
 >
 	<thead>
 		<tr>
-			{#each columns as column, i (column.id || i)}
+			{#each columns as column, i (column)}
 				<th
 					onclick={e => onColumnClick.call(e, column, i)}
-					class:sorted={sorted[i]}
-					class:ascending={sorted[i] === 'asc'}
-					class:descending={sorted[i] === 'desc'}
+					class:sorted={i === index}
+					class:ascending={direction === 'asc'}
+					class:descending={direction === 'desc'}
 				>
 					<Column {column} />
 				</th>
@@ -76,9 +71,9 @@
 	</thead>
 	<tbody>
 		{#if rows.length}
-			{#each rows as row, rowIndex (row.id || rowIndex)}
+			{#each rows as row, rowIndex (rowIndex)}
 				<tr>
-					{#each row as cell, i (cell.id || i)}
+					{#each row as cell, i (i)}
 						<td colspan={getColspan(row.length, i, columns.length)}>
 							<CellRenderer {cell} {i} {columns} />
 						</td>

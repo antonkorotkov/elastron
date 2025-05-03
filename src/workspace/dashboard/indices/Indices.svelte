@@ -1,9 +1,9 @@
 <script>
 	import { onMount, getContext } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
-	import orderBy from 'lodash/orderBy'
-	import isEmpty from 'lodash/isEmpty'
-	import debounce from 'lodash/debounce'
+	import orderBy from 'lodash/orderBy.js'
+	import isEmpty from 'lodash/isEmpty.js'
+	import debounce from 'lodash/debounce.js'
 
 	import { indicesSortPredicate, isThemeToggleChecked, filterArrayBy } from '../../../utils/helpers'
 	import Table from '../../../components/tables/Table.svelte'
@@ -48,7 +48,7 @@
 		dispatch('elasticsearch/indices/fetch')
 	}
 
-	const onTableSort = (column, index, direction) => {
+	const onSort = (column, index, direction) => {
 		dispatch('elasticsearch/indices/update', { sorting: [ direction, column, index ] })
 	}
 </script>
@@ -93,10 +93,10 @@
 		<Table
 			columns={$indices.columns}
 			rows={data}
-			sorter={onTableSort}
+			{onSort}
+			{sorting}
 			emptyMessage="No indices found"
 			selectable
-			sortable
 			{Cell}
 		/>
 	{:else}
