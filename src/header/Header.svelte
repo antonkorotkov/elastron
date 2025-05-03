@@ -36,6 +36,7 @@
 	} = useStoreon(routerKey, 'connection', 'server')
 
 	let version = $derived(get($server, 'version.number', false))
+	let path = $derived($route.match.page ?? 'dashboard');
 </script>
 
 <header ondblclick={onHeaderDblClick} role="navigation">
@@ -46,18 +47,18 @@
 		<a
 			class="item"
 			href="/"
-			class:active={$route.match.page == 'dashboard'}
+			class:active={path == 'dashboard'}
 			onclick={onDashboardClick}
 		>
 			Dashboard
 		</a>
-		<a class="item" href="/search" class:active={$route.match.page == 'search'}>
+		<a class="item" href="/search" class:active={path == 'search'}>
 			Search
 		</a>
 		<a
 			class="item"
 			href="/import-export"
-			class:active={$route.match.page == 'import-export'}
+			class:active={path == 'import-export'}
 		>
 			Import/Export
 			<sup>beta</sup>

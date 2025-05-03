@@ -9,7 +9,7 @@
 	import Table from '../../../components/tables/Table.svelte'
 	import Cell from './Cell.svelte'
 	import CreateIndexDialog from '../../../components/modal/CreateIndexDialog/CreateIndexDialog.svelte'
-	import IconButton from '../../../components/buttons/IconButton.svelte'
+	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
 
 	const { dispatch, app, indices } = useStoreon('app', 'indices')
 	const { open } = getContext('modal-window')
@@ -31,7 +31,7 @@
 		return list
 	})
 
-	onMount(async () => {
+	onMount(() => {
 		if (!$indices.data.length)
 			dispatch('elasticsearch/indices/fetch')
 	})
@@ -57,35 +57,34 @@
 	<div class="ui segment" class:inverted>
 		<div class="ui grid">
 			<div class="eight wide column middle aligned">
-				<h4>
-					Indices
-					<span class="add-index">
-						<IconButton
-							className="plus circle"
-							title="Create new index"
-							onClick={showCreateIndexDialog}
-						/>
-					</span>
-				</h4>
+				<div class="ui tiny buttons">
+					<ButtonTinyBasic
+						label="Refresh"
+						color="blue"
+						loading={$indices.loading}
+						onClick={onRefresh}
+					/>
+					<ButtonTinyBasic
+						label="Create"
+						color="green"
+						loading={$indices.loading}
+						onClick={showCreateIndexDialog}
+					/>
+				</div>
 			</div>
 			<div class="eight wide column right aligned">
-				<div class="ui mini form search">
-					<div class="inline fields">
-						<div class="field">
-							<input
-								onkeyup={onSearchChange}
-								type="text"
-								placeholder="Search"
-							/>
-						</div>
+				<div class="ui search">
+					<div class="ui icon input" class:inverted>
+						<input
+							class="prompt"
+							onkeyup={onSearchChange}
+							type="text"
+							placeholder="Search..."
+							defaultValue={search}
+						>
+						<i class="search icon"></i>
 					</div>
 				</div>
-
-				<IconButton
-					className="sync alternate refresh"
-					loading={$indices.loading}
-					onClick={onRefresh}
-				/>
 			</div>
 		</div>
 	</div>
@@ -109,17 +108,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	.add-index {
-		margin-left: 0.5rem;
-	}
-
-	.search {
-		display: inline-block;
-	}
-
-	.search .fields {
-		margin: 0;
-	}
-</style>

@@ -5,5 +5,5 @@ export const routes = createRouter([
 	['/index', () => ({ page: 'index' })],
 	['/index/*', index => ({ page: 'index', index })],
 	['/search', () => ({ page: 'search' })],
-	['/import-export', () => ({ page: 'import-export' })],
+	['/import-export', () => ({ page: 'import-export' })]
 ])

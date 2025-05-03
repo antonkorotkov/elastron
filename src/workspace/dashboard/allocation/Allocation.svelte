@@ -1,93 +1,88 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
 	import { onMount } from 'svelte'
-	import orderBy from 'lodash/orderBy'
-	import isEmpty from 'lodash/isEmpty'
+	import orderBy from 'lodash/orderBy.js'
+	import isEmpty from 'lodash/isEmpty.js'
+	import debounce from 'lodash/debounce.js'
 
 	import Table from '../../../components/tables/Table.svelte'
-	import {
-		humanStoreSizeToPseudoBytes,
-		filterArrayBy,
-		isThemeToggleChecked,
-	} from '../../../utils/helpers.js'
-	import IconButton from '../../../components/buttons/IconButton.svelte'
+	import { filterArrayBy, isThemeToggleChecked, allocationSortPredicate } from '../../../utils/helpers.js'
+	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
 
-	const { dispatch, allocation, app } = useStoreon('allocation', 'app')
-
-	let search = $state($allocation.search)
-
-	const onTableSort = (column, index, direction) => {
-		const sort = o => {
-			switch (column) {
-				case 'shards':
-				case 'disk.percent':
-					return Number(o[index])
-				case 'disk.indices':
-				case 'disk.used':
-				case 'disk.avail':
-				case 'disk.total':
-					return humanStoreSizeToPseudoBytes(o[index])
-				default:
-					return o[index]
-			}
-		}
-
-		const sorted = orderBy($allocation.data, [sort], [direction])
-		dispatch('elasticsearch/allocation/update', { data: sorted })
-	}
-
-	let filterRows = $derived(data => {
-		if (isEmpty(search)) return data
-
-		return filterArrayBy(data, search)
-	})
+	const { dispatch, app, allocation } = useStoreon('app', 'allocation')
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
+	let allocationList = $derived($allocation.data)
+	let sorting = $derived($allocation.sorting)
+	let search = $derived($allocation.search)
+	let data = $derived.by(() => {
+		const [ direction, column, index ] = sorting
+		let list = allocationList;
 
-	onMount(async () => {
-		if (!$allocation.data.length) dispatch('elasticsearch/allocation/fetch')
+		if (direction && column && index !== undefined)
+			list = orderBy(list, [allocationSortPredicate(column, index)], [direction])
+
+		if (!isEmpty(search))
+			list = filterArrayBy(list, search)
+
+		return list
 	})
+
+	onMount(() => {
+		if (!$allocation.data.length)
+			dispatch('elasticsearch/allocation/fetch')
+	})
+
+	const onSearchChange = debounce(e => {
+		dispatch('elasticsearch/allocation/update', { search: e.target.value })
+	}, 300)
+
+	const onRefresh = () => {
+		dispatch('elasticsearch/allocation/fetch')
+	}
+
+	const onSort = (column, index, direction) => {
+		dispatch('elasticsearch/allocation/update', { sorting: [ direction, column, index ] })
+	}
 </script>
 
 <div class="ui segments">
 	<div class="ui segment" class:inverted>
 		<div class="ui grid">
 			<div class="eight wide column middle aligned">
-				<h4>Allocation</h4>
+				<div class="ui tiny buttons">
+					<ButtonTinyBasic
+						label="Refresh"
+						color="blue"
+						loading={$allocation.loading}
+						onClick={onRefresh}
+					/>
+				</div>
 			</div>
 			<div class="eight wide column right aligned">
-				<div class="ui mini form search">
-					<div class="inline fields">
-						<div class="field">
-							<input
-								bind:value={search}
-								onchange={e =>
-									dispatch('elasticsearch/allocation/update', {
-										search,
-									})}
-								type="text"
-								placeholder="Search"
-							/>
-						</div>
+				<div class="ui search">
+					<div class="ui icon input" class:inverted>
+						<input
+							class="prompt"
+							onkeyup={onSearchChange}
+							type="text"
+							placeholder="Search..."
+							defaultValue={search}
+						>
+						<i class="search icon"></i>
 					</div>
 				</div>
-
-				<IconButton
-					className="sync alternate refresh"
-					loading={$allocation.loading}
-					onClick={() => dispatch('elasticsearch/allocation/fetch')}
-				/>
 			</div>
 		</div>
 	</div>
 	{#if $allocation.columns.length}
 		<Table
 			columns={$allocation.columns}
-			rows={filterRows($allocation.data)}
+			rows={data}
 			emptyMessage="No allocations found"
-			sorter={onTableSort}
+			{onSort}
+			{sorting}
 			selectable
-			sortable
 		/>
 	{:else}
 		<div class="ui segment" class:inverted>
@@ -99,13 +94,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	.search {
-		display: inline-block;
-	}
-
-	.search .fields {
-		margin: 0;
-	}
-</style>

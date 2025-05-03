@@ -63,7 +63,7 @@
 	<div class="ui grid">
 		<div class="two wide column">
 			<div class="ui vertical fluid pointing menu" class:inverted>
-				{#each tabs as tab}
+				{#each tabs as tab (tab.slug)}
 					<a
 						class="item"
 						class:active={activeTab === tab.slug}
@@ -77,7 +77,7 @@
 		</div>
 		<div class="fourteen wide stretched column">
 			<div class="ui segment" class:inverted>
-				{#each tabs as tab}
+				{#each tabs as tab (tab.slug)}
 					{#if activeTab === tab.slug}
 						<tab.Component />
 					{/if}

@@ -6,6 +6,8 @@ export const shards = store => {
 			columns: [],
 			data: [],
 			loading: false,
+			search: '',
+			sorting: [] // [ direction, column, index ]
 		},
 	}))
 
@@ -19,6 +21,7 @@ export const shards = store => {
 			data: [],
 			loading: false,
 			search: '',
+			sorting: []
 		})
 	})
 
