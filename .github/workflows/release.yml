@@ -9,7 +9,7 @@ on:
 
 jobs:
   dist-linux:
-    if: github.event.pull_request.merged == true
+    # if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,7 +24,7 @@ jobs:
         run: npm install -g yarn
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn
 
       - name: Build
         run: yarn build
@@ -32,7 +32,7 @@ jobs:
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn dist-linux
+        run: yarn release-linux
 
   dist-mac:
     # if: github.event.pull_request.merged == true
@@ -58,4 +58,4 @@ jobs:
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn dist-mac
+        run: yarn release-mac
