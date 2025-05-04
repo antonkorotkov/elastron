@@ -53,31 +53,32 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: yarn release-linux
 
-  dist-mac:
-    needs: create-release
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  # currently being built locally
+  #   dist-mac:
+  #   needs: create-release
+  #   runs-on: macos-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: '20'
 
-      - name: Install Yarn
-        run: npm install -g yarn
+  #     - name: Install Yarn
+  #       run: npm install -g yarn
 
-      - name: Install dependencies
-        run: yarn
+  #     - name: Install dependencies
+  #       run: yarn
 
-      - name: Build
-        run: yarn build
+  #     - name: Build
+  #       run: yarn build
 
-      - name: Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: yarn release-mac
+  #     - name: Release
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: yarn release-mac
 
   dist-win:
     needs: create-release
