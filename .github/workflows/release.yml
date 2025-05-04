@@ -1,15 +1,38 @@
 name: Release
 on:
-  # pull_request:
-  #   types:
-  #     - closed
-  #   branches:
-  #     - master
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
   workflow_dispatch:
 
 jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.get_version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from package.json
+        id: get_version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create Draft Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ steps.get_version.outputs.tag }} \
+            --draft \
+            --title "Release ${{ steps.get_version.outputs.tag }}" \
+            --generate-notes
+
   dist-linux:
-    # if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true
+    needs: create-release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,7 +58,8 @@ jobs:
         run: yarn release-linux
 
   dist-mac:
-    # if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true
+    needs: create-release
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -61,7 +85,8 @@ jobs:
         run: yarn release-mac
 
   dist-win:
-    # if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true
+    needs: create-release
     runs-on: windows-latest
     steps:
       - name: Checkout
