@@ -21,6 +21,11 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           echo "tag=${VERSION}" >> $GITHUB_OUTPUT
 
+      - name: Create Git Tag
+        run: |
+          git tag ${{ steps.get_version.outputs.tag }}
+          git push origin ${{ steps.get_version.outputs.tag }}
+
       - name: Create Draft Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
