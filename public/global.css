@@ -1,99 +1,103 @@
 html,
 body {
-  position: relative;
-  width: 100%;
-  height: 100%;
+	position: relative;
+	width: 100%;
+	height: 100%;
 }
 
 body {
-  color: #333;
-  margin: 0;
-  padding: 8px;
-  box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
+	color: #333;
+	margin: 0;
+	padding: 8px;
+	box-sizing: border-box;
+	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+		Oxygen-Sans, Ubuntu, Cantarell, 'Helvetica Neue', sans-serif;
 }
 
 a {
-  color: rgb(0, 100, 200);
-  text-decoration: none;
+	color: rgb(0, 100, 200);
+	text-decoration: none;
 }
 
 a:hover {
-  text-decoration: underline;
+	text-decoration: underline;
 }
 
 a:visited {
-  color: rgb(0, 80, 160);
+	color: rgb(0, 80, 160);
 }
 
 label {
-  display: block;
+	display: block;
 }
 
 input,
 button,
 select,
 textarea {
-  font-family: inherit;
-  font-size: inherit;
-  padding: 0.4em;
-  margin: 0 0 0.5em 0;
-  box-sizing: border-box;
-  border: 1px solid #ccc;
-  border-radius: 2px;
+	font-family: inherit;
+	font-size: inherit;
+	padding: 0.4em;
+	margin: 0 0 0.5em 0;
+	box-sizing: border-box;
+	border: 1px solid #ccc;
+	border-radius: 2px;
 }
 
 input:disabled {
-  color: #ccc;
+	color: #ccc;
 }
 
 input[type='range'] {
-  height: 0;
+	height: 0;
 }
 
 button {
-  color: #333;
-  background-color: #f4f4f4;
-  outline: none;
+	color: #333;
+	background-color: #f4f4f4;
+	outline: none;
 }
 
 button:disabled {
-  color: #999;
+	color: #999;
 }
 
 button:not(:disabled):active {
-  background-color: #ddd;
+	background-color: #ddd;
 }
 
 button:focus {
-  border-color: #666;
+	border-color: #666;
 }
 
 /* dark styling of the editor */
 .inverted div.jsoneditor,
 .inverted div.jsoneditor-menu {
-  border-color: #4b4b4b;
+	border-color: #4b4b4b;
 }
+
 .inverted div.jsoneditor-menu {
-  background-color: #4b4b4b;
+	background-color: #4b4b4b;
 }
+
 .inverted div.jsoneditor-tree,
 .inverted div.jsoneditor textarea.jsoneditor-text {
-  background-color: #666666;
-  color: #ffffff;
+	background-color: #666666;
+	color: #ffffff;
 }
+
 .inverted div.jsoneditor-field,
 .inverted div.jsoneditor-value {
-  color: #ffffff;
+	color: #ffffff;
 }
+
 .inverted table.jsoneditor-search div.jsoneditor-frame {
-  background: #808080;
+	background: #808080;
 }
 
 .inverted tr.jsoneditor-highlight,
 .inverted tr.jsoneditor-selected {
-  background-color: #808080;
+	background-color: #808080;
 }
 
 .inverted div.jsoneditor-field[contenteditable='true']:focus,
@@ -102,8 +106,8 @@ button:focus {
 .inverted div.jsoneditor-value[contenteditable='true']:hover,
 .inverted div.jsoneditor-field.jsoneditor-highlight,
 .inverted div.jsoneditor-value.jsoneditor-highlight {
-  background-color: #808080;
-  border-color: #808080;
+	background-color: #808080;
+	border-color: #808080;
 }
 
 .inverted div.jsoneditor-field.highlight-active,
@@ -112,37 +116,54 @@ button:focus {
 .inverted div.jsoneditor-value.highlight-active,
 .inverted div.jsoneditor-value.highlight-active:focus,
 .inverted div.jsoneditor-value.highlight-active:hover {
-  background-color: #b1b1b1;
-  border-color: #b1b1b1;
+	background-color: #b1b1b1;
+	border-color: #b1b1b1;
 }
 
 .inverted div.jsoneditor-tree button:focus {
-  background-color: #868686;
+	background-color: #868686;
 }
 
 /* coloring of JSON in tree mode */
 .inverted div.jsoneditor-readonly {
-  color: #acacac;
+	color: #acacac;
 }
+
 .inverted div.jsoneditor td.jsoneditor-separator {
-  color: #acacac;
+	color: #acacac;
 }
+
 .inverted div.jsoneditor-value.jsoneditor-string {
-  color: #00ff88;
+	color: #00ff88;
 }
+
 .inverted div.jsoneditor-value.jsoneditor-object,
 .inverted div.jsoneditor-value.jsoneditor-array {
-  color: #bababa;
+	color: #bababa;
 }
+
 .inverted div.jsoneditor-value.jsoneditor-number {
-  color: #ff4040;
+	color: #ff4040;
 }
+
 .inverted div.jsoneditor-value.jsoneditor-boolean {
-  color: #ff8048;
+	color: #ff8048;
 }
+
 .inverted div.jsoneditor-value.jsoneditor-null {
-  color: #49a7fc;
+	color: #49a7fc;
 }
+
 .inverted div.jsoneditor-value.jsoneditor-invalid {
-  color: white;
+	color: white;
+}
+
+.scrollable {
+	overflow-y: scroll;
+	height: calc(100vh - 248px);
+	overflow-x: hidden;
+}
+
+.scrollable::-webkit-scrollbar {
+	display: none;
 }

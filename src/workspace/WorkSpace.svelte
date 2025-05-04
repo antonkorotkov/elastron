@@ -8,16 +8,18 @@
 	import ImportExport from './import-export/Index.svelte'
 
 	const { [routerKey]: route } = useStoreon(routerKey)
+
+	let path = $derived($route.match.page ?? 'dashboard');
 </script>
 
 <div class="ui padded">
-	{#if $route.match.page === 'dashboard'}
+	{#if path === 'dashboard'}
 		<Dashboard />
-	{:else if $route.match.page === 'index'}
+	{:else if path === 'index'}
 		<Index />
-	{:else if $route.match.page === 'search'}
+	{:else if path === 'search'}
 		<Search />
-	{:else if $route.match.page === 'import-export'}
+	{:else if path === 'import-export'}
 		<ImportExport />
 	{:else}
 		<Dashboard />

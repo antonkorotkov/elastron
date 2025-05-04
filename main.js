@@ -11,8 +11,8 @@ electronRemoteMain.initialize()
 const createWindow = () => {
 	// Create the browser window.
 	const mainWindow = new BrowserWindow({
-		width: 1280,
-		height: 768,
+		width: 1440,
+		height: 960,
 		minWidth: 1280,
 		minHeight: 768,
 		titleBarStyle: 'hiddenInset',

@@ -132,7 +132,7 @@
 							<option value="-2">Select Connection</option>
 							<option value="-1">New Connection</option>
 							{#if $history.connection.length}
-								{#each $history.connection as connection, i}
+								{#each $history.connection as connection, i (i)}
 									<option value={i}>
 										{#if connection.name}
 											{connection.name}

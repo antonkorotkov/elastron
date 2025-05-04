@@ -1,91 +1,92 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
 	import { onMount } from 'svelte'
-	import orderBy from 'lodash/orderBy'
-	import isEmpty from 'lodash/isEmpty'
+	import orderBy from 'lodash/orderBy.js'
+	import isEmpty from 'lodash/isEmpty.js'
+	import debounce from 'lodash/debounce.js'
 
 	import Table from '../../../components/tables/Table.svelte'
-	import {
-		humanStoreSizeToPseudoBytes,
-		filterArrayBy,
-		isThemeToggleChecked,
-	} from '../../../utils/helpers.js'
-	import IconButton from '../../../components/buttons/IconButton.svelte'
+	import { filterArrayBy, shardsSortPredicate, isThemeToggleChecked } from '../../../utils/helpers.js'
+	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
 
-	const { dispatch, shards, app } = useStoreon('shards', 'app')
-
-	let search = $state($shards.search)
-
-	const onTableSort = (column, index, direction) => {
-		const sort = o => {
-			switch (column) {
-				case 'shard':
-				case 'docs':
-					return Number(o[index])
-				case 'store':
-					return humanStoreSizeToPseudoBytes(o[index])
-				default:
-					return o[index]
-			}
-		}
-
-		const sorted = orderBy($shards.data, [sort], [direction])
-		dispatch('elasticsearch/shards/update', { data: sorted })
-	}
-
-	onMount(async () => {
-		if (!$shards.data.length) dispatch('elasticsearch/shards/fetch')
-	})
-
-	let filterRows = $derived(data => {
-		if (isEmpty(search)) return data
-
-		return filterArrayBy(data, search)
-	})
+	const { dispatch, app, shards } = useStoreon('app', 'shards')
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
+	let shardsList = $derived($shards.data)
+	let sorting = $derived($shards.sorting)
+	let search = $derived($shards.search)
+	let data = $derived.by(() => {
+		const [ direction, column, index ] = sorting
+		let list = shardsList;
+
+		if (direction && column && index !== undefined)
+			list = orderBy(list, [shardsSortPredicate(column, index)], [direction])
+
+		if (!isEmpty(search))
+			list = filterArrayBy(list, search)
+
+		return list
+	})
+
+	onMount(() => {
+		if (!$shards.data.length)
+			dispatch('elasticsearch/shards/fetch')
+	})
+
+	const onSearchChange = debounce(e => {
+		dispatch('elasticsearch/shards/update', { search: e.target.value })
+	}, 300)
+
+	const onRefresh = () => {
+		dispatch('elasticsearch/shards/fetch')
+	}
+
+	const onSort = (column, index, direction) => {
+		dispatch('elasticsearch/shards/update', { sorting: [ direction, column, index ] })
+	}
 </script>
 
 <div class="ui segments">
 	<div class="ui segment" class:inverted>
 		<div class="ui grid">
 			<div class="eight wide column middle aligned">
-				<h4>Shards</h4>
+				<div class="ui tiny buttons">
+					<ButtonTinyBasic
+						label="Refresh"
+						color="blue"
+						loading={$shards.loading}
+						onClick={onRefresh}
+					/>
+				</div>
 			</div>
 			<div class="eight wide column right aligned">
-				<div class="ui mini form search">
-					<div class="inline fields">
-						<div class="field">
-							<input
-								bind:value={search}
-								onchange={e =>
-									dispatch('elasticsearch/shards/update', {
-										search,
-									})}
-								type="text"
-								placeholder="Search"
-							/>
-						</div>
+				<div class="ui search">
+					<div class="ui icon input" class:inverted>
+						<input
+							class="prompt"
+							onkeyup={onSearchChange}
+							type="text"
+							placeholder="Search..."
+							defaultValue={search}
+						>
+						<i class="search icon"></i>
 					</div>
 				</div>
-
-				<IconButton
-					className="sync alternate refresh"
-					loading={$shards.loading}
-					onClick={() => dispatch('elasticsearch/shards/fetch')}
-				/>
 			</div>
 		</div>
 	</div>
 	{#if $shards.columns.length}
-		<Table
-			columns={$shards.columns}
-			rows={filterRows($shards.data)}
-			emptyMessage="No shards found"
-			sorter={onTableSort}
-			selectable
-			sortable
-		/>
+		<div class="scrollable">
+			<Table
+				columns={$shards.columns}
+				rows={data}
+				{onSort}
+				{sorting}
+				emptyMessage="No shards found"
+				selectable
+				footerColumns
+			/>
+		</div>
 	{:else}
 		<div class="ui segment" class:inverted>
 			<p>
@@ -96,13 +97,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	.search {
-		display: inline-block;
-	}
-
-	.search .fields {
-		margin: 0;
-	}
-</style>

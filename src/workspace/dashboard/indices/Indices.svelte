@@ -1,111 +1,106 @@
 <script>
-	import { useStoreon } from '@storeon/svelte'
 	import { onMount, getContext } from 'svelte'
-	import orderBy from 'lodash/orderBy'
-	import isEmpty from 'lodash/isEmpty'
-	import { isThemeToggleChecked } from '../../../utils/helpers'
+	import { useStoreon } from '@storeon/svelte'
+	import orderBy from 'lodash/orderBy.js'
+	import isEmpty from 'lodash/isEmpty.js'
+	import debounce from 'lodash/debounce.js'
 
+	import { indicesSortPredicate, isThemeToggleChecked, filterArrayBy } from '../../../utils/helpers'
 	import Table from '../../../components/tables/Table.svelte'
 	import Cell from './Cell.svelte'
-	import {
-		humanStoreSizeToPseudoBytes,
-		filterArrayBy,
-	} from '../../../utils/helpers.js'
 	import CreateIndexDialog from '../../../components/modal/CreateIndexDialog/CreateIndexDialog.svelte'
-	import IconButton from '../../../components/buttons/IconButton.svelte'
+	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
 
 	const { dispatch, app, indices } = useStoreon('app', 'indices')
 	const { open } = getContext('modal-window')
 
-	let search = $state($indices.search)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
+	let indicesList = $derived($indices.data)
+	let sorting = $derived($indices.sorting)
+	let search = $derived($indices.search)
+	let data = $derived.by(() => {
+		const [ direction, column, index ] = sorting
+		let list = indicesList;
 
-	const onTableSort = (column, index, direction) => {
-		const sort = o => {
-			switch (column) {
-				case 'docs.count':
-				case 'docs.deleted':
-				case 'pri':
-				case 'rep':
-					return Number(o[index])
-				case 'pri.store.size':
-				case 'store.size':
-					return humanStoreSizeToPseudoBytes(o[index])
-				default:
-					return o[index]
-			}
-		}
+		if (direction && column && index !== undefined)
+			list = orderBy(list, [indicesSortPredicate(column, index)], [direction])
 
-		const sorted = orderBy($indices.data, [sort], [direction])
-		dispatch('elasticsearch/indices/update', { data: sorted })
-	}
+		if (!isEmpty(search))
+			list = filterArrayBy(list, search)
 
-	onMount(async () => {
-		if (!$indices.data.length) dispatch('elasticsearch/indices/fetch')
+		return list
+	})
+
+	onMount(() => {
+		if (!$indices.data.length)
+			dispatch('elasticsearch/indices/fetch')
 	})
 
 	const showCreateIndexDialog = () => {
 		open(CreateIndexDialog)
 	}
 
-	let filterRows = $derived(data => {
-		if (isEmpty(search)) return data
+	const onSearchChange = debounce(e => {
+		dispatch('elasticsearch/indices/update', { search: e.target.value })
+	}, 300)
 
-		return filterArrayBy(data, search)
-	})
+	const onRefresh = () => {
+		dispatch('elasticsearch/indices/fetch')
+	}
 
-	let inverted = $derived(isThemeToggleChecked($app.theme))
+	const onSort = (column, index, direction) => {
+		dispatch('elasticsearch/indices/update', { sorting: [ direction, column, index ] })
+	}
 </script>
 
 <div class="ui segments">
 	<div class="ui segment" class:inverted>
 		<div class="ui grid">
 			<div class="eight wide column middle aligned">
-				<h4>
-					Indices
-					<span class="add-index">
-						<IconButton
-							className="plus circle"
-							title="Create new index"
-							onClick={showCreateIndexDialog}
-						/>
-					</span>
-				</h4>
+				<div class="ui tiny buttons">
+					<ButtonTinyBasic
+						label="Refresh"
+						color="blue"
+						loading={$indices.loading}
+						onClick={onRefresh}
+					/>
+					<ButtonTinyBasic
+						label="Create"
+						color="green"
+						loading={$indices.loading}
+						onClick={showCreateIndexDialog}
+					/>
+				</div>
 			</div>
 			<div class="eight wide column right aligned">
-				<div class="ui mini form search">
-					<div class="inline fields">
-						<div class="field">
-							<input
-								bind:value={search}
-								onchange={e =>
-									dispatch('elasticsearch/indices/update', {
-										search,
-									})}
-								type="text"
-								placeholder="Search"
-							/>
-						</div>
+				<div class="ui search">
+					<div class="ui icon input" class:inverted>
+						<input
+							class="prompt"
+							onkeyup={onSearchChange}
+							type="text"
+							placeholder="Search..."
+							defaultValue={search}
+						>
+						<i class="search icon"></i>
 					</div>
 				</div>
-
-				<IconButton
-					className="sync alternate refresh"
-					loading={$indices.loading}
-					onClick={() => dispatch('elasticsearch/indices/fetch')}
-				/>
 			</div>
 		</div>
 	</div>
 	{#if $indices.columns.length}
-		<Table
-			columns={$indices.columns}
-			rows={filterRows($indices.data)}
-			sorter={onTableSort}
-			emptyMessage="No indices found"
-			selectable
-			sortable
-			{Cell}
-		/>
+		<div class="scrollable">
+			<Table
+				columns={$indices.columns}
+				rows={data}
+				{onSort}
+				{sorting}
+				emptyMessage="No indices found"
+				selectable
+				footerColumns
+				{Cell}
+			/>
+		</div>
 	{:else}
 		<div class="ui segment" class:inverted>
 			<p>
@@ -116,17 +111,3 @@
 		</div>
 	{/if}
 </div>
-
-<style>
-	.add-index {
-		margin-left: 0.5rem;
-	}
-
-	.search {
-		display: inline-block;
-	}
-
-	.search .fields {
-		margin: 0;
-	}
-</style>

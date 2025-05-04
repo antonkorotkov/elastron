@@ -77,3 +77,60 @@ export const getMessageFromError = error => {
 
 	return message;
 }
+
+/**
+ * @param {string} column
+ * @param {number} index
+ * @returns {(o: object) => number}
+ */
+export const indicesSortPredicate = (column, index) => o => {
+	switch (column) {
+		case 'docs.count':
+		case 'docs.deleted':
+		case 'pri':
+		case 'rep':
+			return Number(o[index])
+		case 'pri.store.size':
+		case 'store.size':
+			return humanStoreSizeToPseudoBytes(o[index])
+		default:
+			return o[index]
+	}
+}
+
+/**
+ * @param {string} column
+ * @param {number} index
+ * @returns {(o: object) => number}
+ */
+export const shardsSortPredicate = (column, index) => o => {
+	switch (column) {
+		case 'shard':
+		case 'docs':
+			return Number(o[index])
+		case 'store':
+			return humanStoreSizeToPseudoBytes(o[index])
+		default:
+			return o[index]
+	}
+}
+
+/**
+ * @param {string} column
+ * @param {number} index
+ * @returns {(o: object) => number}
+ */
+export const allocationSortPredicate = (column, index) => o => {
+	switch (column) {
+		case 'shards':
+		case 'disk.percent':
+			return Number(o[index])
+		case 'disk.indices':
+		case 'disk.used':
+		case 'disk.avail':
+		case 'disk.total':
+			return humanStoreSizeToPseudoBytes(o[index])
+		default:
+			return o[index]
+	}
+}
