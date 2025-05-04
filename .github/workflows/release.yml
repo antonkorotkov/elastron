@@ -1,10 +1,6 @@
 name: Release
 on:
-  pull_request:
-    types:
-      - closed
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   create-release:
@@ -24,13 +20,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git tag ${{ steps.get_version.outputs.tag }}
+          git push origin ${{ steps.get_version.outputs.tag }}
           gh release create ${{ steps.get_version.outputs.tag }} \
             --draft \
             --title "Release ${{ steps.get_version.outputs.tag }}" \
             --generate-notes
 
   dist-linux:
-    if: github.event.pull_request.merged == true
     needs: create-release
     runs-on: ubuntu-latest
     steps:
@@ -57,7 +54,6 @@ jobs:
         run: yarn release-linux
 
   dist-mac:
-    if: github.event.pull_request.merged == true
     needs: create-release
     runs-on: macos-latest
     steps:
@@ -84,7 +80,6 @@ jobs:
         run: yarn release-mac
 
   dist-win:
-    if: github.event.pull_request.merged == true
     needs: create-release
     runs-on: windows-latest
     steps:
