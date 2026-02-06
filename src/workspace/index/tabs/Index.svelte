@@ -17,7 +17,6 @@
 	)
 
 	let indexPreviewEditor, ipEditor
-	let isLoading = $state(false)
 
 	onMount(() => {
 		if (indexPreviewEditor) {
@@ -40,9 +39,8 @@
 	})
 
 	onDestroy(() => {
-		if (ipEditor) {
+		if (ipEditor)
 			ipEditor.destroy()
-		}
 	})
 
 	const showCloneIndexDialog = () => {
@@ -62,8 +60,6 @@
 			)
 		)
 			return
-
-		isLoading = true
 
 		try {
 			const api = new API($connection)
@@ -89,12 +85,9 @@
 		}
 
 		dispatch(routerNavigate, '/')
-		isLoading = false
 	}
 
 	const onCloseIndexClick = async indexName => {
-		isLoading = true
-
 		try {
 			const api = new API($connection)
 			const result = await api.closeIndex(indexName)
@@ -118,13 +111,9 @@
 				message: e.message,
 			})
 		}
-
-		isLoading = false
 	}
 
 	const onOpenIndexClick = async indexName => {
-		isLoading = true
-
 		try {
 			const api = new API($connection)
 			const result = await api.openIndex(indexName)
@@ -148,8 +137,6 @@
 				message: e.message,
 			})
 		}
-
-		isLoading = false
 	}
 
 	const onWipeIndexClick = async indexName => {
@@ -159,8 +146,6 @@
 			)
 		)
 			return
-
-		isLoading = true
 
 		try {
 			const api = new API($connection)
@@ -183,8 +168,6 @@
 				message: e.message,
 			})
 		}
-
-		isLoading = false
 	}
 </script>
 
@@ -193,16 +176,16 @@
 		<button
 			class="ui tiny blue basic button"
 			onclick={e => onOpenIndexClick($index.selected)}
-			class:loading={isLoading}
-			disabled={isLoading}
+			class:loading={$index.loading}
+			disabled={$index.loading}
 		>
 			Open
 		</button>
 		<button
 			class="ui tiny blue basic button"
 			onclick={e => onCloseIndexClick($index.selected)}
-			class:loading={isLoading}
-			disabled={isLoading}
+			class:loading={$index.loading}
+			disabled={$index.loading}
 		>
 			Close
 		</button>
@@ -210,8 +193,8 @@
 		<button
 			class="ui tiny green basic button"
 			onclick={showCloneIndexDialog}
-			class:loading={isLoading}
-			disabled={isLoading}
+			class:loading={$index.loading}
+			disabled={$index.loading}
 		>
 			Clone
 		</button>
@@ -220,16 +203,16 @@
 		<button
 			class="ui orange basic button"
 			onclick={e => onWipeIndexClick($index.selected)}
-			class:loading={isLoading}
-			disabled={isLoading}
+			class:loading={$index.loading}
+			disabled={$index.loading}
 		>
 			Wipe
 		</button>
 		<button
 			class="ui red basic button"
 			onclick={e => onDeleteIndexClick($index.selected)}
-			class:loading={isLoading}
-			disabled={isLoading}
+			class:loading={$index.loading}
+			disabled={$index.loading}
 		>
 			Delete
 		</button>

@@ -44,7 +44,9 @@ export const index = store => {
 	})
 
 	store.on('elasticsearch/index/fetch', async state => {
-		if (state.index.loading) return
+		if (state.index.loading)
+			return
+
 		try {
 			store.dispatch('elasticsearch/index/loading', true)
 			const api = new API(state.connection)
