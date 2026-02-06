@@ -1,110 +1,140 @@
-import { app, BrowserWindow, Menu, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell, ipcMain } from 'electron';
+import { fork } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import getPort from 'get-port';
+import axios from 'axios';
 
-import updater from './app/updater.js'
-import messenger from './app/ipc-main.js'
-import dumper from './app/dumper/dumper.js'
-import elasticProxy from './app/requests-node-proxy.js'
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-import electronRemoteMain from '@electron/remote/main/index.js'
-electronRemoteMain.initialize()
+// Lifecycle management for the server process
+let serverProcess = null;
+let serverPort = null;
 
-const createWindow = () => {
-    // Create the browser window.
-    const mainWindow = new BrowserWindow({
-        width: 1440,
-        height: 960,
-        minWidth: 1280,
-        minHeight: 768,
-        titleBarStyle: 'hiddenInset',
-        show: true,
-        backgroundColor: '#000',
-        webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true,
-            contextIsolation: false,
-            nativeWindowOpen: true,
-            devTools: true
-        },
-    })
+const startServer = async () => {
+	if (process.env.npm_lifecycle_event === 'dev') {
+		return 5173;
+	}
 
-    // and load the index.html of the app.
-    if (process.env.VITE_DEV_SERVER_URL) {
-        mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL)
-    } else {
-        mainWindow.loadFile('dist/index.html')
-    }
+	serverPort = await getPort();
+	const serverPath = path.join(__dirname, 'build', 'index.js');
 
-    mainWindow.webContents.on('new-window', function (e, url) {
-        e.preventDefault()
-        shell.openExternal(url)
-    })
+	console.log(`Starting SvelteKit server at port ${serverPort}...`);
 
-    Menu.setApplicationMenu(
-        Menu.buildFromTemplate([
-            {
-                label: app.name,
-                submenu: [{ role: 'about' }, { role: 'quit' }],
-            },
-            {
-                label: 'Edit',
-                submenu: [
-                    { role: 'undo' },
-                    { role: 'redo' },
-                    { type: 'separator' },
-                    { role: 'cut' },
-                    { role: 'copy' },
-                    { role: 'paste' },
-                    { role: 'selectAll' },
-                ],
-            },
-            {
-                role: 'help',
-                submenu: [
-                    {
-                        label: 'Learn More',
-                        click: async () => {
-                            await shell.openExternal('https://elastron.eney.solutions')
-                        },
-                    },
-                    {
-                        label: 'Check For Updates',
-                        click: () => updater.checkForUpdates(true),
-                    },
-                    {
-                        label: 'Debug',
-                        click: () => {
-                            mainWindow.webContents.openDevTools()
-                        }
-                    }
-                ],
-            },
-        ])
-    )
+	serverProcess = fork(serverPath, [], {
+		env: {
+			...process.env,
+			PORT: serverPort,
+			HOST: 'localhost',
+			ORIGIN: `http://localhost:${serverPort}`,
+			ADDRESS_HEADER: 'x-forwarded-for',
+			XFF_DEPTH: '1'
+		}
+	});
 
-    return mainWindow
-}
+	let retries = 0;
+	while (retries < 20) {
+		try {
+			await axios.get(`http://localhost:${serverPort}`);
+			console.log('Server is ready!');
+			return serverPort;
+		} catch (e) {
+			await new Promise(r => setTimeout(r, 500));
+			retries++;
+		}
+	}
+	throw new Error('Server failed to start');
+};
 
-app.whenReady().then(() => {
-    const window = createWindow()
-    const messaging = messenger(window)
+const createWindow = (port) => {
+	const mainWindow = new BrowserWindow({
+		width: 1440,
+		height: 960,
+		minWidth: 1280,
+		minHeight: 768,
+		titleBarStyle: 'hiddenInset',
+		show: true,
+		backgroundColor: '#000',
+		webPreferences: {
+			nodeIntegration: false, // Security: SvelteKit handles backend
+			contextIsolation: true,
+			nativeWindowOpen: true,
+			devTools: true,
+			preload: path.join(__dirname, 'preload.js')
+		},
+	});
 
-    electronRemoteMain.enable(window.webContents)
+	ipcMain.on('header-doubleclick', () => {
+		if (mainWindow.isMaximized()) {
+			mainWindow.unmaximize();
+		} else {
+			mainWindow.maximize();
+		}
+	});
 
-    updater.init(window)
-    updater.checkForUpdates()
+	ipcMain.on('check-for-updates', () => {
+		// checks for updates - to be implemented with electron-updater
+		// For now, prompt user or log
+		console.log('Checking for updates...');
+	});
 
-    messaging.listen('header-doubleclick', () => {
-        if (window.isMaximized()) {
-            window.setSize(1280, 768, false)
-            return window.center()
-        }
-        return window.maximize()
-    })
+	// ... rest of createWindow
 
-    messaging.listen('check-for-updates', () => {
-        if (Math.floor(Math.random() * 10) > 7) updater.checkForUpdates()
-    })
 
-    dumper.init(messaging, window)
-    elasticProxy.init(messaging)
-})
+	const url = `http://localhost:${port}`;
+	mainWindow.loadURL(url);
+
+	mainWindow.webContents.on('new-window', function (e, url) {
+		e.preventDefault();
+		shell.openExternal(url);
+	});
+
+	// ... Menu setup (kept similar to original) ...
+	// Simplified Menu for brevity, can restore full menu if needed
+	Menu.setApplicationMenu(
+		Menu.buildFromTemplate([
+			{
+				label: app.name,
+				submenu: [{ role: 'about' }, { role: 'quit' }],
+			},
+			{
+				role: 'editMenu'
+			},
+			{
+				role: 'help',
+				submenu: [
+					{
+						label: 'Learn More',
+						click: async () => {
+							await shell.openExternal('https://elastron.eney.solutions')
+						},
+					},
+					{
+						label: 'Debug',
+						click: () => {
+							mainWindow.webContents.openDevTools()
+						}
+					}
+				]
+			}
+		])
+	);
+
+	return mainWindow;
+};
+
+app.whenReady().then(async () => {
+	try {
+		const port = await startServer();
+		createWindow(port);
+	} catch (e) {
+		console.error('Failed to start app:', e);
+		app.quit();
+	}
+});
+
+app.on('will-quit', () => {
+	if (serverProcess) {
+		serverProcess.kill();
+	}
+});

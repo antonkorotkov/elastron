@@ -1,26 +1,11 @@
-import { defineConfig } from 'vite'
-import { svelte } from '@sveltejs/vite-plugin-svelte'
-import electron from 'vite-plugin-electron/simple'
-
+import { sveltekit } from '@sveltejs/kit/vite';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-	plugins: [
-		svelte(),
-		electron({
-			main: {
-				entry: 'main.js',
-				vite: {
-					build: {
-						rollupOptions: {
-							output: {
-								format: 'cjs',
-								entryFileNames: '[name].js',
-							},
-						},
-					},
-				},
-			},
-			renderer: {},
-		}),
-	],
-})
+	plugins: [sveltekit()],
+	server: {
+		fs: {
+			allow: ['.']
+		}
+	}
+});
