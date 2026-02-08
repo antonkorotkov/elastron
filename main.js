@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import getPort from 'get-port';
 import axios from 'axios';
+import updater from './updater.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -110,6 +111,12 @@ const createWindow = (port) => {
 						},
 					},
 					{
+						label: 'Check for Updates',
+						click: () => {
+							updater.checkForUpdates(true)
+						}
+					},
+					{
 						label: 'Debug',
 						click: () => {
 							mainWindow.webContents.openDevTools()
@@ -126,7 +133,9 @@ const createWindow = (port) => {
 app.whenReady().then(async () => {
 	try {
 		const port = await startServer();
-		createWindow(port);
+		const mainWindow = createWindow(port);
+		updater.init(mainWindow);
+		updater.checkForUpdates();
 	} catch (e) {
 		console.error('Failed to start app:', e);
 		app.quit();
