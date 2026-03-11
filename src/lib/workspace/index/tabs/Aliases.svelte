@@ -25,37 +25,29 @@
 		'Actions',
 	]
 
-	let rows = $derived(() => {
+	function buildRows() {
 		const _rows = []
-		const aliases = get(
-			$index,
-			['info', $index.selected, $index.selected, 'aliases'],
-			{}
-		)
+		const aliases = get($index, ['info', $index.selected, $index.selected, 'aliases'], {})
 		for (let i in aliases) {
 			let alias = aliases[i]
 			let filter = get(alias, 'filter', false)
-			let row = [
+			_rows.push([
 				i,
 				filter ? JSON.stringify(filter, null, '  ') : '',
 				get(alias, 'is_write_index', false),
 				get(alias, 'index_routing', ''),
 				get(alias, 'search_routing', ''),
 				i,
-			]
-			_rows.push(row)
+			])
 		}
-
 		return _rows
-	})
+	}
+
+	let rows = $derived(buildRows())
 
 	const onCreateClick = () => {
 		open(CreateAliasDialog, {
-			aliases: get(
-				$index,
-				['info', $index.selected, $index.selected, 'aliases'],
-				{}
-			),
+			aliases: get($index, ['info', $index.selected, $index.selected, 'aliases'], {}),
 		})
 	}
 </script>
@@ -73,7 +65,7 @@
 <div class="ui vertical segment">
 	<Table
 		{columns}
-		rows={rows()}
+		{rows}
 		{Cell}
 		emptyMessage="No aliases found"
 		selectable

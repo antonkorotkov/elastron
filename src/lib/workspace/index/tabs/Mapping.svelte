@@ -1,73 +1,40 @@
 <script>
-	import { onMount, onDestroy } from 'svelte'
+	import { onMount } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import get from 'lodash/get'
 
 	import API from '../../../api/elasticsearch'
+	import JsonEditor from '../../../components/JsonEditor.svelte'
 
 	const { dispatch, index, connection } = useStoreon('index', 'connection')
 
-	let mappingPreviewEditor = $state(),
-		mpEditor
-	let isLoading = $state(false),
-		canUpdate = $state(true)
+	let mpEditor = $state(null)
+	let isLoading = $state(false)
+	let canUpdate = $state(true)
 
-	const updateEditorContent = () => {
-		const mappings = get(
-			$index.info,
-			[$index.selected, $index.selected, 'mappings'],
-			false
-		)
+	let value = $derived(
+		get($index.info, [$index.selected, $index.selected, 'mappings'], null)
+	)
 
-		if (mappings) mpEditor.update(mappings)
-	}
-
-	onMount(async () => {
-		const { default: JSONEditor } = await import('jsoneditor')
-
-		if (mappingPreviewEditor) {
-			mpEditor = new JSONEditor(mappingPreviewEditor, {
-				mode: 'tree',
-				modes: ['code', 'tree'],
-				maxVisibleChilds: 0,
-				onModeChange,
-				onChange: () => {
-					try {
-						mpEditor.get()
-						canUpdate = true
-					} catch (e) {
-						canUpdate = false
-					}
-				},
-			})
-
-			updateEditorContent()
-		}
-
+	onMount(() => {
 		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
 	})
 
-	$effect(() => {
-		const mappings = get(
-			$index.info,
-			[$index.selected, $index.selected, 'mappings'],
-			false
-		)
-
-		try {
-			if (mappings && mpEditor && mappings !== mpEditor.get())
-				mpEditor.update(mappings)
-		} catch (error) {}
-	})
-
-	onDestroy(() => {
-		if (mpEditor) {
-			mpEditor.destroy()
-		}
-	})
-
-	const onModeChange = mode => {
-		if (mode === 'code') mpEditor.aceEditor.setOptions({ maxLines: 64 })
+	const editorOptions = {
+		mode: 'tree',
+		modes: ['code', 'tree'],
+		maxVisibleChilds: 0,
+		onModeChange: mode => {
+			if (mode === 'code') mpEditor?.aceEditor.setOptions({ maxLines: 64 })
+		},
+		onChange: () => {
+			try {
+				mpEditor?.get()
+				canUpdate = true
+			} catch (_) {
+				canUpdate = false
+			}
+		},
 	}
 
 	const onUpdateMappingClick = async indexName => {
@@ -144,5 +111,10 @@
 </div>
 
 <div class="ui vertical segment">
-	<div id="mapping-preview" bind:this={mappingPreviewEditor}></div>
+	<JsonEditor
+		id="mapping-preview"
+		{value}
+		options={editorOptions}
+		bind:editor={mpEditor}
+	/>
 </div>

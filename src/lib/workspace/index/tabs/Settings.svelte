@@ -1,10 +1,11 @@
 <script>
-	import { onMount, onDestroy } from 'svelte'
+	import { onMount } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import get from 'lodash/get'
 	import pick from 'lodash/pick'
 
 	import API from '../../../api/elasticsearch'
+	import JsonEditor from '../../../components/JsonEditor.svelte'
 
 	const { dispatch, index, connection } = useStoreon('index', 'connection')
 
@@ -37,72 +38,39 @@
 		'index.final_pipeline',
 	]
 
-	let settingsPreviewEditor, spEditor
-	let isLoading = $state(false),
-		canUpdate = $state(true)
+	let spEditor = $state(null)
+	let isLoading = $state(false)
+	let canUpdate = $state(true)
+
+	let value = $derived(
+		get($index.info, [$index.selected, $index.selected, 'settings'], null)
+	)
+
+	onMount(() => {
+		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
+	})
+
+	const editorOptions = {
+		mode: 'tree',
+		modes: ['code', 'tree'],
+		maxVisibleChilds: 0,
+		onModeChange: mode => {
+			if (mode === 'code') spEditor?.aceEditor.setOptions({ maxLines: 64 })
+		},
+		onChange: () => {
+			try {
+				spEditor?.get()
+				canUpdate = true
+			} catch (_) {
+				canUpdate = false
+			}
+		},
+	}
 
 	const refreshDashboard = () => {
 		dispatch('elasticsearch/indices/fetch')
 		dispatch('elasticsearch/shards/fetch')
 		dispatch('elasticsearch/allocation/fetch')
-	}
-
-	const updateEditorContent = () => {
-		const settings = get(
-			$index.info,
-			[$index.selected, $index.selected, 'settings'],
-			false
-		)
-
-		if (settings) spEditor.update(settings)
-	}
-
-	onMount(async () => {
-		const { default: JSONEditor } = await import('jsoneditor')
-
-		if (settingsPreviewEditor) {
-			spEditor = new JSONEditor(settingsPreviewEditor, {
-				mode: 'tree',
-				modes: ['code', 'tree'],
-				maxVisibleChilds: 0,
-				onModeChange,
-				onChange: () => {
-					try {
-						spEditor.get()
-						canUpdate = true
-					} catch (e) {
-						canUpdate = false
-					}
-				},
-			})
-
-			updateEditorContent()
-		}
-
-		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
-	})
-
-	$effect(() => {
-		const settings = get(
-			$index.info,
-			[$index.selected, $index.selected, 'settings'],
-			false
-		)
-
-		try {
-			if (settings && spEditor && settings !== spEditor.get())
-				spEditor.update(settings)
-		} catch (error) {}
-	})
-
-	onDestroy(() => {
-		if (spEditor) {
-			spEditor.destroy()
-		}
-	})
-
-	const onModeChange = mode => {
-		if (mode === 'code') spEditor.aceEditor.setOptions({ maxLines: 64 })
 	}
 
 	const onUpdateSettingsClick = async indexName => {
@@ -127,7 +95,7 @@
 
 			dispatch('notification/add', {
 				type: 'error',
-				message: `Something went wrong while updating the mapping`,
+				message: `Something went wrong while updating the settings`,
 			})
 		} catch (e) {
 			dispatch('notification/add', {
@@ -163,7 +131,12 @@
 </div>
 
 <div class="ui vertical segment">
-	<div id="settings-preview" bind:this={settingsPreviewEditor}></div>
+	<JsonEditor
+		id="settings-preview"
+		{value}
+		options={editorOptions}
+		bind:editor={spEditor}
+	/>
 </div>
 
 <style>

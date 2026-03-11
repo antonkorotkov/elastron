@@ -91,7 +91,6 @@
     "@electron/remote": "^2.1.2",
     "axios": "^1.9.0",
     "call-bind-apply-helpers": "^1.0.2",
-    "elasticdump": "^6.119.1",
     "electron-updater": "^6.6.2",
     "get-port": "^7.1.0",
     "lodash": "^4.17.21"

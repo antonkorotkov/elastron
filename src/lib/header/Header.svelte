@@ -56,14 +56,7 @@
 		>
 			Search
 		</a>
-		<a
-			class="item"
-			href={resolve('/import-export')}
-			class:active={pathname === '/import-export'}
-		>
-			Import/Export
-			<sup>beta</sup>
-		</a>
+
 		<div class="right menu">
 			{#if $connection.name}
 				<span class="item">{$connection.name}</span>
@@ -90,8 +83,5 @@
 	}
 	header {
 		height: 4rem;
-	}
-	sup {
-		color: red;
 	}
 </style>

@@ -1,55 +1,33 @@
 <script>
-	import { onMount, onDestroy, getContext } from 'svelte'
+	import { getContext } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import { goto } from '$app/navigation'
 	import { resolve } from '$app/paths'
 	import get from 'lodash/get'
 
 	import API from '../../../api/elasticsearch'
+	import JsonEditor from '../../../components/JsonEditor.svelte'
 	import CloneIndexDialog from '../../../components/modal/CloneIndexDialog/CloneIndexDialog.svelte'
 
 	const { open } = getContext('modal-window')
-
 	const { dispatch, index, connection } = useStoreon(
 		'index',
 		'connection',
 		'indices'
 	)
 
-	let indexPreviewEditor, ipEditor
-
-	onMount(async () => {
-		const { default: JSONEditor } = await import('jsoneditor')
-
-		if (indexPreviewEditor) {
-			ipEditor = new JSONEditor(indexPreviewEditor, {
-				mode: 'tree',
-				onEditable: () => false,
-				onCreateMenu: () => [],
-			})
-
-			// Populate with existing data immediately after creation
-			const info = get($index.info, [$index.selected, $index.selected], false)
-			if (info) ipEditor.update(info)
-		}
-
-		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
-	})
+	let value = $derived(
+		get($index.info, [$index.selected, $index.selected], null)
+	)
 
 	$effect(() => {
 		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
-
-		const info = get($index.info, [$index.selected, $index.selected], false)
-
-		if (info && ipEditor) ipEditor.update(info)
 	})
 
-	onDestroy(() => {
-		if (ipEditor) ipEditor.destroy()
-	})
-
-	const showCloneIndexDialog = () => {
-		open(CloneIndexDialog)
+	const editorOptions = {
+		mode: 'tree',
+		onEditable: () => false,
+		onCreateMenu: () => [],
 	}
 
 	const refreshDashboard = () => {
@@ -174,6 +152,8 @@
 			})
 		}
 	}
+
+	const showCloneIndexDialog = () => open(CloneIndexDialog)
 </script>
 
 <div>
@@ -225,5 +205,5 @@
 </div>
 
 <div class="ui vertical segment">
-	<div id="index-preview" bind:this={indexPreviewEditor}></div>
+	<JsonEditor id="index-preview" {value} options={editorOptions} />
 </div>
