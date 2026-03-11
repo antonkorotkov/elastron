@@ -1,6 +1,5 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
-	import JSONEditor from 'jsoneditor'
 	import { getContext, onMount, onDestroy } from 'svelte'
 	import get from 'lodash/get'
 	import isEmpty from 'lodash/isEmpty'
@@ -14,7 +13,7 @@
 		'app'
 	)
 
-	let { aliases = {}, alias = {}, onCancel = () => {} } = $props();
+	let { aliases = {}, alias = {}, onCancel = () => {} } = $props()
 
 	let indexRouting = $state(''),
 		searchRouting = $state(''),
@@ -83,7 +82,9 @@
 		isLoading = false
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		const { default: JSONEditor } = await import('jsoneditor')
+
 		const { filter, index_routing, search_routing, is_write_index } = get(
 			aliases,
 			alias,
@@ -125,12 +126,7 @@
 <div class="ui header">Update New Alias</div>
 
 <div class="content">
-	<form
-		class="ui form"
-		class:inverted
-		onsubmit={save}
-		id="alias-form"
-	>
+	<form class="ui form" class:inverted onsubmit={save} id="alias-form">
 		<div class="field">
 			<label for="index-routing">Index Routing</label>
 			<input type="text" id="index-routing" bind:value={indexRouting} />

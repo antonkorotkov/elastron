@@ -1,5 +1,4 @@
 <script>
-	import JSONEditor from 'jsoneditor'
 	import { onMount, onDestroy } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import get from 'lodash/get'
@@ -8,7 +7,8 @@
 
 	const { dispatch, index, connection } = useStoreon('index', 'connection')
 
-	let mappingPreviewEditor = $state(), mpEditor
+	let mappingPreviewEditor = $state(),
+		mpEditor
 	let isLoading = $state(false),
 		canUpdate = $state(true)
 
@@ -22,7 +22,9 @@
 		if (mappings) mpEditor.update(mappings)
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		const { default: JSONEditor } = await import('jsoneditor')
+
 		if (mappingPreviewEditor) {
 			mpEditor = new JSONEditor(mappingPreviewEditor, {
 				mode: 'tree',
@@ -43,6 +45,19 @@
 		}
 
 		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
+	})
+
+	$effect(() => {
+		const mappings = get(
+			$index.info,
+			[$index.selected, $index.selected, 'mappings'],
+			false
+		)
+
+		try {
+			if (mappings && mpEditor && mappings !== mpEditor.get())
+				mpEditor.update(mappings)
+		} catch (error) {}
 	})
 
 	onDestroy(() => {

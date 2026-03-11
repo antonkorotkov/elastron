@@ -17,11 +17,13 @@
 		disable = false,
 		offset = 0,
 		className = '',
-		change
-	} = $props();
+		change,
+	} = $props()
 
 	let page = $derived(current_page + 1)
-	let total_pages = $derived(total_items > 0 ? Math.ceil(total_items / items_per_page) : 0)
+	let total_pages = $derived(
+		total_items > 0 ? Math.ceil(total_items / items_per_page) : 0
+	)
 
 	let prevDisabled = $derived(disable || current_page == 0)
 	let nextDisabled = $derived(disable || current_page == total_pages - 1)
@@ -29,11 +31,12 @@
 	let firstDisabled = $derived(prevDisabled)
 	let lastDisabled = $derived(nextDisabled)
 
-	let shouldDisplay =
-		$derived(total_items > items_per_page &&
-		!isNaN(current_page) &&
-		page <= total_pages &&
-		offset % items_per_page == 0)
+	let shouldDisplay = $derived(
+		total_items > items_per_page &&
+			!isNaN(current_page) &&
+			page <= total_pages &&
+			offset % items_per_page == 0
+	)
 
 	const onClickPrev = () => {
 		if (prevDisabled) return
@@ -59,42 +62,38 @@
 {#if shouldDisplay}
 	Page {page} of {total_pages}
 	<div class="ui pagination menu {className}">
-		<a
+		<button
 			aria-label="First"
 			class="icon item"
 			class:disabled={firstDisabled}
 			onclick={onClickFirst}
-			href
 		>
 			<i class="angle double left icon"></i>
-		</a>
-		<a
+		</button>
+		<button
 			aria-label="Previous"
 			class="icon item"
 			class:disabled={prevDisabled}
 			onclick={onClickPrev}
-			href
 		>
 			<i class="left chevron icon"></i>
-		</a>
-		<a
+		</button>
+		<button
 			aria-label="Next"
 			class="icon item"
 			class:disabled={nextDisabled}
 			onclick={onClickNext}
-			href
 		>
 			<i class="right chevron icon"></i>
-		</a>
-		<a
+		</button>
+		<button
 			aria-label="Last"
 			class="icon item"
 			class:disabled={lastDisabled}
 			onclick={onClickLast}
-			href
 		>
 			<i class="angle double right icon"></i>
-		</a>
+		</button>
 	</div>
 {/if}
 

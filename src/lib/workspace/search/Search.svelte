@@ -1,6 +1,5 @@
 <script>
 	import isEqual from 'lodash/isEqual'
-	import JSONEditor from 'jsoneditor'
 	import { useStoreon } from '@storeon/svelte'
 	import { onMount, onDestroy } from 'svelte'
 	import isEmpty from 'lodash/isEmpty'
@@ -11,8 +10,6 @@
 	import SearchControls from './SearchControls.svelte'
 	import ProfileTable from './ProfileTable.svelte'
 	import { isThemeToggleChecked } from '../../utils/helpers'
-
-	import 'jsoneditor/dist/jsoneditor.min.css'
 
 	const { dispatch, search, app } = useStoreon('search', 'app')
 
@@ -86,7 +83,10 @@
 		switchView('edit')
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		const { default: JSONEditor } = await import('jsoneditor')
+		await import('jsoneditor/dist/jsoneditor.min.css')
+
 		if (requestBodyEditor) {
 			qEditor = new JSONEditor(
 				requestBodyEditor,

@@ -10,18 +10,14 @@
 	import { isThemeToggleChecked } from '$lib/utils/helpers'
 
 	// SvelteKit Context Provider for Storeon
-	// In strict SSR, store should be created per-request, but for a Desktop app (single user per process),
-	// a global store is acceptable, provided we handle hydration carefully.
-	// However, clean SSR usually demands `store` to be passed via context or props.
-	// Since we reuse existing code which expects `provideStoreon(store)`, we do it here.
 	provideStoreon(store)
 
 	const { dispatch, app } = useStoreon('app')
 
+	let { children } = $props()
+
 	// Client-side only logic for internet check
 	import { onMount } from 'svelte'
-
-	// We need to run these only in browser
 	import { browser } from '$app/environment'
 
 	onMount(() => {
@@ -40,13 +36,15 @@
 		}
 	})
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <Modal>
 	<main class="ui fluid container" class:bg-black={inverted}>
 		<Header />
-		<slot />
+		<div class="padded">
+			{@render children()}
+		</div>
 		<Footer />
 	</main>
 </Modal>
@@ -59,5 +57,11 @@
 	}
 	.bg-black {
 		background: black;
+	}
+
+	.padded {
+		padding-left: 1rem;
+		padding-right: 1rem;
+		padding-bottom: 5rem;
 	}
 </style>

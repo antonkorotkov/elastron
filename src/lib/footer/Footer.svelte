@@ -10,8 +10,8 @@
 		dispatch('app/toggleTheme', theme)
 	}
 
-	$: toggleChecked = isThemeToggleChecked($app.theme)
-	$: inverted = isThemeToggleChecked($app.theme)
+	let toggleChecked = $derived(isThemeToggleChecked($app.theme))
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <footer class="ui segment" class:inverted>

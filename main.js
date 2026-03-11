@@ -143,7 +143,6 @@ app.whenReady().then(async () => {
 });
 
 app.on('will-quit', () => {
-	if (serverProcess) {
+	if (serverProcess)
 		serverProcess.kill();
-	}
 });

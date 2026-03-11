@@ -1,5 +1,4 @@
 <script>
-	import JSONEditor from 'jsoneditor'
 	import { onMount, onDestroy } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import get from 'lodash/get'
@@ -58,7 +57,9 @@
 		if (settings) spEditor.update(settings)
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		const { default: JSONEditor } = await import('jsoneditor')
+
 		if (settingsPreviewEditor) {
 			spEditor = new JSONEditor(settingsPreviewEditor, {
 				mode: 'tree',
@@ -89,7 +90,8 @@
 		)
 
 		try {
-			if (settings !== spEditor.get()) spEditor.update(settings)
+			if (settings && spEditor && settings !== spEditor.get())
+				spEditor.update(settings)
 		} catch (error) {}
 	})
 

@@ -1,7 +1,8 @@
 <script>
 	import { getContext } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
-	import { routerKey } from '@storeon/router'
+	import { page } from '$app/stores'
+	import { resolve } from '$app/paths'
 	import get from 'lodash/get'
 
 	import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
@@ -29,15 +30,10 @@
 		)
 	}
 
-	const {
-		dispatch,
-		[routerKey]: route,
-		connection,
-		server,
-	} = useStoreon(routerKey, 'connection', 'server')
+	const { dispatch, connection, server } = useStoreon('connection', 'server')
 
-	$: version = get($server, 'version.number', false)
-	$: path = $route.match.page ?? 'dashboard'
+	let version = $derived(get($server, 'version.number', false))
+	let pathname = $derived($page.url.pathname)
 </script>
 
 <header ondblclick={onHeaderDblClick} role="navigation">
@@ -47,17 +43,23 @@
 		</div>
 		<a
 			class="item"
-			href="/"
-			class:active={path == 'dashboard'}
+			href={resolve('/')}
+			class:active={pathname === '/'}
 			onclick={onDashboardClick}
 		>
 			Dashboard
 		</a>
-		<a class="item" href="/search" class:active={path == 'search'}> Search </a>
 		<a
 			class="item"
-			href="/import-export"
-			class:active={path == 'import-export'}
+			href={resolve('/search')}
+			class:active={pathname === '/search'}
+		>
+			Search
+		</a>
+		<a
+			class="item"
+			href={resolve('/import-export')}
+			class:active={pathname === '/import-export'}
 		>
 			Import/Export
 			<sup>beta</sup>
@@ -69,10 +71,10 @@
 			{#if version}
 				<span class="item" title="ElasticSearch version">v{version}</span>
 			{/if}
-			<a class="item" onclick={showConnectionDialog} href>
+			<button class="item" onclick={showConnectionDialog}>
 				Connection
 				<OnlineIndicator />
-			</a>
+			</button>
 		</div>
 	</div>
 </header>

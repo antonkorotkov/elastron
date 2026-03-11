@@ -1,8 +1,8 @@
 <script>
-	import JSONEditor from 'jsoneditor'
 	import { onMount, onDestroy, getContext } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
-	import { routerNavigate } from '@storeon/router'
+	import { goto } from '$app/navigation'
+	import { resolve } from '$app/paths'
 	import get from 'lodash/get'
 
 	import API from '../../../api/elasticsearch'
@@ -18,13 +18,19 @@
 
 	let indexPreviewEditor, ipEditor
 
-	onMount(() => {
+	onMount(async () => {
+		const { default: JSONEditor } = await import('jsoneditor')
+
 		if (indexPreviewEditor) {
 			ipEditor = new JSONEditor(indexPreviewEditor, {
 				mode: 'tree',
 				onEditable: () => false,
 				onCreateMenu: () => [],
 			})
+
+			// Populate with existing data immediately after creation
+			const info = get($index.info, [$index.selected, $index.selected], false)
+			if (info) ipEditor.update(info)
 		}
 
 		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
@@ -35,12 +41,11 @@
 
 		const info = get($index.info, [$index.selected, $index.selected], false)
 
-		if (info) ipEditor.update(info)
+		if (info && ipEditor) ipEditor.update(info)
 	})
 
 	onDestroy(() => {
-		if (ipEditor)
-			ipEditor.destroy()
+		if (ipEditor) ipEditor.destroy()
 	})
 
 	const showCloneIndexDialog = () => {
@@ -84,7 +89,7 @@
 			})
 		}
 
-		dispatch(routerNavigate, '/')
+		goto(resolve('/'))
 	}
 
 	const onCloseIndexClick = async indexName => {

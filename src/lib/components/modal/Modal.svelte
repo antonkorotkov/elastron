@@ -4,10 +4,13 @@
 	import { isThemeToggleChecked } from '../../utils/helpers'
 	import { useStoreon } from '@storeon/svelte'
 
-	export let key = 'modal-window'
-	export let closeOnEsc = true
-	export let closeOnOuterClick = true
-	export let setContext = baseSetContext
+	let {
+		key = 'modal-window',
+		closeOnEsc = true,
+		closeOnOuterClick = true,
+		setContext = baseSetContext,
+		children,
+	} = $props()
 
 	const { app } = useStoreon('app')
 
@@ -16,10 +19,10 @@
 		closeOnOuterClick,
 	}
 
-	let theState = { ...defaultState }
+	let theState = $state({ ...defaultState })
 
-	let Component = null
-	let theProps = null
+	let Component = $state(null)
+	let theProps = $state(null)
 
 	let background
 
@@ -50,17 +53,17 @@
 
 	setContext(key, { open, close })
 
-	$: inverted = isThemeToggleChecked($app.theme)
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
-<svelte:window on:keyup={handleKeyup} />
+<svelte:window onkeyup={handleKeyup} />
 
 {#if Component}
 	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<!-- svelte-ignore a11y-interactive-supports-focus -->
 	<div
 		transition:fade={{ duration: 300 }}
-		on:click={handleOuterClick}
+		onclick={handleOuterClick}
 		bind:this={background}
 		class="ui dimmer modals page hidden flex active"
 		role="alertdialog"
@@ -70,7 +73,7 @@
 			transition:fly={{ y: -500, duration: 300 }}
 			class:inverted
 		>
-			<svelte:component this={Component} {...theProps} />
+			<Component {...theProps} />
 		</div>
 	</div>
 
@@ -93,4 +96,4 @@
 	</style>
 {/if}
 
-<slot />
+{@render children()}

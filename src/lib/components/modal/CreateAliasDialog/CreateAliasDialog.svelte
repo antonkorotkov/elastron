@@ -1,6 +1,5 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
-	import JSONEditor from 'jsoneditor'
 	import { getContext, onMount, onDestroy } from 'svelte'
 	import get from 'lodash/get'
 	import isEmpty from 'lodash/isEmpty'
@@ -14,7 +13,7 @@
 		'app'
 	)
 
-	let { aliases = {}, onCancel = () => {}, onOkay = () => {} } = $props();
+	let { aliases = {}, onCancel = () => {}, onOkay = () => {} } = $props()
 
 	let aliasName = $state(''),
 		indexRouting = $state(''),
@@ -33,7 +32,7 @@
 	}
 
 	const save = async e => {
-		e.preventDefault();
+		e.preventDefault()
 		isLoading = true
 
 		try {
@@ -90,7 +89,9 @@
 		return !get(aliases, name, false)
 	}
 
-	onMount(() => {
+	onMount(async () => {
+		const { default: JSONEditor } = await import('jsoneditor')
+
 		if (filterEditor) {
 			fEditor = new JSONEditor(filterEditor, {
 				mode: 'code',
@@ -118,12 +119,7 @@
 <div class="ui header">Create New Alias</div>
 
 <div class="content">
-	<form
-		class="ui form"
-		class:inverted
-		onsubmit={save}
-		id="alias-form"
-	>
+	<form class="ui form" class:inverted onsubmit={save} id="alias-form">
 		<div class="field">
 			<label for="alias-name">Alias Name</label>
 			<input type="text" id="alias-name" bind:value={aliasName} />

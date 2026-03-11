@@ -1,7 +1,7 @@
 <script>
 	import DashboardTabs from '$lib/workspace/dashboard/DashboardTabs.svelte'
-	import Indices from '$lib/workspace/dashboard/indices/Indices.svelte'
+	import Shards from '$lib/workspace/dashboard/shards/Shards.svelte'
 </script>
 
 <DashboardTabs />
-<Indices />
+<Shards />

@@ -1,6 +1,6 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
-	import { getContext } from 'svelte'
+	import { getContext, onMount } from 'svelte'
 	import get from 'lodash/get'
 
 	import Table from '../../../components/tables/Table.svelte'
@@ -8,7 +8,11 @@
 	import CreateAliasDialog from '../../../components/modal/CreateAliasDialog/CreateAliasDialog.svelte'
 
 	const { open } = getContext('modal-window')
-	const { index } = useStoreon('index')
+	const { dispatch, index } = useStoreon('index')
+
+	onMount(() => {
+		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
+	})
 
 	let isLoading = false
 

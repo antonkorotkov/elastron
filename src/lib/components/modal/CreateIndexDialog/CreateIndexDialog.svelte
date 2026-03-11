@@ -1,7 +1,6 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
 	import { onMount, getContext } from 'svelte'
-	import JSONEditor from 'jsoneditor'
 
 	import API from '../../../api/elasticsearch'
 	import {
@@ -16,7 +15,7 @@
 		'app'
 	)
 
-	let { onCancel = () => {} } = $props();
+	let { onCancel = () => {} } = $props()
 
 	let indexName = $state(''),
 		isLoading = $state(false),
@@ -35,7 +34,9 @@
 				]
 		) || []
 
-	onMount(() => {
+	onMount(async () => {
+		const { default: JSONEditor } = await import('jsoneditor')
+
 		document.getElementById('index-name').focus()
 
 		if (settingsEditor) {
@@ -64,7 +65,7 @@
 	}
 
 	const create = async e => {
-		e.preventDefault();
+		e.preventDefault()
 		isLoading = true
 
 		try {
@@ -105,12 +106,7 @@
 <div class="ui header">Create New Index</div>
 
 <div class="content">
-	<form
-		class="ui form"
-		class:inverted
-		onsubmit={create}
-		id="create-index-form"
-	>
+	<form class="ui form" class:inverted onsubmit={create} id="create-index-form">
 		<div class="field">
 			<label for="index-name">Index Name</label>
 			<input type="text" id="index-name" bind:value={indexName} />
