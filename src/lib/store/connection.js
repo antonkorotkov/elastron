@@ -1,8 +1,7 @@
-import ls from 'local-storage'
-
 import API from '../api/elasticsearch'
+import { setStorage } from '../utils/storage'
 
-const initial = {
+export const initialConnection = {
 	name: 'Local Server',
 	host: 'https://localhost',
 	port: '9200',
@@ -15,15 +14,17 @@ const initial = {
 
 export const connection = store => {
 	store.on('@init', () => {
-		const connections = ls('connection') || []
-		const lastConnection = ls('lastConnection');
-		const currentConnection = lastConnection ?? connections[connections.length - 1] ?? initial;
-
-		if (connections.length)
-			return { connection: { ...initial, ...currentConnection } }
-
 		return {
-			connection: initial,
+			connection: initialConnection,
+		}
+	})
+
+	store.on('connection/hydrate', (state, data) => {
+		return {
+			connection: {
+				...state.connection,
+				...data
+			}
 		}
 	})
 
@@ -52,7 +53,7 @@ export const connection = store => {
 				store.dispatch('server/update', {
 					version: test.version,
 				})
-				ls('lastConnection', state.connection);
+				setStorage('lastConnection', state.connection);
 			} else {
 				store.dispatch('disconnected')
 			}

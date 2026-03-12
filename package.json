@@ -91,6 +91,7 @@
     "@electron/remote": "^2.1.2",
     "axios": "^1.9.0",
     "call-bind-apply-helpers": "^1.0.2",
+    "electron-store": "^11.0.2",
     "electron-updater": "^6.6.2",
     "get-port": "^7.1.0",
     "lodash": "^4.17.21"
@@ -111,7 +112,6 @@
     "eslint-plugin-svelte": "^3.5.1",
     "globals": "^17.3.0",
     "jsoneditor": "~10.4.2",
-    "local-storage": "~2.0.0",
     "percent-to-hex": "~1.0.1",
     "sass": "^1.87.0",
     "storeon": "~3.1.5",

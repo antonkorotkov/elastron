@@ -1,16 +1,25 @@
-import ls from 'local-storage'
 import some from 'lodash/some'
 import isEqual from 'lodash/isEqual'
+import { setStorage } from '../utils/storage'
 
 export const history = store => {
     store.on('@init', () => ({
         history: {
-            connection: ls('connection') || [],
+            connection: [], // Will be hydrated
         },
     }))
 
+    store.on('history/hydrate', (state, data) => {
+        return {
+            history: {
+                ...state.history,
+                ...data
+            }
+        }
+    })
+
     store.on('history/connection/clear', state => {
-        ls('connection', [])
+        setStorage('connection', [])
 
         return {
             history: {
@@ -24,12 +33,12 @@ export const history = store => {
         if (some(state.history.connection, item => isEqual(item, connection)))
             return state
 
-        const savedConnections = ls('connection') || []
+        const savedConnections = [...state.history.connection]
         if (savedConnections.length >= 10) {
             savedConnections.shift()
         }
         savedConnections.push(connection)
-        ls('connection', savedConnections)
+        setStorage('connection', savedConnections)
 
         return {
             history: {
@@ -44,12 +53,12 @@ export const history = store => {
         if (!some(state.history.connection, item => isEqual(item, connection)))
             return state
 
-        let savedConnections = ls('connection') || []
+        let savedConnections = [...state.history.connection]
         savedConnections = savedConnections.filter(c => {
             c.name = c.name || ''
             return !isEqual(c, connection)
         })
-        ls('connection', savedConnections)
+        setStorage('connection', savedConnections)
 
         return {
             history: {

@@ -2,10 +2,10 @@ import API from '../api/elasticsearch'
 import get from 'lodash/get'
 import isEmpty from 'lodash/isEmpty'
 import { getMessageFromError } from '../utils/helpers'
-import ls from 'local-storage'
 import omit from 'lodash/omit'
+import { setStorage } from '../utils/storage'
 
-const initialState = ls('lastSearch') ?? {
+const initialState = {
 	profiling: false,
 	explain: false,
 	type: 'uri',
@@ -202,9 +202,18 @@ export const search = store => {
 			...data,
 		}
 
-		ls('lastSearch', omit(search, ['response', 'aggs', 'results', 'profile', 'stats', 'loading', 'editDoc']))
+		setStorage('lastSearch', omit(search, ['response', 'aggs', 'results', 'profile', 'stats', 'loading', 'editDoc']))
 
 		return { search }
+	})
+
+	store.on('search/hydrate', (state, data) => {
+		return {
+			search: {
+				...state.search,
+				...data
+			}
+		}
 	})
 
 	store.on('search/loading', (state, loading) => ({

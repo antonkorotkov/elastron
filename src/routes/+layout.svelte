@@ -19,8 +19,10 @@
 	// Client-side only logic for internet check
 	import { onMount } from 'svelte'
 	import { browser } from '$app/environment'
+	import { getStorage } from '$lib/utils/storage.js'
+	import { initialConnection } from '$lib/store/connection.js'
 
-	onMount(() => {
+	onMount(async () => {
 		if (browser) {
 			InternetConnection.onOnline(() => {
 				dispatch('internet/online')
@@ -32,6 +34,24 @@
 
 			if (InternetConnection.isOnline) dispatch('internet/online')
 
+			const connections = await getStorage('connection', [])
+			const lastConnection = await getStorage('lastConnection', null)
+			const currentConnection =
+				lastConnection ??
+				connections[connections.length - 1] ??
+				initialConnection
+
+			dispatch('connection/hydrate', currentConnection)
+			dispatch('connection/save')
+			dispatch('history/hydrate', { connection: connections })
+
+			const lastSearch = await getStorage('lastSearch', null)
+			if (lastSearch) {
+				dispatch('search/hydrate', lastSearch)
+			}
+
+			const theme = await getStorage('theme')
+			dispatch('app/hydrate', { theme: theme ?? 'light' })
 			dispatch('server/info')
 		}
 	})

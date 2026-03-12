@@ -5,6 +5,11 @@ import { fileURLToPath } from 'url';
 import getPort from 'get-port';
 import axios from 'axios';
 import updater from './updater.js';
+import Store from 'electron-store';
+
+const store = new Store({
+	encryptionKey: `${process.version}-${process.platform}-${process.arch}`
+});
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -77,6 +82,14 @@ const createWindow = (port) => {
 		// checks for updates - to be implemented with electron-updater
 		// For now, prompt user or log
 		console.log('Checking for updates...');
+	});
+
+	ipcMain.handle('store:get', (event, key, defaultValue) => {
+		return store.get(key, defaultValue);
+	});
+
+	ipcMain.on('store:set', (event, key, value) => {
+		store.set(key, value);
 	});
 
 	// ... rest of createWindow

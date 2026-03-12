@@ -1,24 +1,31 @@
-import ls from 'local-storage'
+import { setStorage } from '../utils/storage'
 
 export const app = store => {
-    store.on('@init', () => {
-        const theme = ls('theme') || 'light'
+	store.on('@init', () => {
+		return {
+			app: {
+				theme: 'light', // Default, will be hydrated
+			},
+		}
+	})
 
-        return {
-            app: {
-                theme,
-            },
-        }
-    })
+	store.on('app/hydrate', (state, data) => {
+		return {
+			app: {
+				...state.app,
+				...data
+			}
+		}
+	})
 
-    store.on('app/toggleTheme', (state, theme) => {
-        ls('theme', theme)
+	store.on('app/toggleTheme', (state, theme) => {
+		setStorage('theme', theme)
 
-        return {
-            app: {
-                ...state.app,
-                theme,
-            },
-        }
-    })
+		return {
+			app: {
+				...state.app,
+				theme,
+			},
+		}
+	})
 }

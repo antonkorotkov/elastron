@@ -5,7 +5,11 @@
 	import isEmpty from 'lodash/isEmpty.js'
 	import debounce from 'lodash/debounce.js'
 
-	import { indicesSortPredicate, isThemeToggleChecked, filterArrayBy } from '../../../utils/helpers'
+	import {
+		indicesSortPredicate,
+		isThemeToggleChecked,
+		filterArrayBy,
+	} from '../../../utils/helpers'
 	import Table from '../../../components/tables/Table.svelte'
 	import Cell from './Cell.svelte'
 	import CreateIndexDialog from '../../../components/modal/CreateIndexDialog/CreateIndexDialog.svelte'
@@ -19,21 +23,15 @@
 	let sorting = $derived($indices.sorting)
 	let search = $derived($indices.search)
 	let data = $derived.by(() => {
-		const [ direction, column, index ] = sorting
-		let list = indicesList;
+		const [direction, column, index] = sorting
+		let list = indicesList
 
 		if (direction && column && index !== undefined)
 			list = orderBy(list, [indicesSortPredicate(column, index)], [direction])
 
-		if (!isEmpty(search))
-			list = filterArrayBy(list, search)
+		if (!isEmpty(search)) list = filterArrayBy(list, search)
 
 		return list
-	})
-
-	onMount(() => {
-		if (!$indices.data.length)
-			dispatch('elasticsearch/indices/fetch')
 	})
 
 	const showCreateIndexDialog = () => {
@@ -49,7 +47,9 @@
 	}
 
 	const onSort = (column, index, direction) => {
-		dispatch('elasticsearch/indices/update', { sorting: [ direction, column, index ] })
+		dispatch('elasticsearch/indices/update', {
+			sorting: [direction, column, index],
+		})
 	}
 </script>
 
@@ -81,7 +81,7 @@
 							type="text"
 							placeholder="Search..."
 							defaultValue={search}
-						>
+						/>
 						<i class="search icon"></i>
 					</div>
 				</div>
