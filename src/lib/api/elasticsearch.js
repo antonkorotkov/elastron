@@ -1,33 +1,21 @@
 import { getMessageFromError } from '../utils/helpers';
 
 export default class API {
-	/**
-	 *
-	 * @param {*} connection
-	 */
 	constructor(connection) {
 		this.connection = connection;
-		// Client interface mimics axios for compatibility with existing methods
-		this.client = {
-			get: (...args) => this.request('get', ...args),
-			post: (...args) => this.request('post', ...args),
-			put: (...args) => this.request('put', ...args),
-			delete: (...args) => this.request('delete', ...args),
-		};
 	}
 
 	/**
-	 * Internal request helper
+	 * Internal request helper linking to distinct semantic endpoints
 	 */
-	async request(method, ...args) {
-		const response = await fetch('/api/elastic/request', {
+	async _request(endpoint, payload = {}) {
+		const response = await fetch(`/api/elastic/${endpoint}`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
-				method,
-				args,
+				...payload,
 				connection: this.connection
 			})
 		});
@@ -36,19 +24,12 @@ export default class API {
 
 		if (!response.ok || result.error) {
 			const errorMessage = result.error || 'Unknown server error';
-			// Mimic axios error structure if possible or just throw message
-			// Existing code expects error object structure sometimes?
-			// ConnectionError wraps it.
 			throw new Error(errorMessage);
 		}
 
-		return { data: result.data }; // Match axios response structure { data: ... }
+		return { data: result.data };
 	}
 
-	/**
-	 *
-	 * @param {*} data
-	 */
 	parseCatResponse(data) {
 		const struct = String(data)
 			.split('\n')
@@ -64,14 +45,9 @@ export default class API {
 		return false
 	}
 
-	/**
-	 *
-	 */
 	async test() {
 		try {
-			const response = await this.client.get('/', {
-				timeout: 3000,
-			})
+			const response = await this._request('test')
 			if (response.data && response.data.tagline)
 				return {
 					success: true,
@@ -87,286 +63,155 @@ export default class API {
 		}
 	}
 
-	/**
-	 *
-	 */
 	async getIndices() {
 		try {
-			const response = await this.client.get('/_cat/indices?v')
+			const response = await this._request('indices')
 			return this.parseCatResponse(response.data)
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 */
 	async getAllocation() {
 		try {
-			const response = await this.client.get('/_cat/allocation?v')
+			const response = await this._request('allocation')
 			return this.parseCatResponse(response.data)
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 */
 	async getShards() {
 		try {
-			const response = await this.client.get('/_cat/shards?v')
+			const response = await this._request('shards')
 			return this.parseCatResponse(response.data)
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} params
-	 */
 	async uriSearch(params) {
-		const { index, type, query, size, from, sort, _source, explain } = params
-		const response = await this.client.get(
-			`${index ? `/${index}` : ''}${type ? `/${type}` : ''}/_search`,
-			{
-				params: {
-					q: query,
-					size,
-					from,
-					sort,
-					_source,
-					explain,
-				},
-			}
-		)
+		const response = await this._request('search/uri', params)
 		return response.data
 	}
 
-	/**
-	 *
-	 * @param {*} params
-	 */
 	async bodySearch(params) {
-		const { index, type, query } = params
-		const response = await this.client.post(
-			`${index ? `/${index}` : ''}${type ? `/${type}` : ''}/_search`,
-			{
-				...query,
-			}
-		)
+		const response = await this._request('search/body', params)
 		return response.data
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 * @param {*} type
-	 * @param {*} id
-	 * @param {*} params
-	 */
 	async deleteDocument(index, type = '_doc', id, params = {}) {
-		const response = await this.client.delete(`${index}/${type}/${id}`, {
-			params,
-		})
+		const response = await this._request('document/delete', { index, type, id, params })
 		return response.data
 	}
 
-	/**
-	 * @param {*} index
-	 * @param {*} id
-	 * @param {*} fields
-	 */
 	async updateDocument(index, id, fields = {}) {
 		try {
-			const response = await this.client.post(
-				`${index}/_update/${id}?refresh=true`,
-				{
-					doc: fields,
-				}
-			)
+			const response = await this._request('document/update', { index, id, fields })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 * @param {*} id
-	 * @param {*} fields
-	 */
 	async indexDocument(index, type = '_doc', id, fields = {}) {
-		const response = await this.client.put(`${index}/${type}/${id}`, fields)
+		const response = await this._request('document/index', { index, type, id, fields })
 		return response.data
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async getIndex(index) {
 		try {
-			const response = await this.client.get(`/${index}`)
+			const response = await this._request('index/get', { index })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async deleteIndex(index) {
 		try {
-			const response = await this.client.delete(`/${index}`)
+			const response = await this._request('index/delete', { index })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async closeIndex(index) {
 		try {
-			const response = await this.client.post(`/${index}/_close`)
+			const response = await this._request('index/close', { index })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async openIndex(index) {
 		try {
-			const response = await this.client.post(`/${index}/_open`)
+			const response = await this._request('index/open', { index })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async createIndex(index, settings = {}) {
 		try {
-			const response = await this.client.put(`/${index}`, settings)
+			const response = await this._request('index/create', { index, settings })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} existingIndex
-	 * @param {*} newIndex
-	 */
 	async cloneIndex(existingIndex, newIndex) {
 		try {
-			const response = await this.client.post(
-				`/${existingIndex}/_clone/${newIndex}`
-			)
+			const response = await this._request('index/clone', { existingIndex, newIndex })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async wipeIndex(index) {
 		try {
-			const response = await this.client.post(
-				`/${index}/_delete_by_query?conflicts=proceed`,
-				{
-					query: {
-						match_all: {},
-					},
-				}
-			)
+			const response = await this._request('index/wipe', { index })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 * @param {*} mapping
-	 */
 	async updateIndexMapping(index, mapping) {
 		try {
-			const types = Object.getOwnPropertyNames(mapping)
-			if (types.length === 1 && types[0] === 'properties') {
-				const response = await this.client.put(`/${index}/_mapping`, mapping)
-				return response.data
-			} else {
-				const responses = []
-
-				for (var i in mapping) {
-					const response = await this.client.post(
-						`/${index}/_mapping/${i}`,
-						mapping[i]
-					)
-					responses.push(response.data)
-				}
-
-				return responses
-			}
+			const response = await this._request('index/mapping', { index, mapping })
+			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 * @param {*} settings
-	 */
 	async updateIndexSettings(index, settings) {
 		try {
-			const response = await this.client.put(`/${index}/_settings`, settings)
+			const response = await this._request('index/settings', { index, settings })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 * @param {*} index
-	 */
 	async deleteIndexAlias(index, alias) {
 		try {
-			const response = await this.client.delete(`/${index}/_alias/${alias}`)
+			const response = await this._request('alias/delete', { index, alias })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
 	}
 
-	/**
-	 *
-	 */
 	async createIndexAlias(index, alias, data) {
 		try {
-			const response = await this.client.post(`/${index}/_alias/${alias}`, data)
+			const response = await this._request('alias/create', { index, alias, data })
 			return response.data
 		} catch (err) {
 			throw new ConnectionError(err)
