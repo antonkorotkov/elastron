@@ -1,7 +1,8 @@
 <script>
 	import DashboardTabs from '$lib/workspace/dashboard/DashboardTabs.svelte'
-	import Shards from '$lib/workspace/dashboard/shards/Shards.svelte'
+
+	let { children } = $props()
 </script>
 
 <DashboardTabs />
-<Shards />
+{@render children()}

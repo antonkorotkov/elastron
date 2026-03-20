@@ -9,20 +9,20 @@
 </script>
 
 <div class="ui pointing secondary menu" class:inverted>
-	<a href={resolve('/')} class="item" class:active={$page.url.pathname === '/'}>
+	<a href={resolve('/dashboard/indices')} class="item" class:active={$page.url.pathname === '/dashboard/indices'}>
 		Indices
 	</a>
 	<a
-		href={resolve('/shards')}
+		href={resolve('/dashboard/shards')}
 		class="item"
-		class:active={$page.url.pathname === '/shards'}
+		class:active={$page.url.pathname === '/dashboard/shards'}
 	>
 		Shards
 	</a>
 	<a
-		href={resolve('/allocation')}
+		href={resolve('/dashboard/allocation')}
 		class="item"
-		class:active={$page.url.pathname === '/allocation'}
+		class:active={$page.url.pathname === '/dashboard/allocation'}
 	>
 		Allocation
 	</a>

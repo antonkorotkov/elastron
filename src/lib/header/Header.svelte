@@ -43,8 +43,8 @@
 		</div>
 		<a
 			class="item"
-			href={resolve('/')}
-			class:active={pathname === '/'}
+			href={resolve('/dashboard/indices')}
+			class:active={pathname.startsWith('/dashboard')}
 			onclick={onDashboardClick}
 		>
 			Dashboard
