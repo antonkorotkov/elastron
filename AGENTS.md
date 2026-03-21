@@ -12,7 +12,7 @@ Elastron is a desktop Elasticsearch client built with web technologies. It allow
 - **State Management**: [Storeon](https://github.com/storeon/storeon)
 - **Backend (Main)**: Node.js with `@elastic/elasticsearch` (v8.12.0)
 - **Styles**: SCSS / SASS
-- **Testing**: Vitest
+- **Testing**: Vitest + jsdom + Svelte Testing Library
 - **Build System**: electron-builder
 
 ## Architecture
@@ -22,7 +22,7 @@ Elastron follows a hybrid SvelteKit + Electron architecture:
     -   Entry point.
     -   Creates browser windows.
     -   Manages application lifecycle.
-    -   Initializes IPC handlers (`app/ipc-main.js`).
+    -   Initializes IPC handlers directly in `main.js`.
 
 2.  **Renderer Process** (`src/`):
     -   Built with SvelteKit.
@@ -32,7 +32,6 @@ Elastron follows a hybrid SvelteKit + Electron architecture:
 
 ## Key Directories
 - **`/`**: Root configuration (`package.json`, `vite.config.js`, `svelte.config.js`).
-- **`/app`**: Main process modules (deprecated/moving to SvelteKit server routes?).
 - **`/src`**: SvelteKit source code.
     - **`routes`**: Pages and API endpoints (`+page.svelte`, `+server.js`).
     - **`lib`**: Shared code.
