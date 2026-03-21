@@ -69,7 +69,7 @@
 		role="alertdialog"
 	>
 		<div
-			class="ui tiny modal hidden active"
+			class="ui small modal hidden active"
 			transition:fly={{ y: -500, duration: 300 }}
 			class:inverted
 		>

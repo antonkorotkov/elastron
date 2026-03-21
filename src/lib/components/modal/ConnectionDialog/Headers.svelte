@@ -11,7 +11,7 @@
 </script>
 
 <div class="headers">
-	{#each headers as header, index}
+	{#each headers as header, index (index)}
 		<HeaderItem
 			name={header.name}
 			value={header.value}

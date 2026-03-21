@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
-import { userEvent } from '@testing-library/user-event';
+
 import AliasTableCell from './AliasTableCell.svelte';
 import { writable } from 'svelte/store';
 

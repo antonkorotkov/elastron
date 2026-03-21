@@ -21,7 +21,7 @@
 	</div>
 	<div class="content" class:active>
 		{#if shard.searches && shard.searches.length}
-			{#each shard.searches as search, i}
+			{#each shard.searches as search, i (i)}
 				<Search {search} />
 			{/each}
 		{/if}

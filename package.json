@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "lint": "eslint .",
     "start": "electron .",
     "dist-mac": "electron-builder -m",
     "dist-win": "electron-builder -w",

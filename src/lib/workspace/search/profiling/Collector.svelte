@@ -46,7 +46,7 @@
 	</small>
 	{#if collector.children && collector.children.length}
 		<div class="ui fluid accordion styled" class:inverted>
-			{#each collector.children as q, i}
+			{#each collector.children as q, i (i)}
 				<Collector collector={q} collectors={collector.children} />
 			{/each}
 		</div>

@@ -14,7 +14,7 @@
 	{#if !isEmpty($search.profile)}
 		<h4 class="ui header" class:inverted>Affected Shards</h4>
 		<div class="ui fluid accordion styled" class:inverted>
-			{#each $search.profile.shards as shard, i}
+			{#each $search.profile.shards as shard, i (i)}
 				<Shard {shard} />
 			{/each}
 		</div>

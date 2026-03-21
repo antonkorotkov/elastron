@@ -18,7 +18,7 @@
 			<small class="ui label">Rewrite Time: {search.rewrite_time}</small>
 		{/if}
 		<div class="ui fluid accordion styled" class:inverted>
-			{#each search.query as query, i}
+			{#each search.query as query, i (i)}
 				<Query {query} queries={search.query} />
 			{/each}
 		</div>
@@ -26,7 +26,7 @@
 	{#if search.collector && search.collector.length}
 		<h5 class="ui header" class:inverted>Search Collectors</h5>
 		<div class="ui fluid accordion styled" class:inverted>
-			{#each search.collector as collector, i}
+			{#each search.collector as collector, i (i)}
 				<Collector {collector} collectors={search.collector} />
 			{/each}
 		</div>

@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import Notification from './Notification.svelte';
-import { writable } from 'svelte/store';
+
 
 vi.mock('@storeon/svelte', () => ({
 	useStoreon: () => ({ dispatch: vi.fn() })

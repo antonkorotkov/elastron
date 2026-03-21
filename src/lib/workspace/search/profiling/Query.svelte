@@ -42,7 +42,7 @@
 <div class="content" class:active>
 	{#if !isEmpty(query.breakdown)}
 		<div class="ui list">
-			{#each Object.keys(query.breakdown) as i}
+			{#each Object.keys(query.breakdown) as i (i)}
 				<div class="item">
 					<strong>{i}</strong>
 					:
@@ -53,7 +53,7 @@
 	{/if}
 	{#if query.children && query.children.length}
 		<div class="ui fluid accordion styled" class:inverted>
-			{#each query.children as q, i}
+			{#each query.children as q, i (i)}
 				<Query query={q} queries={query.children} />
 			{/each}
 		</div>

@@ -5,7 +5,7 @@
 	import { resolve } from '$app/paths'
 	import get from 'lodash/get'
 
-	import ConnectionDialog from '../components/modal/ConnectionDialog/ConnectionDialog.svelte'
+	import ConnectDialog from '../components/modal/ConnectionDialog/ConnectDialog.svelte'
 	import OnlineIndicator from './OnlineIndicator.svelte'
 
 	const onHeaderDblClick = () =>
@@ -21,7 +21,7 @@
 			view: 'hits',
 		})
 		open(
-			ConnectionDialog,
+			ConnectDialog,
 			{},
 			{
 				closeOnEsc: false,
