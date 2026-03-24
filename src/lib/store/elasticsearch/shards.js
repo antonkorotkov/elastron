@@ -34,10 +34,20 @@ export const shards = store => {
 			const shards = await api.getShards()
 			if (shards) {
 				const { columns, data } = shards
+
+				let sorting = state.shards.sorting
+				if (sorting.length === 0) {
+					const indexCol = columns.indexOf('index')
+					if (indexCol !== -1) {
+						sorting = ['asc', 'index', indexCol]
+					}
+				}
+
 				store.dispatch('elasticsearch/shards/update', {
 					columns,
 					data,
 					loading: false,
+					sorting,
 				})
 			} else {
 				store.dispatch('notification/add', {

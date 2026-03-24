@@ -34,10 +34,20 @@ export const indices = store => {
 			const indices = await api.getIndices()
 			if (indices) {
 				const { columns, data } = indices
+
+				let sorting = state.indices.sorting
+				if (sorting.length === 0) {
+					const indexCol = columns.indexOf('index')
+					if (indexCol !== -1) {
+						sorting = ['asc', 'index', indexCol]
+					}
+				}
+
 				store.dispatch('elasticsearch/indices/update', {
 					columns,
 					data,
 					loading: false,
+					sorting,
 				})
 				if (typeof cb === 'function') {
 					cb()

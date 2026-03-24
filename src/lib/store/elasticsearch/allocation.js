@@ -34,10 +34,20 @@ export const allocation = store => {
 			const allocation = await api.getAllocation()
 			if (allocation) {
 				const { columns, data } = allocation
+
+				let sorting = state.allocation.sorting
+				if (sorting.length === 0) {
+					const nodeCol = columns.indexOf('node')
+					if (nodeCol !== -1) {
+						sorting = ['asc', 'node', nodeCol]
+					}
+				}
+
 				store.dispatch('elasticsearch/allocation/update', {
 					columns,
 					data,
 					loading: false,
+					sorting,
 				})
 			} else {
 				store.dispatch('notification/add', {
