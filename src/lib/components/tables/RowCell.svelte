@@ -7,10 +7,7 @@
 	 */
 
 	/** @type {Props} */
-	let { cell = '', columns = [], i = 0 } = $props();
-
-	columns
-	i
+	let { cell = '' } = $props()
 </script>
 
 {cell}

@@ -1,5 +1,5 @@
 <script>
-	import { setContext as baseSetContext } from 'svelte'
+	import { setContext as baseSetContext, untrack } from 'svelte'
 	import { fly, fade } from 'svelte/transition'
 	import { isThemeToggleChecked } from '../../utils/helpers'
 	import { useStoreon } from '@storeon/svelte'
@@ -14,22 +14,22 @@
 
 	const { app } = useStoreon('app')
 
-	const defaultState = {
+	const getDefaultState = () => ({
 		closeOnEsc,
 		closeOnOuterClick,
-	}
+	})
 
-	let theState = $state({ ...defaultState })
+	let theState = $state(getDefaultState())
+	let inverted = $derived(isThemeToggleChecked($app.theme))
 
 	let Component = $state(null)
 	let theProps = $state(null)
-
-	let background
+	let background = $state()
 
 	const open = (NewComponent, newProps = {}, options = {}) => {
 		Component = NewComponent
 		theProps = newProps
-		theState = { ...defaultState, ...options }
+		theState = { ...getDefaultState(), ...options }
 	}
 
 	const close = () => {
@@ -51,22 +51,22 @@
 		}
 	}
 
-	setContext(key, { open, close })
-
-	let inverted = $derived(isThemeToggleChecked($app.theme))
+	untrack(() => {
+		setContext(key, { open, close })
+	})
 </script>
 
 <svelte:window onkeyup={handleKeyup} />
 
 {#if Component}
-	<!-- svelte-ignore a11y-click-events-have-key-events -->
-	<!-- svelte-ignore a11y-interactive-supports-focus -->
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div
 		transition:fade={{ duration: 300 }}
 		onclick={handleOuterClick}
 		bind:this={background}
 		class="ui dimmer modals page hidden flex active"
 		role="alertdialog"
+		tabindex="-1"
 	>
 		<div
 			class="ui small modal hidden active"

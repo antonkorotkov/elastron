@@ -4,8 +4,6 @@
 	import { page } from '$app/stores'
 	import { resolve } from '$app/paths'
 	import get from 'lodash/get'
-
-	import ConnectDialog from '../components/modal/ConnectionDialog/ConnectDialog.svelte'
 	import OnlineIndicator from './OnlineIndicator.svelte'
 
 	const onHeaderDblClick = () =>
@@ -16,10 +14,15 @@
 
 	const { open } = getContext('modal-window')
 
-	const showConnectionDialog = () => {
+	const showConnectionDialog = async () => {
+		const ConnectDialog = (
+			await import('../components/modal/ConnectionDialog/ConnectDialog.svelte')
+		).default
+
 		dispatch('search/update', {
 			view: 'hits',
 		})
+
 		open(
 			ConnectDialog,
 			{},

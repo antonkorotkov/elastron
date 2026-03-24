@@ -25,19 +25,22 @@
 		emptyMessage = 'No data',
 		Cell = null,
 		footerColumns = false,
-		onSort
-	} = $props();
+		onSort,
+	} = $props()
 
-	let CellRenderer = Cell ? Cell : RowCell
+	let CellRenderer = $derived(Cell ? Cell : RowCell)
 
 	const { app } = useStoreon('app')
-	const [direction,, index] = $derived(sorting)
+	const [direction, , index] = $derived(sorting)
 
 	const onColumnClick = (column, index) => {
-		if (typeof onSort !== 'function')
-			return
+		if (typeof onSort !== 'function') return
 
-		const newDirection = direction ? (direction === 'asc' ? 'desc' : 'asc') : 'asc';
+		const newDirection = direction
+			? direction === 'asc'
+				? 'desc'
+				: 'asc'
+			: 'asc'
 		onSort(column, index, newDirection)
 	}
 
