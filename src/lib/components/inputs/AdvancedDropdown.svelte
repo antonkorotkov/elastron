@@ -30,8 +30,8 @@
 		onSelect = () => {},
 		onClear = () => {},
 		placeholder = 'Select...',
-		labelIdentifier = 'label'
-	} = $props();
+		labelIdentifier = 'label',
+	} = $props()
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
@@ -53,7 +53,7 @@
 	{/key}
 
 	<style>
-		.inverted.advanced-selector .selection {
+		.inverted.advanced-selector .svelte-select {
 			color: black;
 		}
 	</style>

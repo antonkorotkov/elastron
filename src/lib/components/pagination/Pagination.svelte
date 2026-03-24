@@ -64,7 +64,7 @@
 	<div class="ui pagination menu {className}">
 		<button
 			aria-label="First"
-			class="icon item"
+			class="mini ui button icon item"
 			class:disabled={firstDisabled}
 			onclick={onClickFirst}
 		>
@@ -72,7 +72,7 @@
 		</button>
 		<button
 			aria-label="Previous"
-			class="icon item"
+			class="mini ui button icon item"
 			class:disabled={prevDisabled}
 			onclick={onClickPrev}
 		>
@@ -80,7 +80,7 @@
 		</button>
 		<button
 			aria-label="Next"
-			class="icon item"
+			class="mini ui button icon item"
 			class:disabled={nextDisabled}
 			onclick={onClickNext}
 		>
@@ -88,7 +88,7 @@
 		</button>
 		<button
 			aria-label="Last"
-			class="icon item"
+			class="mini ui button icon item"
 			class:disabled={lastDisabled}
 			onclick={onClickLast}
 		>
@@ -102,7 +102,7 @@
 		margin-left: 1rem !important;
 	}
 
-	.menu.mini {
+	.menu.mini .item {
 		font-size: 0.6rem;
 	}
 </style>

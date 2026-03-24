@@ -37,7 +37,7 @@
 </script>
 
 <header ondblclick={onHeaderDblClick} role="navigation">
-	<div class="ui menu inverted fixed">
+	<div class="ui borderless menu inverted fixed">
 		<div class="logo item" style="-webkit-app-region: drag;">
 			<b style="cursor: move;">Elastron</b>
 		</div>
@@ -64,7 +64,7 @@
 			{#if version}
 				<span class="item" title="ElasticSearch version">v{version}</span>
 			{/if}
-			<button class="item" onclick={showConnectionDialog}>
+			<button class="ui button item" onclick={showConnectionDialog}>
 				Connection
 				<OnlineIndicator />
 			</button>
@@ -77,6 +77,7 @@
 		border-radius: 0 !important;
 		padding-left: 6rem !important;
 		background-color: #fff000 !important;
+		cursor: move;
 	}
 	.logo b {
 		color: #000;
