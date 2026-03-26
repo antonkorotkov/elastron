@@ -5,7 +5,7 @@ export async function POST({ request }) {
 		const response = await client.transport.request({
 			method: 'GET',
 			path: '/_cat/shards',
-			querystring: { v: '' }
+			querystring: { format: 'json' }
 		});
 		return response.body !== undefined ? response.body : response;
 	});

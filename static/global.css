@@ -159,9 +159,8 @@ button:focus {
 }
 
 .scrollable {
-	overflow-y: scroll;
+	overflow: scroll;
 	height: calc(100vh - 248px);
-	overflow-x: hidden;
 }
 
 .scrollable::-webkit-scrollbar {

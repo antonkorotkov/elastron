@@ -90,6 +90,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "8.12.0",
     "@electron/remote": "^2.1.2",
+    "@tanstack/svelte-virtual": "^3.13.23",
     "call-bind-apply-helpers": "^1.0.2",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.6.2",

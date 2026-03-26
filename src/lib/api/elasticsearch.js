@@ -30,19 +30,11 @@ export default class API {
 		return { data: result.data };
 	}
 
-	parseCatResponse(data) {
-		const struct = String(data)
-			.split('\n')
-			.map(line => line.split(' ').filter(item => item !== ''))
-			.filter(row => row.length)
-		if (struct) {
-			return {
-				columns: struct[0],
-				data: struct.splice(1),
-			}
-		}
-
-		return false
+	formatCatJson(data) {
+		if (!data || !Array.isArray(data)) return false;
+		const columns = data.length > 0 ? Object.keys(data[0]) : [];
+		const rows = data.map(item => columns.map(col => typeof item[col] === 'object' ? JSON.stringify(item[col]) : String(item[col] ?? '')));
+		return { columns, data: rows };
 	}
 
 	async test() {
@@ -66,7 +58,7 @@ export default class API {
 	async getIndices() {
 		try {
 			const response = await this._request('indices')
-			return this.parseCatResponse(response.data)
+			return this.formatCatJson(response.data)
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
@@ -75,7 +67,7 @@ export default class API {
 	async getAllocation() {
 		try {
 			const response = await this._request('allocation')
-			return this.parseCatResponse(response.data)
+			return this.formatCatJson(response.data)
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
@@ -84,7 +76,7 @@ export default class API {
 	async getShards() {
 		try {
 			const response = await this._request('shards')
-			return this.parseCatResponse(response.data)
+			return this.formatCatJson(response.data)
 		} catch (err) {
 			throw new ConnectionError(err)
 		}

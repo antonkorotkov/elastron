@@ -10,7 +10,7 @@
 		isThemeToggleChecked,
 		filterArrayBy,
 	} from '../../../utils/helpers'
-	import Table from '../../../components/tables/Table.svelte'
+	import VirtualTable from '../../../components/tables/VirtualTable.svelte'
 	import Cell from './Cell.svelte'
 	import CreateIndexDialog from '../../../components/modal/CreateIndexDialog/CreateIndexDialog.svelte'
 	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
@@ -73,34 +73,39 @@
 				</div>
 			</div>
 			<div class="eight wide column right aligned">
-				<div class="ui search">
-					<div class="ui icon input" class:inverted>
-						<input
-							class="prompt"
-							onkeyup={onSearchChange}
-							type="text"
-							placeholder="Search..."
-							defaultValue={search}
-						/>
-						<i class="search icon"></i>
+				<div class="ui horizontal list">
+					<div class="item">
+						<span class="ui grey text">{data.length} {data.length === 1 ? 'item' : 'items'}</span>
+					</div>
+					<div class="item">
+						<div class="ui search">
+							<div class="ui icon input" class:inverted>
+								<input
+									class="prompt"
+									onkeyup={onSearchChange}
+									type="text"
+									placeholder="Search..."
+									defaultValue={search}
+								/>
+								<i class="search icon"></i>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
 	{#if $indices.columns.length}
-		<div class="scrollable">
-			<Table
-				columns={$indices.columns}
-				rows={data}
-				{onSort}
-				{sorting}
-				emptyMessage="No indices found"
-				selectable
-				footerColumns
-				{Cell}
-			/>
-		</div>
+		<VirtualTable
+			columns={$indices.columns}
+			rows={data}
+			{onSort}
+			{sorting}
+			emptyMessage="No indices found"
+			selectable
+			footerColumns
+			{Cell}
+		/>
 	{:else}
 		<div class="ui segment" class:inverted>
 			<p>

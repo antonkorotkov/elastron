@@ -18,24 +18,20 @@ describe('Elasticsearch API Client - Expanded', () => {
 		api = new API(mockConnection);
 	});
 
-	describe('parseCatResponse', () => {
-		it('parses column headers and data rows', () => {
-			const input =
-				'health status index\ngreen open my-index\nyellow open logs';
-			const result = api.parseCatResponse(input);
+	describe('formatCatJson', () => {
+		it('parses column headers and data rows from JSON array', () => {
+			const input = [
+				{ health: 'green', status: 'open', index: 'my-index' },
+				{ health: 'yellow', status: 'open', index: 'logs' }
+			];
+			const result = api.formatCatJson(input);
 			expect(result.columns).toEqual(['health', 'status', 'index']);
 			expect(result.data).toHaveLength(2);
 			expect(result.data[0]).toEqual(['green', 'open', 'my-index']);
 		});
 
-		it('filters out empty lines', () => {
-			const input = 'col1 col2\nval1 val2\n\n';
-			const result = api.parseCatResponse(input);
-			expect(result.data).toHaveLength(1);
-		});
-
 		it('handles empty input gracefully', () => {
-			const result = api.parseCatResponse('');
+			const result = api.formatCatJson([]);
 			expect(result.data).toEqual([]);
 		});
 	});
@@ -62,8 +58,8 @@ describe('Elasticsearch API Client - Expanded', () => {
 	});
 
 	describe('getIndices()', () => {
-		it('parses cat response', async () => {
-			mockFetch('health status index\ngreen open idx1\n');
+		it('parses cat JSON response', async () => {
+			mockFetch([{ health: 'green', status: 'open', index: 'idx1' }]);
 			const result = await api.getIndices();
 			expect(result.columns[0]).toBe('health');
 			expect(result.data[0][2]).toBe('idx1');
@@ -71,16 +67,16 @@ describe('Elasticsearch API Client - Expanded', () => {
 	});
 
 	describe('getAllocation()', () => {
-		it('parses cat response', async () => {
-			mockFetch('shards disk.indices\n5 10gb\n');
+		it('parses cat JSON response', async () => {
+			mockFetch([{ shards: '5', 'disk.indices': '10gb' }]);
 			const result = await api.getAllocation();
 			expect(result.columns).toEqual(['shards', 'disk.indices']);
 		});
 	});
 
 	describe('getShards()', () => {
-		it('parses cat response', async () => {
-			mockFetch('index shard\nidx1 0\n');
+		it('parses cat JSON response', async () => {
+			mockFetch([{ index: 'idx1', shard: '0' }]);
 			const result = await api.getShards();
 			expect(result.columns).toEqual(['index', 'shard']);
 		});

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
+window.__IS_TEST__ = true;
 
 import Indices from './Indices.svelte';
 import { writable } from 'svelte/store';

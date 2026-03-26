@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
+window.__IS_TEST__ = true;
 import { userEvent } from '@testing-library/user-event';
 import Shards from './Shards.svelte';
 import { writable } from 'svelte/store';
 
 const mockDispatch = vi.fn();
+
+vi.mock('svelte', async (importOriginal) => ({
+	...(await importOriginal()),
+	getContext: () => ({ open: vi.fn() })
+}));
 
 vi.mock('@storeon/svelte', () => ({
 	useStoreon: () => ({
