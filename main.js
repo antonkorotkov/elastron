@@ -8,7 +8,8 @@ import updater from './updater.js';
 import Store from 'electron-store';
 
 const store = new Store({
-	encryptionKey: `${process.version}-${process.platform}-${process.arch}`
+	encryptionKey: `elastron-${process.platform}-${process.arch}`,
+	clearInvalidConfig: true
 });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
