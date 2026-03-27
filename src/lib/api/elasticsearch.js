@@ -209,6 +209,33 @@ export default class API {
 			throw new ConnectionError(err)
 		}
 	}
+
+	async getClusterHealth() {
+		try {
+			const response = await this._request('cluster/health')
+			return response.data
+		} catch (err) {
+			throw new ConnectionError(err)
+		}
+	}
+
+	async getClusterStats() {
+		try {
+			const response = await this._request('cluster/stats')
+			return response.data
+		} catch (err) {
+			throw new ConnectionError(err)
+		}
+	}
+
+	async getNodeStats() {
+		try {
+			const response = await this._request('nodes/stats')
+			return response.data
+		} catch (err) {
+			throw new ConnectionError(err)
+		}
+	}
 }
 
 class ConnectionError extends Error {

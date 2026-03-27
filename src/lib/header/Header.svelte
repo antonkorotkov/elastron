@@ -54,6 +54,13 @@
 		</a>
 		<a
 			class="item"
+			href={resolve('/monitoring/overview')}
+			class:active={pathname.startsWith('/monitoring')}
+		>
+			Monitoring
+		</a>
+		<a
+			class="item"
 			href={resolve('/search')}
 			class:active={pathname === '/search'}
 		>

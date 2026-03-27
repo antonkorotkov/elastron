@@ -274,6 +274,57 @@ describe('Elasticsearch API Client - Expanded', () => {
 		});
 	});
 
+	describe('getClusterHealth()', () => {
+		it('calls cluster/health endpoint', async () => {
+			mockFetch({ status: 'green', cluster_name: 'test' });
+			const result = await api.getClusterHealth();
+			expect(global.fetch).toHaveBeenCalledWith(
+				'/api/elastic/cluster/health',
+				expect.any(Object)
+			);
+			expect(result.status).toBe('green');
+		});
+
+		it('throws ConnectionError on failure', async () => {
+			mockFetch('Cluster not found', false);
+			await expect(api.getClusterHealth()).rejects.toThrow();
+		});
+	});
+
+	describe('getClusterStats()', () => {
+		it('calls cluster/stats endpoint', async () => {
+			mockFetch({ indices: { count: 5 } });
+			const result = await api.getClusterStats();
+			expect(global.fetch).toHaveBeenCalledWith(
+				'/api/elastic/cluster/stats',
+				expect.any(Object)
+			);
+			expect(result.indices.count).toBe(5);
+		});
+
+		it('throws ConnectionError on failure', async () => {
+			mockFetch('Stats unavailable', false);
+			await expect(api.getClusterStats()).rejects.toThrow();
+		});
+	});
+
+	describe('getNodeStats()', () => {
+		it('calls nodes/stats endpoint', async () => {
+			mockFetch({ nodes: { node1: { os: {} } } });
+			const result = await api.getNodeStats();
+			expect(global.fetch).toHaveBeenCalledWith(
+				'/api/elastic/nodes/stats',
+				expect.any(Object)
+			);
+			expect(result.nodes.node1).toBeDefined();
+		});
+
+		it('throws ConnectionError on failure', async () => {
+			mockFetch('Nodes unavailable', false);
+			await expect(api.getNodeStats()).rejects.toThrow();
+		});
+	});
+
 	describe('_request()', () => {
 		it('sends connection in the payload', async () => {
 			mockFetch('ok');
