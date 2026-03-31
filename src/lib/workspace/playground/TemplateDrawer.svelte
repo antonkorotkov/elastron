@@ -45,7 +45,7 @@
 				{#if customTemplates.length === 0}
 					<div class="item empty-state" class:inverted>
 						<i class="folder open outline icon"></i>
-						<p>No custom templates saved yet.</p>
+						No custom templates saved yet.
 					</div>
 				{/if}
 				{#each customTemplates as template (template.id)}
@@ -211,20 +211,17 @@
 
 	.empty-state {
 		text-align: center;
-		padding: 2rem 1rem !important;
+		padding: 1rem !important;
 		color: #888;
 		background: transparent !important;
 		border: 1px dashed #d1d5db !important;
 		border-radius: 8px;
-		margin-bottom: 1rem;
 	}
 	.drawer.inverted .empty-state {
 		border-color: #444 !important;
 		color: #666;
 	}
 	.empty-state i {
-		font-size: 2rem;
-		margin-bottom: 0.5rem;
 		opacity: 0.5;
 	}
 

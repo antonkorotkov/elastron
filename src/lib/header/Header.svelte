@@ -40,15 +40,19 @@
 </script>
 
 <header ondblclick={onHeaderDblClick} role="navigation">
-	<div class="ui borderless menu inverted fixed">
-		<div class="logo item" style="-webkit-app-region: drag;">
-			<b style="cursor: move;">Elastron</b>
+	<div
+		class="ui borderless menu inverted fixed"
+		style="-webkit-app-region: drag;"
+	>
+		<div class="logo item">
+			<b>Elastron</b>
 		</div>
 		<a
 			class="item"
 			href={resolve('/dashboard/indices')}
 			class:active={pathname.startsWith('/dashboard')}
 			onclick={onDashboardClick}
+			style="-webkit-app-region: no-drag;"
 		>
 			Dashboard
 		</a>
@@ -56,6 +60,7 @@
 			class="item"
 			href={resolve('/monitoring/overview')}
 			class:active={pathname.startsWith('/monitoring')}
+			style="-webkit-app-region: no-drag;"
 		>
 			Monitoring
 		</a>
@@ -63,6 +68,7 @@
 			class="item"
 			href={resolve('/search')}
 			class:active={pathname === '/search'}
+			style="-webkit-app-region: no-drag;"
 		>
 			Search
 		</a>
@@ -70,6 +76,7 @@
 			class="item"
 			href={resolve('/playground')}
 			class:active={pathname.startsWith('/playground')}
+			style="-webkit-app-region: no-drag;"
 		>
 			Playground
 		</a>
@@ -81,7 +88,11 @@
 			{#if version}
 				<span class="item" title="ElasticSearch version">v{version}</span>
 			{/if}
-			<button class="ui button item" onclick={showConnectionDialog}>
+			<button
+				class="ui button item"
+				onclick={showConnectionDialog}
+				style="-webkit-app-region: no-drag;"
+			>
 				Connection
 				<OnlineIndicator />
 			</button>
