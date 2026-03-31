@@ -32,8 +32,15 @@
 	let loading = $state(false)
 
 	$effect(() => {
-		if (selectedConnectionIndex === -1 && $history && $history.connection && $connection) {
-			const idx = $history.connection.findIndex(c => c.name === $connection.name && c.host === $connection.host)
+		if (
+			selectedConnectionIndex === -1 &&
+			$history &&
+			$history.connection &&
+			$connection
+		) {
+			const idx = $history.connection.findIndex(
+				c => c.name === $connection.name && c.host === $connection.host
+			)
 			if (idx >= 0) {
 				selectedConnectionIndex = idx
 			}
@@ -55,6 +62,28 @@
 				closeOnOuterClick: false,
 			}
 		)
+	}
+
+	const openNewWindow = () => {
+		if (selectedConnectionIndex < 0) {
+			dispatch('notification/add', {
+				type: 'error',
+				message: 'Please select a connection',
+			})
+			return
+		}
+		if (window.electron && window.electron.ipcRenderer) {
+			window.electron.ipcRenderer.send(
+				'window:new',
+				`?connectionIndex=${selectedConnectionIndex}`
+			)
+			close()
+		} else {
+			dispatch('notification/add', {
+				type: 'error',
+				message: 'IPC Error',
+			})
+		}
 	}
 
 	const connectSaved = async () => {
@@ -227,6 +256,15 @@
 		Manage Connections
 	</button>
 	{#if activeTab === 'saved'}
+		<button
+			class="ui button right"
+			class:inverted
+			class:disabled={loading || selectedConnectionIndex < 0}
+			onclick={openNewWindow}
+		>
+			<i class="external alternate icon"></i>
+			Open in New Window
+		</button>
 		<button
 			class="ui green right button"
 			class:inverted

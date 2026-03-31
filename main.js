@@ -3,7 +3,6 @@ import { fork } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import getPort from 'get-port';
-import axios from 'axios';
 import updater from './updater.js';
 import Store from 'electron-store';
 
@@ -42,7 +41,7 @@ const startServer = async () => {
 	let retries = 0;
 	while (retries < 20) {
 		try {
-			await axios.get(`http://localhost:${serverPort}`);
+			await fetch(`http://localhost:${serverPort}`);
 			console.log('Server is ready!');
 			return serverPort;
 		} catch (e) {
@@ -53,7 +52,7 @@ const startServer = async () => {
 	throw new Error('Server failed to start');
 };
 
-const createWindow = (port) => {
+const createWindow = (port, routeSuffix = '') => {
 	const mainWindow = new BrowserWindow({
 		width: 1440,
 		height: 960,
@@ -71,17 +70,34 @@ const createWindow = (port) => {
 		},
 	});
 
-	ipcMain.on('header-doubleclick', () => {
-		if (mainWindow.isMaximized()) {
-			mainWindow.unmaximize();
+	const url = `http://localhost:${port}${routeSuffix}`;
+	mainWindow.loadURL(url);
+
+	mainWindow.webContents.on('new-window', function (e, url) {
+		e.preventDefault();
+		shell.openExternal(url);
+	});
+
+	return mainWindow;
+};
+
+let globalHandlersSetup = false;
+
+function setupGlobalHandlers() {
+	if (globalHandlersSetup) return;
+	globalHandlersSetup = true;
+
+	ipcMain.on('header-doubleclick', (event) => {
+		const win = BrowserWindow.fromWebContents(event.sender);
+		if (!win) return;
+		if (win.isMaximized()) {
+			win.unmaximize();
 		} else {
-			mainWindow.maximize();
+			win.maximize();
 		}
 	});
 
 	ipcMain.on('check-for-updates', () => {
-		// checks for updates - to be implemented with electron-updater
-		// For now, prompt user or log
 		console.log('Checking for updates...');
 	});
 
@@ -93,19 +109,12 @@ const createWindow = (port) => {
 		store.set(key, value);
 	});
 
-	// ... rest of createWindow
-
-
-	const url = `http://localhost:${port}`;
-	mainWindow.loadURL(url);
-
-	mainWindow.webContents.on('new-window', function (e, url) {
-		e.preventDefault();
-		shell.openExternal(url);
+	ipcMain.on('window:new', (event, routeSuffix) => {
+		if (serverPort) {
+			createWindow(serverPort, routeSuffix);
+		}
 	});
 
-	// ... Menu setup (kept similar to original) ...
-	// Simplified Menu for brevity, can restore full menu if needed
 	Menu.setApplicationMenu(
 		Menu.buildFromTemplate([
 			{
@@ -133,20 +142,22 @@ const createWindow = (port) => {
 					{
 						label: 'Debug',
 						click: () => {
-							mainWindow.webContents.openDevTools()
+							const win = BrowserWindow.getFocusedWindow();
+							if (win) {
+								win.webContents.openDevTools();
+							}
 						}
 					}
 				]
 			}
 		])
 	);
-
-	return mainWindow;
-};
+}
 
 app.whenReady().then(async () => {
 	try {
 		const port = await startServer();
+		setupGlobalHandlers();
 		const mainWindow = createWindow(port);
 		updater.init(mainWindow);
 		updater.checkForUpdates();

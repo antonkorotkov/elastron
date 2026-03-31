@@ -2,6 +2,22 @@ import some from 'lodash/some'
 import isEqual from 'lodash/isEqual'
 import { setStorage } from '../utils/storage'
 
+const normalizeConnection = connection => {
+    const normalized = {
+        name: '',
+        host: '',
+        port: '',
+        useAuth: false,
+        user: '',
+        password: '',
+        addHeaders: false,
+        headers: [],
+        ...connection,
+    }
+    delete normalized.version
+    return normalized
+}
+
 export const history = store => {
     store.on('@init', () => ({
         history: {
@@ -13,7 +29,7 @@ export const history = store => {
         return {
             history: {
                 ...state.history,
-                ...data
+                connection: (data.connection || []).map(normalizeConnection),
             }
         }
     })
@@ -29,7 +45,9 @@ export const history = store => {
         }
     })
 
-    store.on('history/connection/add', (state, connection) => {
+    store.on('history/connection/add', (state, rawConnection) => {
+        const connection = normalizeConnection(rawConnection)
+
         if (some(state.history.connection, item => isEqual(item, connection)))
             return state
 
@@ -43,19 +61,19 @@ export const history = store => {
         return {
             history: {
                 ...state.history,
-                connection: [...savedConnections],
+                connection: savedConnections,
             },
         }
     })
 
-    store.on('history/connection/delete', (state, connection) => {
-        connection.name = connection.name || ''
+    store.on('history/connection/delete', (state, rawConnection) => {
+        const connection = normalizeConnection(rawConnection)
+
         if (!some(state.history.connection, item => isEqual(item, connection)))
             return state
 
         let savedConnections = [...state.history.connection]
         savedConnections = savedConnections.filter(c => {
-            c.name = c.name || ''
             return !isEqual(c, connection)
         })
         setStorage('connection', savedConnections)
@@ -63,7 +81,7 @@ export const history = store => {
         return {
             history: {
                 ...state.history,
-                connection: [...savedConnections],
+                connection: savedConnections,
             },
         }
     })

@@ -45,4 +45,20 @@ describe('ConnectDialog', () => {
         expect(screen.getByLabelText('Host')).toBeTruthy();
         expect(screen.getByLabelText('Port')).toBeTruthy();
     });
+
+	it('opens selected connection in new window', async () => {
+		window.electron = { ipcRenderer: { send: vi.fn() } };
+		const closeMock = vi.fn();
+		const { getByRole, getByText } = render(ConnectDialog, { context: new Map([['modal-window', { close: closeMock, open: vi.fn() }]]) });
+		
+		// Wait for select and change it to the second item (index 1)
+		const select = getByRole('combobox');
+		await fireEvent.change(select, { target: { value: '1' } });
+		
+		const openNewWindowBtn = getByText('Open in New Window');
+		await fireEvent.click(openNewWindowBtn);
+		
+		expect(window.electron.ipcRenderer.send).toHaveBeenCalledWith('window:new', '?connectionIndex=1');
+		expect(closeMock).toHaveBeenCalled();
+	});
 });

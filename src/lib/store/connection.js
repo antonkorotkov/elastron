@@ -10,7 +10,6 @@ export const initialConnection = {
 	password: '',
 	addHeaders: false,
 	headers: [{ name: '', value: '' }],
-	version: null,
 }
 
 export const connection = store => {

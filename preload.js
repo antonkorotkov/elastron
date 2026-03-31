@@ -4,7 +4,7 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer: {
         send: (channel, data) => {
             // whitelist channels
-            let validChannels = ['header-doubleclick', 'check-for-updates'];
+            let validChannels = ['header-doubleclick', 'check-for-updates', 'window:new'];
             if (validChannels.includes(channel)) {
                 ipcRenderer.send(channel, data);
             }

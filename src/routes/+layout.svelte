@@ -35,8 +35,19 @@
 			if (InternetConnection.isOnline) dispatch('internet/online')
 
 			const connections = await getStorage('connection', [])
+
+			const urlParams = new URLSearchParams(window.location.search)
+			let urlConnection = null
+			if (urlParams.has('connectionIndex')) {
+				const idx = parseInt(urlParams.get('connectionIndex'), 10)
+				if (!isNaN(idx) && idx >= 0 && idx < connections.length) {
+					urlConnection = connections[idx]
+				}
+			}
+
 			const lastConnection = await getStorage('lastConnection', null)
 			const currentConnection =
+				urlConnection ??
 				lastConnection ??
 				connections[connections.length - 1] ??
 				initialConnection
@@ -85,6 +96,6 @@
 	.padded {
 		padding-left: 1rem;
 		padding-right: 1rem;
-		padding-bottom: 5rem;
+		padding-bottom: 4rem;
 	}
 </style>
