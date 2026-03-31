@@ -53,6 +53,9 @@
 			const theme = await getStorage('theme')
 			dispatch('app/hydrate', { theme: theme ?? 'light' })
 			dispatch('server/info')
+
+			const playgroundTemplates = await getStorage('playground_templates', [])
+			dispatch('playground/hydrate', playgroundTemplates)
 		}
 	})
 

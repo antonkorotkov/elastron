@@ -10,6 +10,7 @@ export const initialConnection = {
 	password: '',
 	addHeaders: false,
 	headers: [{ name: '', value: '' }],
+	version: null,
 }
 
 export const connection = store => {
@@ -49,16 +50,24 @@ export const connection = store => {
 			const test = await api.test()
 			if (test.success) {
 				store.dispatch('connected')
-				store.dispatch('history/connection/add', state.connection)
+
+				const updatedConnection = {
+					...state.connection,
+					version: test.version.number || test.version
+				};
+
+				store.dispatch('history/connection/add', updatedConnection)
 				store.dispatch('server/update', {
-					version: test.version,
+					version: test.version.number || test.version,
 				})
-				setStorage('lastConnection', state.connection);
+				store.dispatch('connection/update', {
+					version: test.version.number || test.version
+				})
+				setStorage('lastConnection', updatedConnection);
 			} else {
 				store.dispatch('disconnected')
 			}
-		} catch (error) {
-			console.error(error.message);
+		} catch {
 			store.dispatch('disconnected')
 		}
 		callback()

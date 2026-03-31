@@ -1,4 +1,5 @@
-import { Client } from '@elastic/elasticsearch';
+import { Client as Client8 } from 'elasticsearch8';
+import { Client as Client9 } from 'elasticsearch9';
 import { json } from '@sveltejs/kit';
 
 /**
@@ -6,7 +7,7 @@ import { json } from '@sveltejs/kit';
  * specifically ensuring authorization and custom connection flags work properly.
  */
 export const createClient = (connection) => {
-	const { host, port, useAuth, user, password, addHeaders, headers } = connection;
+	const { host, port, useAuth, user, password, addHeaders, headers, version } = connection;
 
 	// ensure host has protocol
 	let safeHost = host;
@@ -41,7 +42,13 @@ export const createClient = (connection) => {
 		}
 	}
 
-	return new Client(clientOptions);
+	// Select the appropriate client version
+	if (version && version.startsWith('9')) {
+		return new Client9(clientOptions);
+	}
+
+	// Default to v8 client
+	return new Client8(clientOptions);
 };
 
 /**

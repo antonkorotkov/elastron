@@ -88,10 +88,11 @@
     }
   },
   "dependencies": {
-    "@elastic/elasticsearch": "9.3.4",
     "@electron/remote": "^2.1.2",
     "@tanstack/svelte-virtual": "^3.13.23",
     "call-bind-apply-helpers": "^1.0.2",
+    "elasticsearch8": "npm:@elastic/elasticsearch@8.19.1",
+    "elasticsearch9": "npm:@elastic/elasticsearch@9.3.4",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.8.3",
     "get-port": "^7.2.0",

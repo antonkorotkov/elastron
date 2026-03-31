@@ -13,22 +13,24 @@ import { shards } from './elasticsearch/shards'
 import { history } from './history'
 import { index } from './elasticsearch/index'
 import { monitoring } from './elasticsearch/monitoring'
+import { playground } from './playground'
 
 
 export const store = createStoreon([
-    app,
-    server,
-    internet,
-    history,
-    connection,
-    notifications,
-    search,
-    indices,
-    allocation,
-    shards,
-    index,
-    monitoring,
-    storeonDevtools
+	app,
+	server,
+	internet,
+	history,
+	connection,
+	notifications,
+	search,
+	indices,
+	allocation,
+	shards,
+	index,
+	monitoring,
+	playground,
+	storeonDevtools
 ])
 
 

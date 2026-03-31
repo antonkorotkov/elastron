@@ -57,6 +57,21 @@ describe('Elasticsearch API Client - Expanded', () => {
 		});
 	});
 
+	describe('genericRequest()', () => {
+		it('calls request endpoint with payload', async () => {
+			mockFetch({ custom: 'response' });
+			const payload = { method: 'POST', path: '/_search', body: {} };
+			const result = await api.genericRequest(payload);
+			expect(global.fetch).toHaveBeenCalledWith(
+				'/api/elastic/request',
+				expect.objectContaining({
+					body: expect.stringContaining('"method":"POST"')
+				})
+			);
+			expect(result.custom).toBe('response');
+		});
+	});
+
 	describe('getIndices()', () => {
 		it('parses cat JSON response', async () => {
 			mockFetch([{ health: 'green', status: 'open', index: 'idx1' }]);

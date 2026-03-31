@@ -55,6 +55,11 @@ export default class API {
 		}
 	}
 
+	async genericRequest(payload) {
+		const response = await this._request('request', payload);
+		return response.data;
+	}
+
 	async getIndices() {
 		try {
 			const response = await this._request('indices')

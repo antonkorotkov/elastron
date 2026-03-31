@@ -66,6 +66,13 @@
 		>
 			Search
 		</a>
+		<a
+			class="item"
+			href={resolve('/playground')}
+			class:active={pathname.startsWith('/playground')}
+		>
+			Playground
+		</a>
 
 		<div class="right menu">
 			{#if $connection.name}

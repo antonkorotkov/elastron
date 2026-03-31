@@ -2,11 +2,24 @@ import { describe, it, expect, vi } from 'vitest';
 import { createClient, handleElasticRequest } from './elastic';
 
 // Mock the Client constructor
-vi.mock('@elastic/elasticsearch', () => {
+vi.mock('elasticsearch8', () => {
 	return {
-		Client: class MockClient {
+		Client: class MockClient8 {
 			constructor(opts) {
 				this._opts = opts;
+				this._version = '8';
+				this.close = vi.fn();
+			}
+		}
+	};
+});
+
+vi.mock('elasticsearch9', () => {
+	return {
+		Client: class MockClient9 {
+			constructor(opts) {
+				this._opts = opts;
+				this._version = '9';
 				this.close = vi.fn();
 			}
 		}
@@ -102,6 +115,27 @@ describe('createClient', () => {
 			headers: [{ name: 'X-Custom', value: 'bar' }],
 		});
 		expect(client._opts.headers).toBeUndefined();
+	});
+
+	it('selects version 9 client when version string starts with 9', () => {
+		const client = createClient({
+			host: 'localhost',
+			version: '9.0.0',
+		});
+		expect(client._version).toBe('9');
+	});
+
+	it('defaults to version 8 client if version is missing or not 9', () => {
+		const client = createClient({
+			host: 'localhost',
+		});
+		expect(client._version).toBe('8');
+
+		const client7 = createClient({
+			host: 'localhost',
+			version: '7.17.0',
+		});
+		expect(client7._version).toBe('8'); // Currently defaults to 8 for anything else
 	});
 });
 
