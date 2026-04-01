@@ -19,6 +19,7 @@ let serverPort = null;
 
 const startServer = async () => {
 	if (process.env.npm_lifecycle_event === 'dev') {
+		serverPort = 5173;
 		return 5173;
 	}
 
