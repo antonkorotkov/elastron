@@ -46,6 +46,8 @@ jobs:
         run: yarn
 
       - name: Build
+        env:
+          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
         run: yarn build
 
       - name: Release
@@ -73,6 +75,8 @@ jobs:
   #       run: yarn
 
   #     - name: Build
+  #       env:
+  #         PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
   #       run: yarn build
 
   #     - name: Release
@@ -99,6 +103,8 @@ jobs:
         run: yarn
 
       - name: Build
+        env:
+          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
         run: yarn build
 
       - name: Release
