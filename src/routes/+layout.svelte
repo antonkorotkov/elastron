@@ -1,5 +1,7 @@
 <script>
 	import { provideStoreon, useStoreon } from '@storeon/svelte'
+	import { afterNavigate } from '$app/navigation'
+	import { PUBLIC_GA_ID } from '$env/static/public'
 
 	import Header from '$lib/header/Header.svelte'
 	import Footer from '$lib/footer/Footer.svelte'
@@ -70,8 +72,32 @@
 		}
 	})
 
+	afterNavigate(({ to }) => {
+		if (PUBLIC_GA_ID && typeof gtag !== 'undefined' && to) {
+			gtag('config', PUBLIC_GA_ID, {
+				page_path: to.url.pathname
+			})
+		}
+	})
+
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
+
+<svelte:head>
+	{#if PUBLIC_GA_ID}
+		<script async src="https://www.googletagmanager.com/gtag/js?id={PUBLIC_GA_ID}"></script>
+		<script>
+			window.dataLayer = window.dataLayer || [];
+			function gtag() {
+				dataLayer.push(arguments);
+			}
+			gtag('js', new Date());
+			gtag('config', '{PUBLIC_GA_ID}', {
+				page_path: window.location.pathname
+			});
+		</script>
+	{/if}
+</svelte:head>
 
 <Modal>
 	<main class="ui fluid container" class:bg-black={inverted}>
