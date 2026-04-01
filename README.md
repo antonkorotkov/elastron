@@ -6,6 +6,13 @@ Desktop Elasticsearch client.
 
 **The project is maintained by AI.**
 
+- View and manage Elasticsearch indices, documents, and mappings
+- Monitoring of Elasticsearch cluster health and performance
+- Execute complex search queries with filters and aggregations
+- Explanation and Profiling of search queries
+- API Playground
+- Elasticsearch 8 and 9 support
+
 ### Install
 
 ```sh
@@ -16,7 +23,7 @@ yarn
 yarn build
 ```
 
-Development in browser: (no interaction with real elastic server)
+Development mode with hot-reload:
 
 ```sh
 yarn dev
@@ -26,6 +33,18 @@ Development preview as an app:
 
 ```sh
 yarn start
+```
+
+Test:
+
+```sh
+yarn test
+```
+
+Lint:
+
+```sh
+yarn lint
 ```
 
 App build:
