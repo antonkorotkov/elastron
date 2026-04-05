@@ -2,9 +2,11 @@
 	import { useStoreon } from '@storeon/svelte'
 	import { getContext } from 'svelte'
 
-	import API from '../../../api/elasticsearch'
+	import API, { openTunnel } from '../../../api/elasticsearch'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
+	import { initialSshConfig } from '../../../store/connection'
 	import Headers from './Headers.svelte'
+	import SshTunnelFields from './SshTunnelFields.svelte'
 
 	const { dispatch, history, app } = useStoreon(
 		'history',
@@ -50,7 +52,9 @@
             user: '',
             password: '',
             addHeaders: false,
-            headers: [{ name: '', value: '' }]
+            headers: [{ name: '', value: '' }],
+            useSshTunnel: false,
+            ssh: { ...initialSshConfig },
         }
         selectedIndex = -1
         isEditingNew = true
@@ -87,8 +91,20 @@
 	}
 
 	const testConnection = async () => {
+		const testWindowId = $app.windowId ? $app.windowId + '_test' : crypto.randomUUID();
 		try {
-			const api = new API($state.snapshot(localConnection))
+			if (localConnection.useSshTunnel) {
+				const tunnelResult = await openTunnel($state.snapshot(localConnection), testWindowId);
+				if (tunnelResult.error) {
+					dispatch('notification/add', {
+						type: 'error',
+						message: `SSH Tunnel: ${tunnelResult.error}`,
+					});
+					return;
+				}
+			}
+
+			const api = new API($state.snapshot(localConnection), testWindowId)
 			const { success, message } = await api.test()
 
 			dispatch('notification/add', {
@@ -100,6 +116,10 @@
 				type: 'error',
 				message: e.message,
 			})
+		} finally {
+			if (localConnection.useSshTunnel) {
+				closeTunnel(testWindowId).catch(() => {});
+			}
 		}
 	}
 
@@ -248,6 +268,11 @@
                         </div>
                     </div>
                 {/if}
+                <SshTunnelFields
+                    bind:useSshTunnel={localConnection.useSshTunnel}
+                    bind:ssh={localConnection.ssh}
+                    {inverted}
+                />
                 <div class="field">
                     <div class="ui checkbox">
                         <input

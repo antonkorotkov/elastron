@@ -2,6 +2,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/svelte';
 import Headers from './Headers.svelte';
+import { writable } from 'svelte/store';
+
+vi.mock('@storeon/svelte', () => ({
+	useStoreon: () => ({
+		app: writable({ theme: 'light' })
+	})
+}));
 
 describe('Headers', () => {
 	it('renders multiple HeaderItems', () => {

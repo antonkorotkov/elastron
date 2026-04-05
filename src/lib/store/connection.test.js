@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createStoreon } from 'storeon';
-import { connection, initialConnection } from './connection';
+import { connection, initialConnection, initialSshConfig } from './connection';
 
 // Mock API and storage
 vi.mock('../api/elasticsearch', () => ({
 	default: vi.fn(),
+	openTunnel: vi.fn(),
+	closeTunnel: vi.fn(),
 }));
 vi.mock('../utils/storage', () => ({
 	setStorage: vi.fn(),
@@ -59,5 +61,36 @@ describe('connection store module', () => {
 	it('initialConnection matches documented defaults', () => {
 		expect(initialConnection.name).toBe('Local Server');
 		expect(initialConnection.addHeaders).toBe(false);
+	});
+
+	it('initialConnection includes SSH tunnel defaults', () => {
+		expect(initialConnection.useSshTunnel).toBe(false);
+		expect(initialConnection.ssh).toBeDefined();
+		expect(initialConnection.ssh.host).toBe('');
+		expect(initialConnection.ssh.port).toBe('22');
+		expect(initialConnection.ssh.username).toBe('');
+		expect(initialConnection.ssh.authMethod).toBe('password');
+		expect(initialConnection.ssh.password).toBe('');
+		expect(initialConnection.ssh.privateKeyContent).toBe('');
+		expect(initialConnection.ssh.privateKeyName).toBe('');
+		expect(initialConnection.ssh.passphrase).toBe('');
+	});
+
+	it('initialSshConfig has correct defaults', () => {
+		expect(initialSshConfig.port).toBe('22');
+		expect(initialSshConfig.authMethod).toBe('password');
+	});
+
+	it('clears SSH tunnel fields on connection/clear', () => {
+		store.dispatch('connection/hydrate', {
+			useSshTunnel: true,
+			ssh: { host: 'bastion', port: '2222', username: 'deploy', authMethod: 'password', password: 'secret', privateKeyContent: '', privateKeyName: '', passphrase: '' },
+		});
+		store.dispatch('connection/clear');
+		const state = store.get().connection;
+		expect(state.useSshTunnel).toBe(false);
+		expect(state.ssh.host).toBe('');
+		expect(state.ssh.port).toBe('22');
+		expect(state.ssh.username).toBe('');
 	});
 });

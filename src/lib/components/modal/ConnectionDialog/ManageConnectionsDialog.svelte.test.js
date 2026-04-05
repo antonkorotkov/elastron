@@ -11,7 +11,7 @@ vi.mock('@storeon/svelte', () => ({
 		app: writable({ theme: 'light' }),
 		history: writable({
 			connection: [
-				{ name: 'Local Test', host: 'http://localhost', port: '9200', useAuth: false, headers: [] }
+				{ name: 'Local Test', host: 'http://localhost', port: '9200', useAuth: false, headers: [], useSshTunnel: false, ssh: { host: '', port: '22', username: '', authMethod: 'password', password: '', privateKeyContent: '', privateKeyName: '', passphrase: '' } }
 			]
 		}),
 		dispatch: mockDispatch,

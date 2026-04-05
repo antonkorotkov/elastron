@@ -1,8 +1,9 @@
 import { getMessageFromError } from '../utils/helpers';
 
 export default class API {
-	constructor(connection) {
+	constructor(connection, windowId) {
 		this.connection = connection;
+		this.windowId = windowId || (typeof window !== 'undefined' ? window.__elastronWindowId : null);
 	}
 
 	/**
@@ -16,7 +17,8 @@ export default class API {
 			},
 			body: JSON.stringify({
 				...payload,
-				connection: this.connection
+				connection: this.connection,
+				windowId: this.windowId,
 			})
 		});
 
@@ -251,4 +253,30 @@ class ConnectionError extends Error {
 		this.type = 'ConnectionError'
 		this.message = message
 	}
+}
+
+/**
+ * Opens an SSH tunnel for this connection.
+ * @returns {Promise<{data?: {localPort: number}, error?: string}>}
+ */
+export async function openTunnel(connection, windowId) {
+	const response = await fetch('/api/elastic/tunnel/open', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ windowId, connection }),
+	});
+	return response.json();
+}
+
+/**
+ * Closes the SSH tunnel for this window.
+ * @returns {Promise<{data?: {closed: boolean}, error?: string}>}
+ */
+export async function closeTunnel(windowId) {
+	const response = await fetch('/api/elastic/tunnel/close', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ windowId }),
+	});
+	return response.json();
 }
