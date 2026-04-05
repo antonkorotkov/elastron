@@ -3,7 +3,6 @@
 	import { useStoreon } from '@storeon/svelte'
 	import { page } from '$app/stores'
 	import { resolve } from '$app/paths'
-	import get from 'lodash/get'
 	import OnlineIndicator from './OnlineIndicator.svelte'
 
 	const onHeaderDblClick = () =>
