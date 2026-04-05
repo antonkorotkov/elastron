@@ -2,12 +2,7 @@
 	import IconButton from '../../../components/buttons/IconButton.svelte'
 	import HeaderItem from './HeaderItem.svelte'
 
-	let {
-		onAdd,
-		onDelete,
-		onChange,
-		headers
-	} = $props();
+	let { onAdd, onDelete, onChange, headers } = $props()
 </script>
 
 <div class="headers">
@@ -23,3 +18,13 @@
 
 	<IconButton className="plus circle" onClick={onAdd} />
 </div>
+
+<style>
+	.headers {
+		margin-top: 0.5rem;
+		padding: 0.75rem;
+		border-left: 3px solid rgba(100, 100, 100, 0.3);
+		margin-bottom: 0.5rem;
+		padding-right: 0;
+	}
+</style>

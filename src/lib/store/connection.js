@@ -1,5 +1,16 @@
-import API from '../api/elasticsearch'
+import API, { openTunnel, closeTunnel } from '../api/elasticsearch'
 import { setStorage } from '../utils/storage'
+
+export const initialSshConfig = {
+	host: '',
+	port: '22',
+	username: '',
+	authMethod: 'password',
+	password: '',
+	privateKeyContent: '',
+	privateKeyName: '',
+	passphrase: '',
+}
 
 export const initialConnection = {
 	name: 'Local Server',
@@ -10,6 +21,8 @@ export const initialConnection = {
 	password: '',
 	addHeaders: false,
 	headers: [{ name: '', value: '' }],
+	useSshTunnel: false,
+	ssh: { ...initialSshConfig },
 }
 
 export const connection = store => {
@@ -39,13 +52,36 @@ export const connection = store => {
 				password: '',
 				addHeaders: false,
 				headers: [{ name: '', value: '' }],
+				useSshTunnel: false,
+				ssh: { ...initialSshConfig },
 			},
 		}
 	})
 
 	store.on('connection/save', async (state, callback = () => { }) => {
 		try {
-			const api = new API(state.connection)
+			const windowId = state.app?.windowId
+
+			// Explicitly clean up any existing tunnel from a prior connection
+			if (windowId) {
+				await closeTunnel(windowId).catch(() => {})
+			}
+
+			// Open SSH tunnel if configured
+			if (state.connection.useSshTunnel) {
+				const tunnelResult = await openTunnel(state.connection, windowId)
+				if (tunnelResult.error) {
+					store.dispatch('notification/add', {
+						type: 'error',
+						message: `SSH Tunnel: ${tunnelResult.error}`,
+					})
+					store.dispatch('disconnected')
+					callback()
+					return
+				}
+			}
+
+			const api = new API(state.connection, windowId)
 			const test = await api.test()
 			if (test.success) {
 				store.dispatch('connected')
@@ -78,6 +114,13 @@ export const connection = store => {
 				...state.connection,
 				...data,
 			},
+		}
+	})
+
+	store.on('disconnected', (state) => {
+		const windowId = state.app?.windowId
+		if (state.connection?.useSshTunnel && windowId) {
+			closeTunnel(windowId).catch(() => { })
 		}
 	})
 }

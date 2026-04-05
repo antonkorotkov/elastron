@@ -1,6 +1,7 @@
 import some from 'lodash/some'
 import isEqual from 'lodash/isEqual'
 import { setStorage } from '../utils/storage'
+import { initialSshConfig } from './connection'
 
 const normalizeConnection = connection => {
     const normalized = {
@@ -12,6 +13,8 @@ const normalizeConnection = connection => {
         password: '',
         addHeaders: false,
         headers: [],
+        useSshTunnel: false,
+        ssh: { ...initialSshConfig },
         ...connection,
     }
     delete normalized.version

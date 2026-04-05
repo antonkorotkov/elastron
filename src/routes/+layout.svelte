@@ -26,6 +26,10 @@
 
 	onMount(async () => {
 		if (browser) {
+			const windowId = crypto.randomUUID();
+			window.__elastronWindowId = windowId;
+			dispatch('app/hydrate', { windowId });
+
 			InternetConnection.onOnline(() => {
 				dispatch('internet/online')
 			})
@@ -69,6 +73,19 @@
 
 			const playgroundTemplates = await getStorage('playground_templates', [])
 			dispatch('playground/hydrate', playgroundTemplates)
+
+			// Clean up SSH tunnel on window close
+			window.addEventListener('beforeunload', () => {
+				const state = store.get()
+				if (state.connection?.useSshTunnel && state.app?.windowId) {
+					fetch('/api/elastic/tunnel/close', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ windowId: state.app.windowId }),
+						keepalive: true
+					}).catch(() => {})
+				}
+			})
 		}
 	})
 

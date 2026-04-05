@@ -2,9 +2,11 @@
 	import { useStoreon } from '@storeon/svelte'
 	import { getContext } from 'svelte'
 
-	import API from '../../../api/elasticsearch'
+	import API, { openTunnel, closeTunnel } from '../../../api/elasticsearch'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
+	import { initialSshConfig } from '../../../store/connection'
 	import ManageConnectionsDialog from './ManageConnectionsDialog.svelte'
+	import SshTunnelFields from './SshTunnelFields.svelte'
 
 	const { dispatch, connection, history, app } = useStoreon(
 		'connection',
@@ -25,6 +27,8 @@
 	let quickUseAuth = $state(false)
 	let quickUser = $state('')
 	let quickPassword = $state('')
+	let quickUseSshTunnel = $state(false)
+	let quickSsh = $state({ ...initialSshConfig })
 
 	// for saved connect
 	let selectedConnectionIndex = $state(-1)
@@ -113,13 +117,33 @@
 			password: quickPassword,
 			addHeaders: false,
 			headers: [],
+			useSshTunnel: quickUseSshTunnel,
+			ssh: $state.snapshot(quickSsh),
 		}
 
 		loading = true
 		dispatch('connection/update', $state.snapshot(quickConn))
 
 		try {
-			const api = new API($state.snapshot(quickConn))
+			const windowId = $app.windowId
+
+			// Clean up any existing tunnel from a previous connection
+			await closeTunnel(windowId).catch(() => {})
+
+			// Open SSH tunnel if configured
+			if (quickUseSshTunnel) {
+				const tunnelResult = await openTunnel($state.snapshot(quickConn), windowId)
+				if (tunnelResult.error) {
+					dispatch('notification/add', {
+						type: 'error',
+						message: `SSH Tunnel: ${tunnelResult.error}`,
+					})
+					loading = false
+					return
+				}
+			}
+
+			const api = new API($state.snapshot(quickConn), windowId)
 			const test = await api.test()
 			if (test.success) {
 				dispatch('connected')
@@ -240,6 +264,11 @@
 					</div>
 				</div>
 			{/if}
+			<SshTunnelFields
+				bind:useSshTunnel={quickUseSshTunnel}
+				bind:ssh={quickSsh}
+				{inverted}
+			/>
 		</form>
 	{/if}
 </div>

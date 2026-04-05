@@ -22,6 +22,17 @@ describe('history store module', () => {
 		password: '',
 		addHeaders: false,
 		headers: [],
+		useSshTunnel: false,
+		ssh: {
+			host: '',
+			port: '22',
+			username: '',
+			authMethod: 'password',
+			password: '',
+			privateKeyContent: '',
+			privateKeyName: '',
+			passphrase: '',
+		},
 		...conn
 	});
 
@@ -97,5 +108,43 @@ describe('history store module', () => {
 		store.dispatch('history/connection/add', connV1);
 		store.dispatch('history/connection/add', connV2);
 		expect(store.get().history.connection).toHaveLength(1);
+	});
+
+	it('adds SSH defaults to old connections without SSH fields', () => {
+		const oldConn = { name: 'Old', host: 'old-host', port: '9200' };
+		store.dispatch('history/connection/add', oldConn);
+		const stored = store.get().history.connection[0];
+		expect(stored.useSshTunnel).toBe(false);
+		expect(stored.ssh).toBeDefined();
+		expect(stored.ssh.host).toBe('');
+		expect(stored.ssh.port).toBe('22');
+		expect(stored.ssh.authMethod).toBe('password');
+	});
+
+	it('preserves SSH fields on connections that have them', () => {
+		const sshConn = {
+			name: 'SSH',
+			host: 'es-host',
+			port: '9200',
+			useSshTunnel: true,
+			ssh: {
+				host: 'bastion.example.com',
+				port: '2222',
+				username: 'deploy',
+				authMethod: 'privateKey',
+				password: '',
+				privateKeyContent: 'key-content',
+				privateKeyName: 'id_rsa',
+				passphrase: '',
+			},
+		};
+		store.dispatch('history/connection/add', sshConn);
+		const stored = store.get().history.connection[0];
+		expect(stored.useSshTunnel).toBe(true);
+		expect(stored.ssh.host).toBe('bastion.example.com');
+		expect(stored.ssh.port).toBe('2222');
+		expect(stored.ssh.username).toBe('deploy');
+		expect(stored.ssh.authMethod).toBe('privateKey');
+		expect(stored.ssh.privateKeyContent).toBe('key-content');
 	});
 });

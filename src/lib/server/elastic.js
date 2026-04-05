@@ -1,6 +1,7 @@
 import { Client as Client8 } from 'elasticsearch8';
 import { Client as Client9 } from 'elasticsearch9';
 import { json } from '@sveltejs/kit';
+import { tunnelManager } from './tunnel';
 
 /**
  * Creates an Elasticsearch client instance configured with connection details,
@@ -54,6 +55,9 @@ export const createClient = (connection) => {
 /**
  * Helper to process the incoming SvelteKit request, extract connection info,
  * create a client, perform an action, and handle any errors.
+ *
+ * When an SSH tunnel is active for the requesting window, the connection
+ * is transparently rewritten to route through localhost:tunnelPort.
  */
 export async function handleElasticRequest(request, action) {
 	let body;
@@ -63,13 +67,26 @@ export async function handleElasticRequest(request, action) {
 		return json({ error: 'Invalid JSON payload' }, { status: 400 });
 	}
 
-	const { connection, ...params } = body;
+	const { connection, windowId, ...params } = body;
 
 	if (!connection) {
 		return json({ error: 'Connection details required' }, { status: 400 });
 	}
 
-	const client = createClient(connection);
+	// Rewrite connection to route through SSH tunnel if active
+	let effectiveConnection = connection;
+	if (connection.useSshTunnel && windowId) {
+		const localPort = tunnelManager.getLocalPort(windowId);
+		if (localPort) {
+			effectiveConnection = {
+				...connection,
+				host: 'http://127.0.0.1',
+				port: String(localPort),
+			};
+		}
+	}
+
+	const client = createClient(effectiveConnection);
 
 	try {
 		const result = await action(client, params);

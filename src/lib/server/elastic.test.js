@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createClient, handleElasticRequest } from './elastic';
 
 // Mock the Client constructor
@@ -25,6 +25,14 @@ vi.mock('elasticsearch9', () => {
 		}
 	};
 });
+
+// Mock the tunnel manager
+const mockGetLocalPort = vi.fn().mockReturnValue(null);
+vi.mock('./tunnel', () => ({
+	tunnelManager: {
+		getLocalPort: (...args) => mockGetLocalPort(...args),
+	},
+}));
 
 describe('createClient', () => {
 	it('builds a basic node URL without auth', () => {
@@ -214,5 +222,78 @@ describe('handleElasticRequest', () => {
 		const response = await handleElasticRequest(request, action);
 		const data = await response.json();
 		expect(data.error).toBe('mapping parse exception');
+	});
+
+	it('excludes windowId from params passed to action', async () => {
+		const request = makeRequest({
+			connection: { host: 'localhost', port: '9200', useAuth: false },
+			windowId: 'win-123',
+			index: 'my-index',
+		});
+		const action = vi.fn().mockResolvedValue('ok');
+		await handleElasticRequest(request, action);
+		const [, params] = action.mock.calls[0];
+		expect(params).toEqual({ index: 'my-index' });
+		expect(params.windowId).toBeUndefined();
+	});
+
+	describe('tunnel-aware routing', () => {
+		beforeEach(() => {
+			mockGetLocalPort.mockReturnValue(null);
+		});
+
+		it('routes through tunnel when useSshTunnel is true and tunnel is active', async () => {
+			mockGetLocalPort.mockReturnValue(54321);
+			const request = makeRequest({
+				connection: {
+					host: 'http://es-internal.example.com',
+					port: '9200',
+					useAuth: false,
+					useSshTunnel: true,
+				},
+				windowId: 'win-1',
+			});
+			const action = vi.fn().mockResolvedValue('ok');
+			await handleElasticRequest(request, action);
+
+			const client = action.mock.calls[0][0];
+			expect(client._opts.node).toBe('http://127.0.0.1:54321');
+			expect(mockGetLocalPort).toHaveBeenCalledWith('win-1');
+		});
+
+		it('uses original host when useSshTunnel is false', async () => {
+			const request = makeRequest({
+				connection: {
+					host: 'http://es.example.com',
+					port: '9200',
+					useAuth: false,
+					useSshTunnel: false,
+				},
+				windowId: 'win-1',
+			});
+			const action = vi.fn().mockResolvedValue('ok');
+			await handleElasticRequest(request, action);
+
+			const client = action.mock.calls[0][0];
+			expect(client._opts.node).toBe('http://es.example.com:9200');
+		});
+
+		it('falls back to original host when tunnel is not active', async () => {
+			mockGetLocalPort.mockReturnValue(null);
+			const request = makeRequest({
+				connection: {
+					host: 'http://es.example.com',
+					port: '9200',
+					useAuth: false,
+					useSshTunnel: true,
+				},
+				windowId: 'win-1',
+			});
+			const action = vi.fn().mockResolvedValue('ok');
+			await handleElasticRequest(request, action);
+
+			const client = action.mock.calls[0][0];
+			expect(client._opts.node).toBe('http://es.example.com:9200');
+		});
 	});
 });
