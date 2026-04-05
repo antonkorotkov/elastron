@@ -93,10 +93,16 @@ class TunnelManager {
 		});
 
 		// Start the local server
-		await new Promise((resolve, reject) => {
-			localServer.on('error', reject);
-			localServer.listen(localPort, '127.0.0.1', resolve);
-		});
+		try {
+			await new Promise((resolve, reject) => {
+				localServer.on('error', reject);
+				localServer.listen(localPort, '127.0.0.1', resolve);
+			});
+		} catch (err) {
+			sshClient.removeAllListeners();
+			sshClient.end();
+			throw new Error(`Local port binding failed: ${err.message}`, { cause: err });
+		}
 
 		// Handle SSH disconnection
 		sshClient.on('close', () => {

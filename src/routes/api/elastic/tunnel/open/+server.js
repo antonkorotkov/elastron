@@ -21,11 +21,34 @@ export async function POST({ request }) {
 
 	const { ssh, host, port } = connection;
 
-	// Determine the remote ES host/port from the connection
-	let remoteHost = host || 'localhost';
-	// Strip protocol for SSH forwarding — we need the raw hostname
-	remoteHost = remoteHost.replace(/^https?:\/\//, '').replace(/\/+$/, '');
-	const remotePort = Number(port) || 9200;
+	if (!ssh.host || !ssh.username) {
+		return json({ error: 'SSH host and username are required' }, { status: 400 });
+	}
+
+	if (ssh.authMethod === 'privateKey' && !ssh.privateKeyContent) {
+		return json({ error: 'Private key content is required for privateKey auth' }, { status: 400 });
+	}
+
+	if (ssh.authMethod !== 'privateKey' && !ssh.password) {
+		return json({ error: 'SSH password is required for password auth' }, { status: 400 });
+	}
+
+	let remoteHost = 'localhost';
+	let remotePort = Number(port) || 9200;
+
+	if (host) {
+		const normalizedHost = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(host) ? host : `http://${host}`;
+		try {
+			const parsedHost = new URL(normalizedHost);
+			remoteHost = parsedHost.hostname || 'localhost';
+			if (!port && parsedHost.port) {
+				remotePort = Number(parsedHost.port);
+			}
+		} catch {
+			// fallback directly
+			remoteHost = host;
+		}
+	}
 
 	try {
 		const localPort = await tunnelManager.open(windowId, ssh, remoteHost, remotePort);
