@@ -12,6 +12,7 @@
 		allocationSortPredicate,
 	} from '../../../utils/helpers.js'
 	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
+	import AutoRefreshButtonGroup from '../../../components/buttons/AutoRefreshButtonGroup.svelte'
 
 	const { dispatch, app, allocation } = useStoreon('app', 'allocation')
 
@@ -52,6 +53,18 @@
 			sorting: [direction, column, index],
 		})
 	}
+
+	const onAutoRefreshChange = () => {
+		dispatch('elasticsearch/allocation/update', {
+			autoRefresh: !$allocation.autoRefresh,
+		})
+	}
+
+	const onIntervalChange = e => {
+		dispatch('elasticsearch/allocation/update', {
+			interval: Number(e.target.value),
+		})
+	}
 </script>
 
 <div class="ui segments">
@@ -59,18 +72,24 @@
 		<div class="ui grid">
 			<div class="eight wide column middle aligned">
 				<div class="ui tiny buttons">
-					<ButtonTinyBasic
-						label="Refresh"
-						color="blue"
+					<AutoRefreshButtonGroup
 						loading={$allocation.loading}
-						onClick={onRefresh}
+						autoRefresh={$allocation.autoRefresh}
+						interval={$allocation.interval}
+						{inverted}
+						{onRefresh}
+						{onAutoRefreshChange}
+						{onIntervalChange}
 					/>
 				</div>
 			</div>
 			<div class="eight wide column right aligned">
 				<div class="ui horizontal list">
 					<div class="item">
-						<span class="ui grey text">{data.length} {data.length === 1 ? 'item' : 'items'}</span>
+						<span class="ui grey text">
+							{data.length}
+							{data.length === 1 ? 'item' : 'items'}
+						</span>
 					</div>
 					<div class="item">
 						<div class="ui search">

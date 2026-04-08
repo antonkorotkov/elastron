@@ -14,6 +14,7 @@
 	import Cell from './Cell.svelte'
 	import CreateIndexDialog from '../../../components/modal/CreateIndexDialog/CreateIndexDialog.svelte'
 	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
+	import AutoRefreshButtonGroup from '../../../components/buttons/AutoRefreshButtonGroup.svelte'
 
 	const { dispatch, app, indices } = useStoreon('app', 'indices')
 	const { open } = getContext('modal-window')
@@ -51,6 +52,18 @@
 			sorting: [direction, column, index],
 		})
 	}
+
+	const onAutoRefreshChange = () => {
+		dispatch('elasticsearch/indices/update', {
+			autoRefresh: !$indices.autoRefresh,
+		})
+	}
+
+	const onIntervalChange = e => {
+		dispatch('elasticsearch/indices/update', {
+			interval: Number(e.target.value),
+		})
+	}
 </script>
 
 <div class="ui segments">
@@ -58,24 +71,30 @@
 		<div class="ui grid">
 			<div class="eight wide column middle aligned">
 				<div class="ui tiny buttons">
-					<ButtonTinyBasic
-						label="Refresh"
-						color="blue"
+					<AutoRefreshButtonGroup
 						loading={$indices.loading}
-						onClick={onRefresh}
-					/>
-					<ButtonTinyBasic
-						label="Create"
-						color="green"
-						loading={$indices.loading}
-						onClick={showCreateIndexDialog}
+						autoRefresh={$indices.autoRefresh}
+						interval={$indices.interval}
+						{inverted}
+						{onRefresh}
+						{onAutoRefreshChange}
+						{onIntervalChange}
 					/>
 				</div>
+				<ButtonTinyBasic
+					label="Create"
+					color="green"
+					loading={$indices.loading}
+					onClick={showCreateIndexDialog}
+				/>
 			</div>
 			<div class="eight wide column right aligned">
 				<div class="ui horizontal list">
 					<div class="item">
-						<span class="ui grey text">{data.length} {data.length === 1 ? 'item' : 'items'}</span>
+						<span class="ui grey text">
+							{data.length}
+							{data.length === 1 ? 'item' : 'items'}
+						</span>
 					</div>
 					<div class="item">
 						<div class="ui search">

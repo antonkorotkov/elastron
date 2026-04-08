@@ -12,6 +12,7 @@
 		isThemeToggleChecked,
 	} from '../../../utils/helpers.js'
 	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
+	import AutoRefreshButtonGroup from '../../../components/buttons/AutoRefreshButtonGroup.svelte'
 
 	const { dispatch, app, shards } = useStoreon('app', 'shards')
 
@@ -48,6 +49,18 @@
 			sorting: [direction, column, index],
 		})
 	}
+
+	const onAutoRefreshChange = () => {
+		dispatch('elasticsearch/shards/update', {
+			autoRefresh: !$shards.autoRefresh,
+		})
+	}
+
+	const onIntervalChange = e => {
+		dispatch('elasticsearch/shards/update', {
+			interval: Number(e.target.value),
+		})
+	}
 </script>
 
 <div class="ui segments">
@@ -55,18 +68,24 @@
 		<div class="ui grid">
 			<div class="eight wide column middle aligned">
 				<div class="ui tiny buttons">
-					<ButtonTinyBasic
-						label="Refresh"
-						color="blue"
+					<AutoRefreshButtonGroup
 						loading={$shards.loading}
-						onClick={onRefresh}
+						autoRefresh={$shards.autoRefresh}
+						interval={$shards.interval}
+						{inverted}
+						{onRefresh}
+						{onAutoRefreshChange}
+						{onIntervalChange}
 					/>
 				</div>
 			</div>
 			<div class="eight wide column right aligned">
 				<div class="ui horizontal list">
 					<div class="item">
-						<span class="ui grey text">{data.length} {data.length === 1 ? 'item' : 'items'}</span>
+						<span class="ui grey text">
+							{data.length}
+							{data.length === 1 ? 'item' : 'items'}
+						</span>
 					</div>
 					<div class="item">
 						<div class="ui search">

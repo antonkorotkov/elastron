@@ -7,7 +7,9 @@ export const shards = store => {
 			data: [],
 			loading: false,
 			search: '',
-			sorting: [] // [ direction, column, index ]
+			sorting: [], // [ direction, column, index ]
+			autoRefresh: false,
+			interval: 10000
 		},
 	}))
 
@@ -21,7 +23,9 @@ export const shards = store => {
 			data: [],
 			loading: false,
 			search: '',
-			sorting: []
+			sorting: [],
+			autoRefresh: false,
+			interval: 10000
 		})
 	})
 

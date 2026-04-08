@@ -7,7 +7,9 @@ export const allocation = store => {
 			data: [],
 			loading: false,
 			search: '',
-			sorting: [] // [ direction, column, index ]
+			sorting: [], // [ direction, column, index ]
+			autoRefresh: false,
+			interval: 10000
 		},
 	}))
 
@@ -21,7 +23,9 @@ export const allocation = store => {
 			data: [],
 			loading: false,
 			search: '',
-			sorting: [] // [ direction, column, index ]
+			sorting: [], // [ direction, column, index ]
+			autoRefresh: false,
+			interval: 10000
 		})
 	})
 
