@@ -1,5 +1,4 @@
 <script>
-	import { onMount } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import get from 'lodash/get'
 
@@ -16,9 +15,6 @@
 		get($index.info, [$index.selected, $index.selected, 'mappings'], null)
 	)
 
-	onMount(() => {
-		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
-	})
 
 	const editorOptions = {
 		mode: 'tree',

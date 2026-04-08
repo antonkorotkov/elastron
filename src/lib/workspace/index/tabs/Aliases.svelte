@@ -1,6 +1,6 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
-	import { getContext, onMount } from 'svelte'
+	import { getContext } from 'svelte'
 	import get from 'lodash/get'
 
 	import Table from '../../../components/tables/Table.svelte'
@@ -9,11 +9,6 @@
 
 	const { open } = getContext('modal-window')
 	const { dispatch, index } = useStoreon('index')
-
-	onMount(() => {
-		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
-	})
-
 	let isLoading = false
 
 	const columns = [

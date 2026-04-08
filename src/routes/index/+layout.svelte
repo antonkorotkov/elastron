@@ -16,6 +16,12 @@
 		}
 	})
 
+	$effect(() => {
+		if ($index.selected && !$index.info[$index.selected]) {
+			dispatch('elasticsearch/index/fetch')
+		}
+	})
+
 	let { children } = $props()
 
 	const tabs = [

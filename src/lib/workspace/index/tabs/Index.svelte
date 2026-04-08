@@ -20,9 +20,6 @@
 		get($index.info, [$index.selected, $index.selected], null)
 	)
 
-	$effect(() => {
-		if (!$index.info[$index.selected]) dispatch('elasticsearch/index/fetch')
-	})
 
 	const editorOptions = {
 		mode: 'tree',
