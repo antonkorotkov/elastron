@@ -96,7 +96,6 @@
 				},
 				$search.requestBody
 			)
-			qEditor.aceEditor.setOptions({ maxLines: 32 })
 		}
 
 		if (resultsEditor) {
@@ -231,7 +230,7 @@
 	}
 </script>
 
-<div class="ui segments">
+<div class="ui segments playground-container">
 	<div class="ui segment" class:inverted>
 		<div class="ui form" class:inverted>
 			<div class="fields search-options">
@@ -257,6 +256,21 @@
 						onClear={() => onStateFieldChange({ index: '_all' })}
 					/>
 				</div>
+
+				{#if $search.type === 'body'}
+					<div class="field">
+						<label for="run">&nbsp;</label>
+						<button
+							class="ui green button"
+							class:inverted
+							class:loading={$search.loading}
+							disabled={$search.loading}
+							onclick={onSearchRun}
+						>
+							Run
+						</button>
+					</div>
+				{/if}
 
 				{#if $search.type === 'uri'}
 					<div class="field">
@@ -375,20 +389,6 @@
 					</div>
 				{/if}
 			</div>
-			<div class="field" class:hidden={$search.type !== 'body'}>
-				<div id="request-body-editor" bind:this={requestBodyEditor}></div>
-			</div>
-			{#if $search.type === 'body'}
-				<button
-					class="ui green button"
-					class:inverted
-					class:loading={$search.loading}
-					disabled={$search.loading}
-					onclick={onSearchRun}
-				>
-					Run
-				</button>
-			{/if}
 			<div class="field" class:hidden={$search.type !== 'uri'}>
 				<label for="uri">URI Query</label>
 				<div class="ui fluid action input">
@@ -419,27 +419,82 @@
 		{:else}
 			<SearchControls {qEditor} />
 		{/if}
-		{#if $search.view === 'profile'}
-			<ProfileTable />
-		{/if}
-		<div
-			hidden={$search.view === 'profile'}
-			id="results-editor"
-			bind:this={resultsEditor}
-		></div>
+	</div>
+
+	<div class="ui segment split-view" class:inverted>
+		<div class="editor-panel" class:hidden={$search.type !== 'body'}>
+			<div class="editor-wrapper">
+				<div id="request-body-editor" bind:this={requestBodyEditor}></div>
+			</div>
+		</div>
+
+		<div class="editor-panel">
+			{#if $search.view === 'profile'}
+				<div class="editor-wrapper" style="overflow-y: auto;">
+					<ProfileTable />
+				</div>
+			{/if}
+			<div class="editor-wrapper" class:hidden={$search.view === 'profile'}>
+				<div id="results-editor" bind:this={resultsEditor}></div>
+			</div>
+		</div>
 	</div>
 </div>
 
 <style>
 	.hidden {
-		display: none;
+		display: none !important;
 	}
 
 	.search-options input[type='number'] {
 		width: 6rem !important;
 	}
 
+	.search-options {
+		margin-bottom: 0 !important;
+	}
+
 	.themed {
 		min-width: 190px;
+	}
+
+	.playground-container {
+		display: flex;
+		flex-direction: column;
+		height: calc(100vh - 130px);
+		border-radius: 4px;
+	}
+	.split-view {
+		flex: 1;
+		display: flex;
+		gap: 1rem;
+		min-height: 0;
+		padding: 1rem !important;
+	}
+	.editor-panel {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		border: 1px solid #e0e0e0;
+		border-radius: 4px;
+		background: #fff;
+		overflow: hidden;
+	}
+	:global(.inverted) .editor-panel {
+		border-color: #555;
+		background: #1b1c1d;
+	}
+	.editor-wrapper {
+		flex: 1;
+		position: relative;
+		overflow: hidden;
+	}
+	:global(#request-body-editor),
+	:global(#results-editor) {
+		height: 100%;
+		border: none;
+	}
+	:global(.jsoneditor) {
+		border: none !important;
 	}
 </style>

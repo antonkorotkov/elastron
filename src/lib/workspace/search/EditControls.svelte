@@ -1,7 +1,7 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
 
-	let { canEditDoc, rEditor } = $props();
+	let { canEditDoc, rEditor } = $props()
 
 	const { dispatch, search } = useStoreon('search')
 
@@ -78,9 +78,3 @@
 		</div>
 	</div>
 </div>
-
-<style>
-	.edit-doc {
-		margin-bottom: 12px;
-	}
-</style>

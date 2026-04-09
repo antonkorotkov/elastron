@@ -25,4 +25,9 @@
 	.ui.accordion.styled.inverted {
 		background-color: black;
 	}
+
+	.profile-table h4 {
+		padding-left: 1rem;
+		padding-top: 1rem;
+	}
 </style>

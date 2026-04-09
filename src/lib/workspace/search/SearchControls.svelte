@@ -7,13 +7,17 @@
 	import get from 'lodash/get'
 	import { isThemeToggleChecked } from '../../utils/helpers'
 
-	let { qEditor } = $props();
+	let { qEditor } = $props()
 
 	const { dispatch, search, app } = useStoreon('search', 'app')
 
-	let uriPaginationCurrentPage = $derived(() => Math.round($search.from / $search.size))
+	let uriPaginationCurrentPage = $derived(() =>
+		Math.round($search.from / $search.size)
+	)
 	let bodyPaginationOffset = $derived(() => get($search.requestBody, 'from', 0))
-	let bodyPaginationItemsPerPage = $derived(() => get($search.requestBody, 'size', 10))
+	let bodyPaginationItemsPerPage = $derived(() =>
+		get($search.requestBody, 'size', 10)
+	)
 	let bodyPaginationCurrentPage = $derived(() => {
 		const body = $search.requestBody
 		const from = get(body, 'from', 0)
@@ -50,7 +54,7 @@
 </script>
 
 <div class="ui grid">
-	<div class="twelve wide column">
+	<div class="twelve wide column" style="align-content: center">
 		<div class="ui circular labels stats">
 			Documents found: &nbsp;
 			<span class="ui label">{$search.stats.total_results}</span>
@@ -110,7 +114,7 @@
 			</span>
 		</div>
 	</div>
-	<div class="four wide column pagination">
+	<div class="four wide column pagination" style="align-content: center">
 		{#if $search.type === 'uri'}
 			<Pagination
 				className="mini"
@@ -139,7 +143,12 @@
 
 <style>
 	.stats {
-		margin-bottom: 7px;
+		display: flex;
+		align-items: center;
+	}
+
+	.stats .label {
+		margin-bottom: 0;
 	}
 
 	.pagination {
