@@ -16,20 +16,25 @@
 
 <footer class="ui segment" class:inverted>
 	<div class="ui grid">
-		<div class="twelve wide column left aligned">
-			<span>Version {pkg.version}</span>
-			-
+		<div class="six wide column left aligned">
+			<span>v{pkg.version}</span>
 			<span>
 				Made with {#if !inverted}&#x1F5A4{:else}&#x1F49B{/if} by
 				<a href="https://github.com/antonkorotkov" target="_blank">
 					@antonkorotkov
 				</a>
 			</span>
-
-			<span> 🇺🇦 Слава Україні! </span>
 		</div>
-		<div class="four wide column right aligned">
-			<div class="ui toggle checkbox theme-toggle">
+		<div class="ten wide column right aligned control-group">
+			<span class="footer-item">🇺🇦 Слава Україні!</span>
+			<a
+				href="https://github.com/sponsors/antonkorotkov"
+				target="_blank"
+				class="footer-item"
+			>
+				<i class="heart pink icon"></i> Sponsor me
+			</a>
+			<div class="ui toggle checkbox theme-toggle footer-item">
 				<input
 					id="theme-mode-toggler"
 					type="checkbox"
@@ -52,8 +57,7 @@
 		z-index: 10;
 	}
 
-	.theme-toggle {
-		font-size: 1.5rem;
-		line-height: 1rem;
+	.footer-item {
+		margin-left: 1rem;
 	}
 </style>
