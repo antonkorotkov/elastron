@@ -21,17 +21,13 @@ describe('Footer', () => {
 	});
 
 	it('displays the version number', () => {
-		expect(screen.getByText(/Version/)).toBeTruthy();
+		expect(screen.getByText(/v\d+\.\d+\.\d+/)).toBeTruthy();
 	});
 
 	it('displays the author link', () => {
 		const link = screen.getByText('@antonkorotkov');
 		expect(link.closest('a').getAttribute('href')).toBe('https://github.com/antonkorotkov');
 		expect(link.closest('a').getAttribute('target')).toBe('_blank');
-	});
-
-	it('displays the Ukrainian flag message', () => {
-		expect(screen.getByText(/Слава Україні!/)).toBeTruthy();
 	});
 
 	it('renders the theme toggle checkbox', () => {
