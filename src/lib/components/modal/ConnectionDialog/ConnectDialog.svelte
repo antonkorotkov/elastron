@@ -258,7 +258,7 @@
 						<input
 							required
 							type="password"
-							id="quick-quick-password"
+							id="quick-password"
 							bind:value={quickPassword}
 						/>
 					</div>

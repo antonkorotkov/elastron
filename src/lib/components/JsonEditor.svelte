@@ -5,6 +5,7 @@
 	let { value = null, options = {}, editor = $bindable(null), id = '' } = $props()
 
 	let container = $state()
+	let lastApplied = null
 
 	onMount(async () => {
 		const { default: JSONEditor } = await import('jsoneditor')
@@ -16,11 +17,10 @@
 	})
 
 	$effect(() => {
-		try {
-			if (value && editor && value !== editor.get()) {
-				editor.update(value)
-			}
-		} catch (_) {}
+		if (value && editor && value !== lastApplied) {
+			editor.update(value)
+			lastApplied = value
+		}
 	})
 
 	onDestroy(() => {
