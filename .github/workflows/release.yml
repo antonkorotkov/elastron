@@ -73,6 +73,11 @@ jobs:
       - name: Install dependencies
         run: yarn
 
+      - name: Decode certificate
+        run: echo "$MAC_CERTIFICATE" | base64 --decode > certificate.p12
+        env:
+          MAC_CERTIFICATE: ${{ secrets.MAC_CERTIFICATE }}
+
       - name: Build
         env:
           PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
@@ -81,6 +86,8 @@ jobs:
       - name: Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: certificate.p12
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
         run: yarn release-mac
 
   dist-win:
