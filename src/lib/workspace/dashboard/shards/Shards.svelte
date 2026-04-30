@@ -1,0 +1,127 @@
+<script>
+	import { useStoreon } from '@storeon/svelte'
+	import { onMount } from 'svelte'
+	import orderBy from 'lodash/orderBy.js'
+	import isEmpty from 'lodash/isEmpty.js'
+	import debounce from 'lodash/debounce.js'
+
+	import VirtualTable from '../../../components/tables/VirtualTable.svelte'
+	import {
+		filterArrayBy,
+		shardsSortPredicate,
+		isThemeToggleChecked,
+	} from '../../../utils/helpers.js'
+	import ButtonTinyBasic from '../../../components/buttons/ButtonTinyBasic.svelte'
+	import AutoRefreshButtonGroup from '../../../components/buttons/AutoRefreshButtonGroup.svelte'
+
+	const { dispatch, app, shards } = useStoreon('app', 'shards')
+
+	let inverted = $derived(isThemeToggleChecked($app.theme))
+	let shardsList = $derived($shards.data)
+	let sorting = $derived($shards.sorting)
+	let search = $derived($shards.search)
+	let data = $derived.by(() => {
+		const [direction, column, index] = sorting
+		let list = shardsList
+
+		if (direction && column && index !== undefined)
+			list = orderBy(list, [shardsSortPredicate(column, index)], [direction])
+
+		if (!isEmpty(search)) list = filterArrayBy(list, search)
+
+		return list
+	})
+
+	onMount(() => {
+		if (!$shards.data.length) dispatch('elasticsearch/shards/fetch')
+	})
+
+	const onSearchChange = debounce(e => {
+		dispatch('elasticsearch/shards/update', { search: e.target.value })
+	}, 300)
+
+	const onRefresh = () => {
+		dispatch('elasticsearch/shards/fetch')
+	}
+
+	const onSort = (column, index, direction) => {
+		dispatch('elasticsearch/shards/update', {
+			sorting: [direction, column, index],
+		})
+	}
+
+	const onAutoRefreshChange = () => {
+		dispatch('elasticsearch/shards/update', {
+			autoRefresh: !$shards.autoRefresh,
+		})
+	}
+
+	const onIntervalChange = e => {
+		dispatch('elasticsearch/shards/update', {
+			interval: Number(e.target.value),
+		})
+	}
+</script>
+
+<div class="ui segments">
+	<div class="ui segment" class:inverted>
+		<div class="ui grid">
+			<div class="eight wide column middle aligned">
+				<div class="ui tiny buttons">
+					<AutoRefreshButtonGroup
+						loading={$shards.loading}
+						autoRefresh={$shards.autoRefresh}
+						interval={$shards.interval}
+						{inverted}
+						{onRefresh}
+						{onAutoRefreshChange}
+						{onIntervalChange}
+					/>
+				</div>
+			</div>
+			<div class="eight wide column right aligned">
+				<div class="ui horizontal list">
+					<div class="item">
+						<span class="ui grey text">
+							{data.length}
+							{data.length === 1 ? 'item' : 'items'}
+						</span>
+					</div>
+					<div class="item">
+						<div class="ui search">
+							<div class="ui icon input" class:inverted>
+								<input
+									class="prompt"
+									onkeyup={onSearchChange}
+									type="text"
+									placeholder="Search..."
+									defaultValue={search}
+								/>
+								<i class="search icon"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	{#if $shards.columns.length}
+		<VirtualTable
+			columns={$shards.columns}
+			rows={data}
+			{onSort}
+			{sorting}
+			emptyMessage="No shards found"
+			selectable
+			footerColumns
+		/>
+	{:else}
+		<div class="ui segment" class:inverted>
+			<p>
+				No
+				<code>shards</code>
+				data yet
+			</p>
+		</div>
+	{/if}
+</div>

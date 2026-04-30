@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Yarn
         run: npm install -g yarn
@@ -46,6 +46,8 @@ jobs:
         run: yarn
 
       - name: Build
+        env:
+          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
         run: yarn build
 
       - name: Release
@@ -53,32 +55,40 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: yarn release-linux
 
-  # currently being built locally
-  #   dist-mac:
-  #   needs: create-release
-  #   runs-on: macos-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
+  dist-mac:
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '20'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-  #     - name: Install Yarn
-  #       run: npm install -g yarn
+      - name: Install Yarn
+        run: npm install -g yarn
 
-  #     - name: Install dependencies
-  #       run: yarn
+      - name: Install dependencies
+        run: yarn
 
-  #     - name: Build
-  #       run: yarn build
+      - name: Decode certificate
+        run: echo "$MAC_CERTIFICATE" | base64 --decode > certificate.p12
+        env:
+          MAC_CERTIFICATE: ${{ secrets.MAC_CERTIFICATE }}
 
-  #     - name: Release
-  #       env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       run: yarn release-mac
+      - name: Build
+        env:
+          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
+        run: yarn build
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: certificate.p12
+          CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTIFICATE_PASSWORD }}
+        run: yarn release-mac
 
   dist-win:
     needs: create-release
@@ -90,7 +100,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Yarn
         run: npm install -g yarn
@@ -99,6 +109,8 @@ jobs:
         run: yarn
 
       - name: Build
+        env:
+          PUBLIC_GA_ID: ${{ secrets.PUBLIC_GA_ID }}
         run: yarn build
 
       - name: Release

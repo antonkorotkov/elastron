@@ -1,130 +1,144 @@
 {
-    "name": "Elastron",
-    "version": "1.7.0",
-    "description": "Full featured elasticsearch client",
-    "type": "module",
-    "main": "main.js",
-    "scripts": {
-        "build": "rollup -c --bundleConfigAsCjs",
-        "dev": "rollup -c -w --bundleConfigAsCjs",
-        "start-local": "sirv public",
-        "start": "ENV=development electron .",
-        "start:prod": "electron .",
-        "dist-mac": "electron-builder -m",
-        "dist-win": "electron-builder -w",
-        "dist-linux": "electron-builder -l",
-        "dist": "electron-builder -mwl",
-        "release-mac": "electron-builder -m --publish=onTagOrDraft",
-        "release-win": "electron-builder -w --publish=onTagOrDraft",
-        "release-linux": "electron-builder -l --publish=onTagOrDraft",
-        "release": "electron-builder -mwl --publish=onTagOrDraft",
-        "upgrade-all": "yarn upgrade-interactive --latest"
-    },
-    "repository": "https://github.com/antonkorotkov/elastron",
-    "keywords": [
-        "Electron",
-        "elasticsearch",
-        "gui"
+  "name": "elastron",
+  "version": "2.0.0",
+  "description": "Full featured elasticsearch client",
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "dev": "concurrently \"vite dev\" \"wait-on tcp:5173 && electron .\"",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "start": "electron .",
+    "dist-mac": "electron-builder -m",
+    "dist-win": "electron-builder -w",
+    "dist-linux": "electron-builder -l",
+    "dist": "electron-builder -mwl",
+    "release-mac": "electron-builder -m --publish=onTagOrDraft",
+    "release-win": "electron-builder -w --publish=onTagOrDraft",
+    "release-linux": "electron-builder -l --publish=onTagOrDraft",
+    "release": "electron-builder -mwl --publish=onTagOrDraft",
+    "upgrade-all": "yarn upgrade-interactive --latest"
+  },
+  "repository": "https://github.com/antonkorotkov/elastron",
+  "keywords": [
+    "Electron",
+    "elasticsearch",
+    "gui"
+  ],
+  "author": "Anton Korotkov",
+  "license": "MIT",
+  "build": {
+    "files": [
+      "build",
+      "node_modules",
+      "main.js",
+      "preload.js",
+      "updater.js",
+      "package.json"
     ],
-    "author": "Anton Korotkov",
-    "license": "MIT",
-    "build": {
-        "files": [
-            "app",
-            "node_modules",
-            "public",
-            "main.js"
-        ],
-        "appId": "com.elastron.www",
-        "mac": {
-            "category": "db.development.tools",
-            "icon": "public/icon.icns",
-            "gatekeeperAssess": false,
-            "mergeASARs": false,
-            "target": [
-                {
-                    "target": "default",
-                    "arch": [
-                        "universal"
-                    ]
-                }
-            ],
-            "publish": {
-                "provider": "github",
-                "repo": "elastron",
-                "owner": "antonkorotkov"
-            }
-        },
-        "win": {
-            "icon": "public/icon.png",
-            "target": [
-                {
-                    "target": "nsis",
-                    "arch": [
-                        "x64",
-                        "ia32"
-                    ]
-                }
-            ],
-            "publish": {
-                "provider": "github",
-                "repo": "elastron",
-                "owner": "antonkorotkov"
-            }
-        },
-        "linux": {
-            "icon": "public/icon.png",
-            "category": "Utility",
-            "publish": {
-                "provider": "github",
-                "repo": "elastron",
-                "owner": "antonkorotkov"
-            }
+    "appId": "com.elastron.www",
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "category": "db.development.tools",
+      "icon": "static/icon.icns",
+      "gatekeeperAssess": false,
+      "x64ArchFiles": "**/sshcrypto.node",
+      "target": [
+        {
+          "target": "default",
+          "arch": [
+            "universal"
+          ]
         }
+      ],
+      "publish": {
+        "provider": "github",
+        "repo": "elastron",
+        "owner": "antonkorotkov"
+      }
     },
-    "dependencies": {
-        "@electron/remote": "^2.1.2",
-        "axios": "^1.9.0",
-        "call-bind-apply-helpers": "^1.0.2",
-        "elasticdump": "^6.119.1",
-        "electron-updater": "^6.6.2",
-        "lodash": "^4.17.21"
+    "win": {
+      "icon": "static/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "ia32"
+          ]
+        }
+      ],
+      "publish": {
+        "provider": "github",
+        "repo": "elastron",
+        "owner": "antonkorotkov"
+      }
     },
-    "devDependencies": {
-        "@eslint/js": "^9.26.0",
-        "@rollup/plugin-commonjs": "^28.0.3",
-        "@rollup/plugin-json": "^6.1.0",
-        "@rollup/plugin-node-resolve": "^16.0.1",
-        "@storeon/router": "~2.0.1",
-        "@storeon/svelte": "~1.0.0",
-        "@types/lodash": "^4.17.16",
-        "compare-versions": "~6.1.1",
-        "electron": "^36.1.0",
-        "electron-builder": "^26.0.12",
-        "eslint": "^9.26.0",
-        "eslint-plugin-svelte": "^3.5.1",
-        "globals": "^16.0.0",
-        "jsoneditor": "~10.2.0",
-        "local-storage": "~2.0.0",
-        "percent-to-hex": "~1.0.1",
-        "rollup": "^4.40.1",
-        "rollup-plugin-css-only": "^4.5.2",
-        "rollup-plugin-livereload": "^2.0.0",
-        "rollup-plugin-replace": "^2.2.0",
-        "rollup-plugin-svelte": "^7.2.2",
-        "rollup-plugin-terser": "^7.0.2",
-        "sass": "^1.87.0",
-        "sirv-cli": "^3.0.1",
-        "storeon": "~3.1.5",
-        "svelte": "^5.28.2",
-        "svelte-preprocess": "^6.0.3",
-        "svelte-select": "~4.4.7"
-    },
-    "prettier": {
-        "trailingComma": "es5",
-        "tabWidth": 2,
-        "arrowParens": "avoid",
-        "semi": false,
-        "singleQuote": true
+    "linux": {
+      "icon": "static/icon.png",
+      "category": "Utility",
+      "publish": {
+        "provider": "github",
+        "repo": "elastron",
+        "owner": "antonkorotkov"
+      }
     }
+  },
+  "dependencies": {
+    "@electron/remote": "^2.1.2",
+    "@tanstack/svelte-virtual": "^3.13.24",
+    "call-bind-apply-helpers": "^1.0.2",
+    "elasticsearch8": "npm:@elastic/elasticsearch@8.19.1",
+    "elasticsearch9": "npm:@elastic/elasticsearch@9.3.4",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.8.3",
+    "get-port": "^7.2.0",
+    "lodash": "^4.17.21",
+    "ssh2": "^1.17.0",
+    "uplot": "^1.6.32"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@storeon/router": "~2.0.1",
+    "@storeon/svelte": "^1.0.0",
+    "@sveltejs/adapter-node": "^5.5.4",
+    "@sveltejs/kit": "^2.58.0",
+    "@sveltejs/vite-plugin-svelte": "^7.0.0",
+    "@testing-library/svelte": "^5.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/lodash": "^4.17.24",
+    "compare-versions": "~6.1.1",
+    "concurrently": "^9.2.1",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-svelte": "^3.17.1",
+    "globals": "^17.5.0",
+    "jsdom": "^29.0.2",
+    "jsoneditor": "~10.4.3",
+    "percent-to-hex": "~1.0.1",
+    "sass": "^1.99.0",
+    "storeon": "~3.1.5",
+    "svelte": "^5.55.5",
+    "svelte-eslint-parser": "^1.6.0",
+    "svelte-preprocess": "^6.0.3",
+    "svelte-select": "~5.8.3",
+    "vite": "^8.0.3",
+    "vitest": "^4.1.5",
+    "wait-on": "^9.0.5"
+  },
+  "resolutions": {
+    "svelte-eslint-parser": "^1.6.0"
+  },
+  "prettier": {
+    "trailingComma": "es5",
+    "tabWidth": 2,
+    "arrowParens": "avoid",
+    "semi": false,
+    "singleQuote": true
+  }
 }

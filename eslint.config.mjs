@@ -4,6 +4,9 @@ import eslintPluginSvelte from 'eslint-plugin-svelte'
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+    {
+        ignores: [".svelte-kit/**", "build/**", "dist/**", "release/**"]
+    },
 	{
         ...js.configs.recommended,
         files: ["src/**/*.js", "app/**/*.js"],

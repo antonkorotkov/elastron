@@ -1,0 +1,79 @@
+import API from '../../api/elasticsearch'
+
+export const shards = store => {
+	store.on('@init', () => ({
+		shards: {
+			columns: [],
+			data: [],
+			loading: false,
+			search: '',
+			sorting: [], // [ direction, column, index ]
+			autoRefresh: false,
+			interval: 10000
+		},
+	}))
+
+	store.on('connected', () => {
+		store.dispatch('elasticsearch/shards/fetch')
+	})
+
+	store.on('disconnected', () => {
+		store.dispatch('elasticsearch/shards/update', {
+			columns: [],
+			data: [],
+			loading: false,
+			search: '',
+			sorting: [],
+			autoRefresh: false,
+			interval: 10000
+		})
+	})
+
+	store.on('elasticsearch/shards/fetch', async state => {
+		try {
+			store.dispatch('elasticsearch/shards/update', {
+				loading: true,
+			})
+			const api = new API(state.connection)
+			const shards = await api.getShards()
+			if (shards) {
+				const { columns, data } = shards
+
+				let sorting = state.shards.sorting
+				if (sorting.length === 0) {
+					const indexCol = columns.indexOf('index')
+					if (indexCol !== -1) {
+						sorting = ['asc', 'index', indexCol]
+					}
+				}
+
+				store.dispatch('elasticsearch/shards/update', {
+					columns,
+					data,
+					loading: false,
+					sorting,
+				})
+			} else {
+				store.dispatch('notification/add', {
+					type: 'error',
+					message: 'Could not get shards data',
+				})
+				store.dispatch('elasticsearch/shards/update', {
+					loading: false,
+				})
+			}
+		} catch (error) {
+			store.dispatch('notification/add', {
+				type: 'error',
+				message: error.message,
+			})
+			store.dispatch('elasticsearch/shards/update', {
+				loading: false,
+			})
+		}
+	})
+
+	store.on('elasticsearch/shards/update', (state, shards) => ({
+		shards: { ...state.shards, ...shards },
+	}))
+}

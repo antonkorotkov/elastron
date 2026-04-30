@@ -4,3 +4,7 @@ node_modules
 .DS_Store
 .env
 dev-app-update.yml
+release
+dist-electron
+.svelte-kit
+/build
