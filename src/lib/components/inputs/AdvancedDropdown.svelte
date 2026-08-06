@@ -34,22 +34,39 @@
 	} = $props()
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
+	let filterText = $state('')
+	let normalizedItems = $derived(
+		(items || []).map(item => (typeof item === 'object' ? item : { value: item, [labelIdentifier]: item }))
+	)
+
+	let createdItem = $derived.by(() => {
+		if (!isCreatable || filterText.trim().length === 0) return null
+		if (normalizedItems.some(item => item[labelIdentifier] === filterText)) return null
+
+		return { value: filterText, [labelIdentifier]: filterText, created: true }
+	})
+
+	let selectItems = $derived(createdItem ? [...normalizedItems, createdItem] : normalizedItems)
 </script>
 
 <div class="advanced-selector" class:inverted>
 	{#key selectedValue}
 		<Select
-			{labelIdentifier}
-			{placeholder}
-			{isClearable}
-			{inputStyles}
-			{items}
-			{isCreatable}
+			label={labelIdentifier}
+			clearable={isClearable}
+			items={selectItems}
 			value={selectedValue}
-			{isDisabled}
+			disabled={isDisabled}
+			{placeholder}
+			{inputStyles}
+			bind:filterText
 			on:select={onSelect}
 			on:clear={onClear}
-		></Select>
+		>
+			<div slot="item" let:item>
+				{item.created ? '🔧 ' : ''}{item[labelIdentifier]}
+			</div>
+		</Select>
 	{/key}
 
 	<style>
