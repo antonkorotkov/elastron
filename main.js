@@ -65,7 +65,6 @@ const createWindow = (port, routeSuffix = '') => {
 		webPreferences: {
 			nodeIntegration: false, // Security: SvelteKit handles backend
 			contextIsolation: true,
-			nativeWindowOpen: true,
 			devTools: true,
 			preload: path.join(__dirname, 'preload.js')
 		},
@@ -74,9 +73,18 @@ const createWindow = (port, routeSuffix = '') => {
 	const url = `http://localhost:${port}${routeSuffix}`;
 	mainWindow.loadURL(url);
 
-	mainWindow.webContents.on('new-window', function (e, url) {
-		e.preventDefault();
-		shell.openExternal(url);
+	mainWindow.webContents.setWindowOpenHandler(({ url: targetUrl }) => {
+		if (/^https?:$/.test(new URL(targetUrl).protocol)) {
+			shell.openExternal(targetUrl);
+		}
+		return { action: 'deny' };
+	});
+
+	mainWindow.webContents.on('will-navigate', (e, targetUrl) => {
+		if (new URL(targetUrl).origin !== `http://localhost:${port}`) {
+			e.preventDefault();
+			shell.openExternal(targetUrl);
+		}
 	});
 
 	return mainWindow;
