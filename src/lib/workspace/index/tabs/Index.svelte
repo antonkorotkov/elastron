@@ -202,5 +202,11 @@
 </div>
 
 <div class="ui vertical segment">
-	<JsonEditor id="index-preview" {value} options={editorOptions} />
+	<JsonEditor
+		id="index-preview"
+		{value}
+		options={editorOptions}
+		onError={({ message }) =>
+			dispatch('notification/add', { type: 'error', message })}
+	/>
 </div>

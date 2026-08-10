@@ -134,3 +134,22 @@ export const allocationSortPredicate = (column, index) => o => {
             return o[index]
     }
 }
+
+/**
+ * Parse JSON typed into an editor, treating an empty document as `{}`.
+ * Throws a SyntaxError on malformed input — callers report it to the user.
+ *
+ * @param {string} text
+ * @returns {any}
+ */
+export const parseJsonBody = (text = '') => {
+    const trimmed = (text || '').trim()
+    return trimmed ? JSON.parse(trimmed) : {}
+}
+
+/**
+ * @param {Error} error
+ * @returns {string} notification message for an unparseable request body
+ */
+export const invalidJsonBodyMessage = error =>
+    `Request body is not valid JSON: ${error.message}`
