@@ -31,6 +31,7 @@ const initialState = {
 	size: 10,
 	from: 0,
 	view: 'hits',
+	tableConfigs: {},
 };
 
 export const search = store => {
@@ -202,7 +203,7 @@ export const search = store => {
 			...data,
 		}
 
-		setStorage('lastSearch', omit(search, ['response', 'aggs', 'results', 'profile', 'stats', 'loading', 'editDoc']))
+		setStorage('lastSearch', omit(search, ['response', 'aggs', 'results', 'profile', 'stats', 'loading', 'editDoc', 'tableConfigs']))
 
 		return { search }
 	})
@@ -212,6 +213,31 @@ export const search = store => {
 			search: {
 				...state.search,
 				...data
+			}
+		}
+	})
+
+	store.on('search/tableConfigs/hydrate', (state, tableConfigs) => {
+		return {
+			search: {
+				...state.search,
+				tableConfigs: tableConfigs || {},
+			}
+		}
+	})
+
+	store.on('search/tableConfigs/update', (state, { connectionKey, indexName, config }) => {
+		const tableConfigs = {
+			...state.search.tableConfigs,
+			[`${connectionKey}_${indexName}`]: config,
+		}
+
+		setStorage('tableConfigs', tableConfigs)
+
+		return {
+			search: {
+				...state.search,
+				tableConfigs,
 			}
 		}
 	})

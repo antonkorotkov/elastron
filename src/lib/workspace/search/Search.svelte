@@ -9,6 +9,7 @@
 	import EditControls from './EditControls.svelte'
 	import SearchControls from './SearchControls.svelte'
 	import ProfileTable from './ProfileTable.svelte'
+	import ResultsTable from './ResultsTable.svelte'
 	import { isThemeToggleChecked } from '../../utils/helpers'
 
 	const { dispatch, search, app } = useStoreon('search', 'app')
@@ -434,7 +435,13 @@
 					<ProfileTable />
 				</div>
 			{/if}
-			<div class="editor-wrapper" class:hidden={$search.view === 'profile'}>
+			<div class="editor-wrapper" class:hidden={$search.view !== 'table'}>
+				<ResultsTable />
+			</div>
+			<div
+				class="editor-wrapper"
+				class:hidden={$search.view === 'table' || $search.view === 'profile'}
+			>
 				<div id="results-editor" bind:this={resultsEditor}></div>
 			</div>
 		</div>

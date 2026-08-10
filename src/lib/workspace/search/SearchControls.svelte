@@ -82,7 +82,16 @@
 					class:disabled={isEmpty($search.results)}
 					onclick={() => switchView('hits')}
 				>
-					Hits
+					JSON
+				</button>
+				<button
+					class:inverted
+					class="mini ui button"
+					class:active={$search.view == 'table'}
+					class:disabled={isEmpty($search.results)}
+					onclick={() => switchView('table')}
+				>
+					Table
 				</button>
 				<button
 					class:inverted
