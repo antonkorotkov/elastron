@@ -27,6 +27,19 @@ export const humanStoreSizeToPseudoBytes = size => {
 export const isIndexNameValid = indexName => /^[a-z0-9\-_]+$/.test(indexName)
 
 /**
+ * Elasticsearch reports its version as `{ number: '8.12.0', ... }`, but it is
+ * passed around as the bare number string. Accept either and return the string,
+ * or null when the server did not report one.
+ *
+ * @param {object|string} version
+ * @returns {string|null}
+ */
+export const getVersionNumber = version => {
+    if (version && typeof version === 'object') version = version.number
+    return typeof version === 'string' && version ? version : null
+}
+
+/**
  * @param {array} data
  * @param {string} search
  * @returns {array}

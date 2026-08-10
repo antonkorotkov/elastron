@@ -34,7 +34,7 @@
 
 	const { dispatch, connection, server } = useStoreon('connection', 'server')
 
-	let version = $derived($server?.version?.number || $server?.version || false)
+	let version = $derived($server?.version || false)
 	let pathname = $derived($page.url.pathname)
 </script>
 

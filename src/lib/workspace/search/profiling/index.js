@@ -22,14 +22,26 @@ export const getTimeColor = (time, times) => {
  */
 export const getNanosFromMsString = string => parseFloat(string) * 1000000
 
+/**
+ * Elasticsearch below 5.0 used a different shape for the profile response.
+ * The version is unknown until the connection test resolves, so anything
+ * `compare` cannot parse is treated as a modern server.
+ */
+export const isLegacyProfile = version => {
+	try {
+		return compare(version, '5.0.0', '<')
+	} catch {
+		return false
+	}
+}
+
 export default {
 	query(q) {
 		return {
-			getType: v => (compare(v, '5.0.0', '<') ? q.query_type : q.type),
-			getDescription: v =>
-				compare(v, '5.0.0', '<') ? q.lucene : q.description,
+			getType: v => (isLegacyProfile(v) ? q.query_type : q.type),
+			getDescription: v => (isLegacyProfile(v) ? q.lucene : q.description),
 			getNanos: v =>
-				compare(v, '5.0.0', '<')
+				isLegacyProfile(v)
 					? getNanosFromMsString(q.time)
 					: q.time_in_nanos || 0,
 		}
@@ -39,7 +51,7 @@ export default {
 			getName: () => c.name,
 			getReason: () => c.reason,
 			getNanos: v =>
-				compare(v, '5.0.0', '<')
+				isLegacyProfile(v)
 					? getNanosFromMsString(c.time)
 					: c.time_in_nanos || 0,
 		}

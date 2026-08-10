@@ -2,6 +2,7 @@ import { Client as Client8 } from 'elasticsearch8';
 import { Client as Client9 } from 'elasticsearch9';
 import { json } from '@sveltejs/kit';
 import { tunnelManager } from './tunnel';
+import { getVersionNumber } from '../utils/helpers';
 
 /**
  * Creates an Elasticsearch client instance configured with connection details,
@@ -44,7 +45,7 @@ export const createClient = (connection) => {
 	}
 
 	// Select the appropriate client version
-	if (version && version.startsWith('9')) {
+	if (getVersionNumber(version)?.startsWith('9')) {
 		return new Client9(clientOptions);
 	}
 
