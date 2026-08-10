@@ -9,7 +9,7 @@ vi.mock('@storeon/svelte', () => ({
 		app: writable({ theme: 'light' }),
 		search: writable({ results: {}, loading: false }),
 		indices: writable({ data: [], columns: [] }),
-		server: writable({ version: { number: '8.0.0' } }),
+		server: writable({ version: '8.0.0' }),
 		dispatch: vi.fn()
 	})
 }));

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	humanStoreSizeToPseudoBytes,
 	isIndexNameValid,
+	getVersionNumber,
 	filterArrayBy,
 	isThemeToggleChecked,
 	getIndexListFromIndexData,
@@ -43,6 +44,26 @@ describe('isIndexNameValid', () => {
 		expect(isIndexNameValid('my index')).toBe(false);
 		expect(isIndexNameValid('my.index')).toBe(false);
 		expect(isIndexNameValid('')).toBe(false);
+	});
+});
+
+describe('getVersionNumber', () => {
+	it('returns a version number string as-is', () => {
+		expect(getVersionNumber('8.12.0')).toBe('8.12.0');
+	});
+
+	it('unwraps the raw elasticsearch version object', () => {
+		expect(getVersionNumber({ number: '9.0.1', build_flavor: 'default' })).toBe(
+			'9.0.1'
+		);
+	});
+
+	it('returns null when no version number is reported', () => {
+		expect(getVersionNumber(undefined)).toBe(null);
+		expect(getVersionNumber(null)).toBe(null);
+		expect(getVersionNumber('')).toBe(null);
+		expect(getVersionNumber({})).toBe(null);
+		expect(getVersionNumber({ number: 9 })).toBe(null);
 	});
 });
 

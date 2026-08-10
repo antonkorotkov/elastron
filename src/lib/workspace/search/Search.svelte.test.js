@@ -10,7 +10,7 @@ vi.mock('@storeon/svelte', () => ({
 		search: writable({ results: {}, stats: { total_results: 0, time: 0 }, loading: false }),
 		indices: writable({ data: [['idx', 'yellow', 'open']], columns: ['index', 'health', 'status'] }),
 		connection: writable({}),
-		server: writable({ version: { number: '8.0.0' } }),
+		server: writable({ version: '8.0.0' }),
 		dispatch: vi.fn()
 	})
 }));

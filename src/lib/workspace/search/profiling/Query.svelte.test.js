@@ -8,7 +8,7 @@ vi.mock('@storeon/svelte', () => ({
 	useStoreon: () => ({
 		app: writable({ theme: 'light' }),
 		search: writable({ request: {}, loading: false }),
-		server: writable({ version: { number: '8.0.0' } }),
+		server: writable({ version: '8.0.0' }),
 		dispatch: vi.fn()
 	})
 }));

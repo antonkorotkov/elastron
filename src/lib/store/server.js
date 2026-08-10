@@ -1,5 +1,5 @@
 import API from '../api/elasticsearch'
-import { getMessageFromError } from '../utils/helpers'
+import { getMessageFromError, getVersionNumber } from '../utils/helpers'
 
 export const server = store => {
 	store.on('@init', () => {
@@ -31,6 +31,9 @@ export const server = store => {
 			server: {
 				...state.server,
 				...data,
+				...('version' in data
+					? { version: getVersionNumber(data.version) }
+					: {}),
 			},
 		}
 	})
