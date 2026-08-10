@@ -12,7 +12,7 @@
 
 	let timeInNanos = $derived(profiling
 		.collector(collector)
-		.getNanos($server.version.number))
+		.getNanos($server.version))
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
@@ -27,13 +27,13 @@
 	role="navigation"
 >
 	<i class="dropdown icon"></i>
-	{profiling.collector(collector).getName($server.version.number)}
+	{profiling.collector(collector).getName($server.version)}
 	<small
 		class="ui label"
 		style="background-color:{getTimeColor(
 			timeInNanos,
 			collectors.map(c =>
-				profiling.collector(c).getNanos($server.version.number)
+				profiling.collector(c).getNanos($server.version)
 			)
 		)}"
 	>
@@ -42,7 +42,7 @@
 </div>
 <div class="content" class:active>
 	<small class="ui label">
-		{profiling.collector(collector).getReason($server.version.number)}
+		{profiling.collector(collector).getReason($server.version)}
 	</small>
 	{#if collector.children && collector.children.length}
 		<div class="ui fluid accordion styled" class:inverted>

@@ -23,8 +23,8 @@ vi.mock('@storeon/svelte', () => ({
 		search: searchStore,
 		indices: writable({ data: [['idx', 'yellow', 'open']], columns: ['index', 'health', 'status'] }),
 		connection: writable({}),
-		server: writable({ version: { number: '8.0.0' } }),
-		dispatch
+		server: writable({ version: '8.0.0' }),
+		dispatch: vi.fn()
 	})
 }));
 
