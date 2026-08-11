@@ -112,5 +112,7 @@
 		{value}
 		options={editorOptions}
 		bind:editor={mpEditor}
+		onError={({ message }) =>
+			dispatch('notification/add', { type: 'error', message })}
 	/>
 </div>

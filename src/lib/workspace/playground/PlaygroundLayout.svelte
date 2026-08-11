@@ -5,7 +5,11 @@
 	import KeyValueList from './KeyValueList.svelte'
 	import IndexSelector from '$lib/components/inputs/IndexSelector.svelte'
 	import TemplateDrawer from './TemplateDrawer.svelte'
-	import { isThemeToggleChecked } from '../../utils/helpers'
+	import {
+		invalidJsonBodyMessage,
+		isThemeToggleChecked,
+		parseJsonBody,
+	} from '../../utils/helpers'
 
 	const { dispatch, connection, playground, app } = useStoreon(
 		'connection',
@@ -18,6 +22,7 @@
 	let selectedIndex = $state(null)
 
 	let requestBody = $state({})
+	let requestBodyText = $state('{}')
 	let responseBody = $state({})
 
 	let activeTab = $state('body')
@@ -30,13 +35,32 @@
 	let showSaveInput = $state(false)
 	let templateName = $state('')
 
+	const notifyError = message =>
+		dispatch('notification/add', { type: 'error', message })
+
+	/**
+	 * Parse the current editor text. Reports malformed JSON and returns
+	 * `{ error }` instead of throwing out of an event handler.
+	 */
+	function readRequestBody() {
+		try {
+			return { body: parseJsonBody(requestBodyText) }
+		} catch (error) {
+			notifyError(invalidJsonBodyMessage(error))
+			return { error }
+		}
+	}
+
 	function saveTemplate() {
 		if (templateName.trim()) {
+			const { body, error } = readRequestBody()
+			if (error) return
+
 			dispatch('playground/saveTemplate', {
 				name: templateName.trim(),
 				method,
 				path,
-				body: requestBody,
+				body,
 				headers: headerItems,
 			})
 			templateName = ''
@@ -46,12 +70,18 @@
 
 	// Sync global store template loading to local states
 	$effect(() => {
-		if ($playground.currentRequest) {
-			const req = $playground.currentRequest
-			method = req.method || 'GET'
-			path = req.path || ''
-			requestBody = req.body || {}
-			headerItems = req.headers || []
+		const req = $playground.currentRequest
+		if (req) {
+			try {
+				method = req.method || 'GET'
+				path = req.path || ''
+				const text = JSON.stringify(req.body || {}, null, 2)
+				requestBodyText = text
+				requestBody = JSON.parse(text)
+				headerItems = req.headers || []
+			} catch (error) {
+				notifyError(`Could not load the request: ${error.message}`)
+			}
 		}
 	})
 
@@ -59,11 +89,7 @@
 		mode: 'code',
 		modes: ['code', 'tree'],
 		onChangeText: text => {
-			try {
-				requestBody = text ? JSON.parse(text) : {}
-			} catch (e) {
-				// Ignore parse errors while typing
-			}
+			requestBodyText = text
 		},
 	}
 
@@ -74,44 +100,48 @@
 
 	async function sendRequest() {
 		if (!$connection) return
-		const api = new API($connection)
 
-		let customHeaders = {}
-		for (const { key, value, enabled } of headerItems) {
-			if (enabled && key) {
-				customHeaders[key] = value
-			}
-		}
-
-		let resolvedPath = path
-		if (resolvedPath.includes('{{index}}')) {
-			if (selectedIndex) {
-				resolvedPath = resolvedPath.replaceAll('{{index}}', selectedIndex)
-			} else {
-				resolvedPath = resolvedPath
-					.replaceAll('{{index}}/', '')
-					.replaceAll('{{index}}', '')
-			}
-			if (resolvedPath === '') resolvedPath = '/'
-			if (!resolvedPath.startsWith('/')) resolvedPath = '/' + resolvedPath
-		}
+		const { body, error } = readRequestBody()
+		if (error) return
 
 		try {
 			isRequestLoading = true
-			const res = await api.genericRequest({
+
+			const api = new API($connection)
+
+			let customHeaders = {}
+			for (const { key, value, enabled } of headerItems) {
+				if (enabled && key) {
+					customHeaders[key] = value
+				}
+			}
+
+			let resolvedPath = path
+			if (resolvedPath.includes('{{index}}')) {
+				if (selectedIndex) {
+					resolvedPath = resolvedPath.replaceAll('{{index}}', selectedIndex)
+				} else {
+					resolvedPath = resolvedPath
+						.replaceAll('{{index}}/', '')
+						.replaceAll('{{index}}', '')
+				}
+				if (resolvedPath === '') resolvedPath = '/'
+				if (!resolvedPath.startsWith('/')) resolvedPath = '/' + resolvedPath
+			}
+
+			responseBody = await api.genericRequest({
 				method,
 				path: resolvedPath,
-				elasticBody:
-					Object.keys(requestBody).length > 0 ? requestBody : undefined,
+				elasticBody: Object.keys(body).length > 0 ? body : undefined,
 				headers:
 					Object.keys(customHeaders).length > 0 ? customHeaders : undefined,
 			})
-			responseBody = res
 		} catch (error) {
 			try {
 				responseBody = JSON.parse(error.message)
 			} catch {
 				responseBody = { error: error.message }
+				notifyError(error.message)
 			}
 		} finally {
 			isRequestLoading = false
@@ -157,8 +187,8 @@
 							placeholder={'e.g. {{index}}/_search'}
 							onkeydown={e => e.key === 'Enter' && sendRequest()}
 						/>
-						<button 
-							class="ui button primary" 
+						<button
+							class="ui button primary"
 							class:loading={isRequestLoading}
 							onclick={sendRequest}
 						>
@@ -252,6 +282,7 @@
 					id="playgroundRequestEditor"
 					value={requestBody}
 					options={requestEditorOptions}
+					onError={error => notifyError(error.message)}
 				/>
 			</div>
 			<div
@@ -271,6 +302,7 @@
 					id="playgroundResponseEditor"
 					value={responseBody}
 					options={responseEditorOptions}
+					onError={error => notifyError(error.message)}
 				/>
 			</div>
 		</div>
