@@ -132,6 +132,8 @@
 		{value}
 		options={editorOptions}
 		bind:editor={spEditor}
+		onError={({ message }) =>
+			dispatch('notification/add', { type: 'error', message })}
 	/>
 </div>
 

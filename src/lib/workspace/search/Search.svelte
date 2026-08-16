@@ -10,7 +10,11 @@
 	import SearchControls from './SearchControls.svelte'
 	import ProfileTable from './ProfileTable.svelte'
 	import ResultsTable from './ResultsTable.svelte'
-	import { isThemeToggleChecked } from '../../utils/helpers'
+	import {
+		invalidJsonBodyMessage,
+		isThemeToggleChecked,
+		parseJsonBody,
+	} from '../../utils/helpers'
 
 	const { dispatch, search, app } = useStoreon('search', 'app')
 
@@ -20,13 +24,38 @@
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 
+	const notifyError = error =>
+		dispatch('notification/add', {
+			type: 'error',
+			message: error.message,
+		})
+
 	const onEditorChange = () => {
 		try {
 			if (qEditor) {
 				const requestBody = qEditor.get()
 				dispatch('search/update', { requestBody })
 			}
-		} catch (err) {}
+		} catch (err) {
+			// Malformed JSON is expected while typing — the store keeps the last
+			// valid body and `onSearchRun` re-validates before running a query.
+		}
+	}
+
+	/**
+	 * Read the request body straight from the editor so a query never runs with
+	 * a stale body. Reports malformed JSON and returns `{ error }` instead.
+	 */
+	const readRequestBody = () => {
+		try {
+			return { requestBody: parseJsonBody(qEditor.getText()) }
+		} catch (error) {
+			dispatch('notification/add', {
+				type: 'error',
+				message: invalidJsonBodyMessage(error),
+			})
+			return { error }
+		}
 	}
 
 	const onDocTypeChange = e => {
@@ -36,6 +65,12 @@
 	}
 
 	const onSearchRun = e => {
+		if ($search.type === 'body' && qEditor) {
+			const { requestBody, error } = readRequestBody()
+			if (error) return
+			dispatch('search/update', { requestBody })
+		}
+
 		if ($search.view === 'edit') {
 			dispatch('search/update', {
 				view: 'hits',
@@ -73,7 +108,7 @@
 
 	let canEditDoc = $state(false)
 	const onClickEditDocument = index => {
-		if (isEmpty($search.results[index]._source)) {
+		if (isEmpty($search.results[index]?._source)) {
 			return dispatch('notification/add', {
 				type: 'error',
 				message: 'Document must have `_source` field in order to be edited',
@@ -85,6 +120,14 @@
 	}
 
 	onMount(async () => {
+		try {
+			await createEditors()
+		} catch (error) {
+			notifyError(error)
+		}
+	})
+
+	const createEditors = async () => {
 		const { default: JSONEditor } = await import('jsoneditor')
 		await import('jsoneditor/dist/jsoneditor.min.css')
 
@@ -150,7 +193,7 @@
 				$search.results
 			)
 		}
-	})
+	}
 
 	let prevView = 'hits'
 	$effect(() => {
@@ -190,7 +233,10 @@
 
 				prevView = $search.view
 			}
-		} catch (e) {}
+		} catch (e) {
+			// `rEditor.get()` throws while the user is editing a document into
+			// invalid JSON; the view sync simply waits for it to become valid.
+		}
 	})
 
 	onDestroy(() => {
@@ -202,29 +248,34 @@
 		}
 	})
 
-	const onProfilingChanged = checked => {
-		const requestBody = qEditor.get()
+	/**
+	 * Toggle a boolean flag inside the request body. Needs parseable JSON, so a
+	 * malformed body is reported instead of throwing out of the event handler.
+	 */
+	const toggleRequestBodyFlag = (flag, checked, stateField) => {
+		const { requestBody, error } = readRequestBody()
+		if (error) return
+
 		if (checked) {
-			requestBody.profile = true
+			requestBody[flag] = true
 		} else {
-			delete requestBody.profile
+			delete requestBody[flag]
 		}
-		qEditor.set(requestBody)
-		dispatch('search/update', { requestBody })
-		onStateFieldChange({ profiling: checked })
+
+		try {
+			qEditor.set(requestBody)
+			dispatch('search/update', { requestBody })
+			onStateFieldChange({ [stateField]: checked })
+		} catch (err) {
+			notifyError(err)
+		}
 	}
 
-	const onExplainChanged = checked => {
-		const requestBody = qEditor.get()
-		if (checked) {
-			requestBody.explain = true
-		} else {
-			delete requestBody.explain
-		}
-		qEditor.set(requestBody)
-		dispatch('search/update', { requestBody })
-		onStateFieldChange({ explain: checked })
-	}
+	const onProfilingChanged = checked =>
+		toggleRequestBodyFlag('profile', checked, 'profiling')
+
+	const onExplainChanged = checked =>
+		toggleRequestBodyFlag('explain', checked, 'explain')
 
 	const switchView = view => {
 		dispatch('search/update', { view })

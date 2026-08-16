@@ -2,10 +2,6 @@
 
 Desktop Elasticsearch client.
 
-## Important
-
-To open the app on Mac for the first time, make sure to allow it in Settings -> Privacy and Security -> Open Anyway
-
 ![2026-04-01_09-37-15](https://github.com/user-attachments/assets/6d33bb4f-b2c2-4354-b96c-d22f2bb3a68f)
 
 ![2026-04-01_09-38-18](https://github.com/user-attachments/assets/a9d1cf3b-1899-4f5d-8e81-3a7a80d5bc27)

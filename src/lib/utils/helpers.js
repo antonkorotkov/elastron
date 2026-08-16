@@ -27,6 +27,19 @@ export const humanStoreSizeToPseudoBytes = size => {
 export const isIndexNameValid = indexName => /^[a-z0-9\-_]+$/.test(indexName)
 
 /**
+ * Elasticsearch reports its version as `{ number: '8.12.0', ... }`, but it is
+ * passed around as the bare number string. Accept either and return the string,
+ * or null when the server did not report one.
+ *
+ * @param {object|string} version
+ * @returns {string|null}
+ */
+export const getVersionNumber = version => {
+    if (version && typeof version === 'object') version = version.number
+    return typeof version === 'string' && version ? version : null
+}
+
+/**
  * @param {array} data
  * @param {string} search
  * @returns {array}
@@ -134,3 +147,22 @@ export const allocationSortPredicate = (column, index) => o => {
             return o[index]
     }
 }
+
+/**
+ * Parse JSON typed into an editor, treating an empty document as `{}`.
+ * Throws a SyntaxError on malformed input — callers report it to the user.
+ *
+ * @param {string} text
+ * @returns {any}
+ */
+export const parseJsonBody = (text = '') => {
+    const trimmed = (text || '').trim()
+    return trimmed ? JSON.parse(trimmed) : {}
+}
+
+/**
+ * @param {Error} error
+ * @returns {string} notification message for an unparseable request body
+ */
+export const invalidJsonBodyMessage = error =>
+    `Request body is not valid JSON: ${error.message}`

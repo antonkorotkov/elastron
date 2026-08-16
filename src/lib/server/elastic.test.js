@@ -133,6 +133,19 @@ describe('createClient', () => {
 		expect(client._version).toBe('9');
 	});
 
+	it('selects the client from a raw elasticsearch version object', () => {
+		const client = createClient({
+			host: 'localhost',
+			version: { number: '9.0.0', build_flavor: 'default' },
+		});
+		expect(client._version).toBe('9');
+	});
+
+	it('defaults to version 8 client for an unusable version value', () => {
+		expect(createClient({ host: 'localhost', version: {} })._version).toBe('8');
+		expect(createClient({ host: 'localhost', version: 9 })._version).toBe('8');
+	});
+
 	it('defaults to version 8 client if version is missing or not 9', () => {
 		const client = createClient({
 			host: 'localhost',

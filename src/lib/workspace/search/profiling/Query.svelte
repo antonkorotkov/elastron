@@ -13,7 +13,7 @@
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 
-	let timeInNanos = $derived(profiling.query(query).getNanos($server.version.number))
+	let timeInNanos = $derived(profiling.query(query).getNanos($server.version))
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
@@ -25,15 +25,15 @@
 	role="navigation"
 >
 	<i class="dropdown icon"></i>
-	{profiling.query(query).getType($server.version.number)}
+	{profiling.query(query).getType($server.version)}
 	<small class="ui label">
-		{profiling.query(query).getDescription($server.version.number)}
+		{profiling.query(query).getDescription($server.version)}
 	</small>
 	<small
 		class="ui label"
 		style="background-color:{getTimeColor(
 			timeInNanos,
-			queries.map(q => profiling.query(q).getNanos($server.version.number))
+			queries.map(q => profiling.query(q).getNanos($server.version))
 		)}"
 	>
 		{getTimeMillis(timeInNanos || 0)}ms

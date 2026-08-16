@@ -1,5 +1,6 @@
 import API, { openTunnel, closeTunnel } from '../api/elasticsearch'
 import { setStorage } from '../utils/storage'
+import { getVersionNumber } from '../utils/helpers'
 
 export const initialSshConfig = {
 	host: '',
@@ -86,18 +87,16 @@ export const connection = store => {
 			if (test.success) {
 				store.dispatch('connected')
 
+				const version = getVersionNumber(test.version)
+
 				const updatedConnection = {
 					...state.connection,
-					version: test.version.number || test.version
+					version
 				};
 
 				store.dispatch('history/connection/add', updatedConnection)
-				store.dispatch('server/update', {
-					version: test.version.number || test.version,
-				})
-				store.dispatch('connection/update', {
-					version: test.version.number || test.version
-				})
+				store.dispatch('server/update', { version })
+				store.dispatch('connection/update', { version })
 				setStorage('lastConnection', updatedConnection);
 			} else {
 				store.dispatch('disconnected')

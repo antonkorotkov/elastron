@@ -24,7 +24,7 @@ vi.mock('@storeon/svelte', () => ({
 		return {
 			dispatch: vi.fn(),
 			connection: writable({ name: 'Local Server' }),
-			server: writable({ version: { number: '8.12.0' } }),
+			server: writable({ version: '8.12.0' }),
 			internet: writable({ online: true }),
 		};
 	},

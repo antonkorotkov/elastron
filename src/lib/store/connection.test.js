@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createStoreon } from 'storeon';
 import { connection, initialConnection, initialSshConfig } from './connection';
+import API from '../api/elasticsearch';
 
 // Mock API and storage
 vi.mock('../api/elasticsearch', () => ({
@@ -79,6 +80,29 @@ describe('connection store module', () => {
 	it('initialSshConfig has correct defaults', () => {
 		expect(initialSshConfig.port).toBe('22');
 		expect(initialSshConfig.authMethod).toBe('password');
+	});
+
+	describe('connection/save', () => {
+		const save = () =>
+			new Promise(resolve => store.dispatch('connection/save', resolve));
+
+		const mockTest = result => {
+			API.mockImplementation(function () {
+				this.test = async () => result;
+			});
+		};
+
+		it('stores the version number from the elasticsearch response', async () => {
+			mockTest({ success: true, version: { number: '8.12.0' } });
+			await save();
+			expect(store.get().connection.version).toBe('8.12.0');
+		});
+
+		it('stores a null version when the server reports none', async () => {
+			mockTest({ success: true });
+			await save();
+			expect(store.get().connection.version).toBe(null);
+		});
 	});
 
 	it('clears SSH tunnel fields on connection/clear', () => {

@@ -5,7 +5,11 @@
 
 	import isEmpty from 'lodash/isEmpty'
 	import get from 'lodash/get'
-	import { isThemeToggleChecked } from '../../utils/helpers'
+	import {
+		invalidJsonBodyMessage,
+		isThemeToggleChecked,
+		parseJsonBody,
+	} from '../../utils/helpers'
 
 	let { qEditor } = $props()
 
@@ -36,7 +40,7 @@
 
 	const onBodyPaginationChanged = page => {
 		try {
-			const requestBody = qEditor.get()
+			const requestBody = parseJsonBody(qEditor.getText())
 			const size = get(requestBody, 'size', 10)
 			requestBody.from = size * page
 			qEditor.set(requestBody)
@@ -45,7 +49,10 @@
 		} catch (error) {
 			dispatch('notification/add', {
 				type: 'error',
-				message: error.message,
+				message:
+					error instanceof SyntaxError
+						? invalidJsonBodyMessage(error)
+						: error.message,
 			})
 		}
 	}
