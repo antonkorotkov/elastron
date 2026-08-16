@@ -24,6 +24,7 @@ vi.mock('@storeon/svelte', () => ({
 		indices: writable({ data: [['idx', 'yellow', 'open']], columns: ['index', 'health', 'status'] }),
 		connection: writable({}),
 		server: writable({ version: '8.0.0' }),
+		mappings: writable({ info: {}, loading: {}, error: {} }),
 		dispatch
 	})
 }));

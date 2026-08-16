@@ -166,3 +166,23 @@ export const parseJsonBody = (text = '') => {
  */
 export const invalidJsonBodyMessage = error =>
     `Request body is not valid JSON: ${error.message}`
+
+/**
+ * Reads the request body straight out of a JSON editor so a caller never acts
+ * on a body the user has since edited. Falls back to the last known good body
+ * when no editor is mounted, and returns `{ error }` on malformed JSON.
+ *
+ * @param {{ getText?: () => string }} editor
+ * @param {object} fallback
+ * @returns {{ requestBody?: object, error?: Error }}
+ */
+export const readEditorJson = (editor, fallback = {}) => {
+    if (!editor || typeof editor.getText !== 'function')
+        return { requestBody: fallback }
+
+    try {
+        return { requestBody: parseJsonBody(editor.getText()) }
+    } catch (error) {
+        return { error }
+    }
+}

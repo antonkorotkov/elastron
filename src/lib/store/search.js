@@ -4,6 +4,11 @@ import isEmpty from 'lodash/isEmpty'
 import { getMessageFromError } from '../utils/helpers'
 import omit from 'lodash/omit'
 import { setStorage } from '../utils/storage'
+import {
+	pruneTableConfigs,
+	sanitizeColumns,
+	sanitizeTableConfigs,
+} from '../utils/tableHelpers'
 
 const initialState = {
 	profiling: false,
@@ -221,17 +226,25 @@ export const search = store => {
 		return {
 			search: {
 				...state.search,
-				tableConfigs: tableConfigs || {},
+				tableConfigs: sanitizeTableConfigs(tableConfigs),
 			}
 		}
 	})
 
-	store.on('search/tableConfigs/update', (state, { connectionKey, indexName, config }) => {
-		const tableConfigs = {
-			...state.search.tableConfigs,
-			[`${connectionKey}_${indexName}`]: config,
-		}
+	/**
+	 * Saves the table layout for an index. An empty column list deletes the
+	 * entry rather than storing one, so "no saved layout" stays distinguishable
+	 * from "a layout that happens to match the defaults".
+	 */
+	store.on('search/tableConfigs/update', (state, { index, config }) => {
+		const key = String(index ?? '').trim() || '_all'
+		const columns = sanitizeColumns(config?.columns)
 
+		const next = { ...state.search.tableConfigs }
+		if (columns.length) next[key] = { columns }
+		else delete next[key]
+
+		const tableConfigs = pruneTableConfigs(next, key)
 		setStorage('tableConfigs', tableConfigs)
 
 		return {

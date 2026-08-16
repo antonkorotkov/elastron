@@ -487,7 +487,7 @@
 				</div>
 			{/if}
 			<div class="editor-wrapper" class:hidden={$search.view !== 'table'}>
-				<ResultsTable />
+				<ResultsTable {qEditor} />
 			</div>
 			<div
 				class="editor-wrapper"

@@ -1,366 +1,295 @@
 <script>
 	import { useStoreon } from '@storeon/svelte'
-	import { getContext } from 'svelte'
-	import get from 'lodash/get'
+	import { SvelteSet } from 'svelte/reactivity'
 	import isEmpty from 'lodash/isEmpty'
-	import API from '../../api/elasticsearch'
-	import { isThemeToggleChecked } from '../../utils/helpers'
+
+	import ColumnsSidebar from './results-table/ColumnsSidebar.svelte'
+	import RowDetail from './results-table/RowDetail.svelte'
+	import { isFetchableIndex } from '../../store/elasticsearch/mappings'
 	import {
-		getAvailableFields,
+		invalidJsonBodyMessage,
+		isThemeToggleChecked,
+		readEditorJson,
+	} from '../../utils/helpers'
+	import {
+		CELL_MAX_CHARS,
+		META_FIELDS,
+		MAX_RENDERED_ROWS,
+		TITLE_MAX_CHARS,
+		addColumn,
+		buildBodySort,
+		buildFieldIndex,
+		buildUriSort,
+		cellValue,
+		clampColumnWidth,
+		columnWidth,
+		columnsOf,
+		currentSortState,
 		formatCompactJSON,
-		flattenObject,
+		getAvailableFields,
+		isConfigured,
+		moveColumn,
+		removeColumn,
+		renameColumn,
+		resolveSortTarget,
+		setColumnWidth,
 	} from '../../utils/tableHelpers'
 
-	const { dispatch, search, connection, app } = useStoreon(
+	/**
+	 * @typedef {Object} Props
+	 * @property {{ getText?: () => string, set?: (json: object) => void }} [qEditor]
+	 *   the request body editor, so sorting in body mode rewrites the body the
+	 *   user can see rather than a copy of it
+	 */
+
+	/** @type {Props} */
+	let { qEditor = null } = $props()
+
+	const { dispatch, search, app, mappings } = useStoreon(
 		'search',
-		'connection',
-		'app'
+		'app',
+		'mappings'
 	)
 
+	const EXPAND_COLUMN_WIDTH = 45
+
 	let sidebarOpen = $state(true)
-	let searchQuery = $state('')
-	let indexMapping = $state(null)
-	let loadingMapping = $state(false)
+	let expandedRows = new SvelteSet()
+	let rowTabs = $state({})
 
-	// Column renaming state
-	let editingField = $state(null)
-	let renameValue = $state('')
-
-	// Table sorting state
-	let sortField = $state(null)
-	let sortDirection = $state('asc') // 'asc' | 'desc'
-
-	// Row expansion state
-	let expandedRows = $state(new Set())
-	let rowTabs = $state({}) // { [rowId]: 'table' | 'json' }
+	// Geometry of an in-progress column drag. `resizeField` drives the listener
+	// effect, `resizePreview` the live width; the rest is deliberately outside
+	// reactive state so a mousemove cannot re-run the effect that installed it.
+	let resizeField = $state(null)
+	let resizePreview = $state(0)
+	let resizeGeometry = null
 
 	let inverted = $derived(isThemeToggleChecked($app?.theme))
 
-	// Fetch index mapping reactively when index or connection changes
-	$effect(() => {
-		const index = $search?.index
-		const conn = $connection
+	let active = $derived($search?.view === 'table')
+	let indexName = $derived(String($search?.index ?? '').trim() || '_all')
 
-		const fetchMapping = async () => {
-			if (!index || index === '_all' || index.includes(',')) {
-				indexMapping = null
-				return
-			}
-			loadingMapping = true
-			try {
-				const api = new API(conn)
-				const info = await api.getIndex(index)
-				indexMapping = info
-			} catch (err) {
-				console.error('Failed to fetch index mapping:', err)
-				indexMapping = null
-			} finally {
-				loadingMapping = false
-			}
-		}
+	let mappingInfo = $derived($mappings?.info?.[indexName] ?? null)
+	let loadingMapping = $derived(!!$mappings?.loading?.[indexName])
+	let fieldIndex = $derived(buildFieldIndex(mappingInfo))
 
-		fetchMapping()
-	})
+	let config = $derived($search?.tableConfigs?.[indexName] ?? null)
+	let configured = $derived(isConfigured(config))
+	let columns = $derived(columnsOf(config))
 
-	// Table configuration for the current connection and index
-	let configKey = $derived(
-		`${$connection?.name || $connection?.host || 'default'}_${$search?.index || '_all'}`
-	)
+	let observedFields = $derived(getAvailableFields(mappingInfo, $search?.results))
+	let selectableFields = $derived([
+		...META_FIELDS,
+		...observedFields.filter(field => !META_FIELDS.includes(field)),
+	])
 
-	let currentConfig = $derived(
-		($search?.tableConfigs && $search.tableConfigs[configKey]) || {
-			columns: [
-				{ field: '_id', name: '_id' },
-				{ field: '_source', name: '_source' },
-			],
-		}
-	)
+	let sortState = $derived(currentSortState($search))
 
-	let columns = $derived(currentConfig.columns)
+	let hits = $derived(Array.isArray($search?.results) ? $search.results : [])
+	let visibleHits = $derived(hits.slice(0, MAX_RENDERED_ROWS))
+	let hiddenCount = $derived(hits.length - visibleHits.length)
 
-	// List of all unique fields from mapping + results
-	let allFields = $derived(getAvailableFields(indexMapping, $search?.results))
-
-	// Filter available fields based on search input
-	let filteredAvailableFields = $derived(
-		allFields.filter(
-			field =>
-				field.toLowerCase().includes(searchQuery.toLowerCase()) &&
-				!columns.some(col => col.field === field)
+	let tableWidth = $derived(
+		columns.reduce(
+			(total, column) => total + displayWidth(column),
+			EXPAND_COLUMN_WIDTH
 		)
 	)
 
-	// Client-side sorting of the current search hits
-	let sortedResults = $derived.by(() => {
-		const hits = Array.isArray($search?.results) ? [...$search.results] : []
-		if (!sortField) return hits
-
-		return hits.sort((a, b) => {
-			let valA = sortField === '_id' ? a._id : get(a._source, sortField)
-			let valB = sortField === '_id' ? b._id : get(b._source, sortField)
-
-			if (valA === undefined || valA === null) valA = ''
-			if (valB === undefined || valB === null) valB = ''
-
-			if (typeof valA === 'object') valA = JSON.stringify(valA)
-			if (typeof valB === 'object') valB = JSON.stringify(valB)
-
-			if (valA < valB) return sortDirection === 'asc' ? -1 : 1
-			if (valA > valB) return sortDirection === 'asc' ? 1 : -1
-			return 0
-		})
+	// The table stays mounted behind the view toggle, so the mapping is only
+	// worth fetching once the user actually looks at it. The store owns the
+	// caching, so a repeat dispatch is a no-op and a failed index can retry.
+	$effect(() => {
+		if (!active || !isFetchableIndex(indexName)) return
+		dispatch('elasticsearch/mappings/fetch', { index: indexName })
 	})
 
-	const saveConfig = (updatedConfig) => {
+	// Matching a row across two different queries is coincidence, not intent.
+	let lastResults = null
+	$effect(() => {
+		const results = $search?.results
+		if (results === lastResults) return
+		lastResults = results
+		expandedRows.clear()
+		rowTabs = {}
+	})
+
+	$effect(() => {
+		const field = resizeField
+		if (!field) return
+
+		const onMove = event => {
+			resizePreview = resizeGeometry.startWidth + (event.clientX - resizeGeometry.startX)
+		}
+		const onUp = () => {
+			// A click on the handle that never moved must not persist a layout:
+			// that would turn an index with no saved columns into a configured
+			// one holding nothing but the defaults.
+			if (resizePreview !== resizeGeometry.startWidth) {
+				saveColumns(setColumnWidth(columns, field, resizePreview))
+			}
+			resizeField = null
+			resizeGeometry = null
+		}
+
+		window.addEventListener('mousemove', onMove)
+		window.addEventListener('mouseup', onUp)
+		return () => {
+			window.removeEventListener('mousemove', onMove)
+			window.removeEventListener('mouseup', onUp)
+		}
+	})
+
+	function displayWidth(column) {
+		return column.field === resizeField
+			? clampColumnWidth(resizePreview)
+			: columnWidth(column)
+	}
+
+	const saveColumns = nextColumns =>
 		dispatch('search/tableConfigs/update', {
-			connectionKey: $connection?.name || $connection?.host || 'default',
-			indexName: $search?.index || '_all',
-			config: updatedConfig,
+			index: indexName,
+			config: { columns: nextColumns },
 		})
+
+	const toggleColumn = field => {
+		const selected = columns.some(column => column.field === field)
+		saveColumns(
+			selected
+				? removeColumn(columns, field)
+				: addColumn(columns, field, configured)
+		)
 	}
 
-	const toggleColumn = (field) => {
-		let cols = [...columns]
-		const idx = cols.findIndex(c => c.field === field)
+	const onMoveColumn = (from, to) => saveColumns(moveColumn(columns, from, to))
 
-		if (idx > -1) {
-			// Remove column
-			cols.splice(idx, 1)
-			if (cols.length === 0) {
-				cols = [
-					{ field: '_id', name: '_id' },
-					{ field: '_source', name: '_source' },
-				]
+	const onRenameColumn = (field, name) =>
+		saveColumns(renameColumn(columns, field, name))
+
+	// Saving an empty layout deletes the entry, returning the index to defaults.
+	const resetColumns = () => saveColumns([])
+
+	const onResizeStart = (event, column) => {
+		event.preventDefault()
+		event.stopPropagation()
+		resizeGeometry = { startX: event.clientX, startWidth: columnWidth(column) }
+		resizePreview = resizeGeometry.startWidth
+		resizeField = column.field
+	}
+
+	/**
+	 * Sorting goes to the cluster, not to the loaded page: sorting ten of ten
+	 * thousand hits and presenting it as an ordering would be a lie. Offset is
+	 * reset because page 5 of a re-sorted result set is an arbitrary window.
+	 */
+	const applySort = (field, direction) => {
+		if ($search.type === 'body') {
+			const { requestBody, error } = readEditorJson(qEditor, $search.requestBody)
+			if (error) {
+				dispatch('notification/add', {
+					type: 'error',
+					message: invalidJsonBodyMessage(error),
+				})
+				return
 			}
+
+			const nextBody = {
+				...requestBody,
+				sort: buildBodySort(field, direction),
+				from: 0,
+			}
+			if (typeof qEditor?.set === 'function') qEditor.set(nextBody)
+			dispatch('search/update', { requestBody: nextBody })
 		} else {
-			// Add column
-			const isDefault =
-				cols.length === 2 &&
-				cols.some(c => c.field === '_id') &&
-				cols.some(c => c.field === '_source')
-
-			if (isDefault) {
-				cols = cols.filter(c => c.field !== '_source')
-			}
-			cols.push({ field, name: field })
+			dispatch('search/update', {
+				sort: buildUriSort(field, direction),
+				from: 0,
+			})
 		}
 
-		saveConfig({ columns: cols })
+		dispatch('search/run')
 	}
 
-	const moveColumnUp = (index) => {
-		if (index === 0) return
-		const cols = [...columns]
-		const temp = cols[index]
-		cols[index] = cols[index - 1]
-		cols[index - 1] = temp
-		saveConfig({ columns: cols })
+	const sortTargetOf = column => resolveSortTarget(column.field, fieldIndex)
+
+	const sortDirectionOf = column => {
+		const target = sortTargetOf(column)
+		return target && sortState?.field === target ? sortState.direction : null
 	}
 
-	const moveColumnDown = (index) => {
-		if (index === columns.length - 1) return
-		const cols = [...columns]
-		const temp = cols[index]
-		cols[index] = cols[index + 1]
-		cols[index + 1] = temp
-		saveConfig({ columns: cols })
+	const onHeaderClick = column => {
+		const target = sortTargetOf(column)
+		if (!target) return
+		applySort(target, sortDirectionOf(column) === 'asc' ? 'desc' : 'asc')
 	}
 
-	const startRename = (field, name) => {
-		editingField = field
-		renameValue = name
+	const headerTitle = column => {
+		const target = sortTargetOf(column)
+		if (!target) return `${column.field} cannot be sorted on`
+		if (target !== column.field) return `Sort by ${target}`
+		return `Sort by ${column.field}`
 	}
 
-	const saveRename = (field) => {
-		const cols = columns.map(c => {
-			if (c.field === field) {
-				return { ...c, name: renameValue.trim() || field }
-			}
-			return c
-		})
-		saveConfig({ columns: cols })
-		editingField = null
+	const rowId = (hit, position) => `${position}:${hit?._index}/${hit?._id}`
+
+	const toggleRowExpanded = id => {
+		if (expandedRows.has(id)) expandedRows.delete(id)
+		else expandedRows.add(id)
 	}
 
-	const resetColumns = () => {
-		saveConfig({
-			columns: [
-				{ field: '_id', name: '_id' },
-				{ field: '_source', name: '_source' },
-			],
-		})
-	}
-
-	const handleHeaderClick = (field) => {
-		if (sortField === field) {
-			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc'
-		} else {
-			sortField = field
-			sortDirection = 'asc'
+	const copyToClipboard = async text => {
+		try {
+			await navigator.clipboard.writeText(text)
+			dispatch('notification/add', {
+				type: 'success',
+				message: 'Copied document to clipboard!',
+			})
+		} catch (error) {
+			dispatch('notification/add', {
+				type: 'error',
+				message: `Could not copy to clipboard: ${error.message}`,
+			})
 		}
 	}
-
-	const rowKey = (hit) => `${hit._index}/${hit._id}`
-
-	const toggleRowExpanded = (rowId) => {
-		const next = new Set(expandedRows)
-		if (next.has(rowId)) {
-			next.delete(rowId)
-		} else {
-			next.add(rowId)
-		}
-		expandedRows = next
-	}
-
-	const copyToClipboard = (text) => {
-		navigator.clipboard.writeText(text)
-		dispatch('notification/add', {
-			type: 'success',
-			message: 'Copied document to clipboard!',
-		})
-	}
-
-	const autofocus = (node) => {
-		node.focus()
-	}
-
-	const getRowTab = (id) => rowTabs[id] || 'table'
 </script>
 
 <div class="results-table-container" class:inverted>
-	<!-- Left Collapsible Sidebar -->
 	{#if sidebarOpen}
-		<div class="sidebar-panel" class:inverted>
-			<div class="panel-header">
-				<h3>Columns</h3>
-			</div>
-
-			<!-- Selected Columns List -->
-			<div class="selected-section">
-				<h4 class="section-title">Selected ({columns.length})</h4>
-				<div class="column-list" class:inverted>
-					{#each columns as col, idx}
-						<div class="column-item selected" class:inverted>
-							<div class="col-main">
-								{#if editingField === col.field}
-									<input
-										type="text"
-										class="rename-input"
-										bind:value={renameValue}
-										onblur={() => saveRename(col.field)}
-										onkeydown={e => e.key === 'Enter' && saveRename(col.field)}
-										use:autofocus
-									/>
-								{:else}
-									<span class="col-name" title={col.field}>{col.name}</span>
-									{#if col.field !== col.name}
-										<span class="col-original">({col.field})</span>
-									{/if}
-								{/if}
-							</div>
-							<div class="col-actions">
-								<button
-									class="action-btn"
-									title="Rename"
-									onclick={() => startRename(col.field, col.name)}
-								>
-									<i class="pencil alternate icon"></i>
-								</button>
-								<button
-									class="action-btn"
-									title="Move Up"
-									disabled={idx === 0}
-									onclick={() => moveColumnUp(idx)}
-								>
-									<i class="angle up icon"></i>
-								</button>
-								<button
-									class="action-btn"
-									title="Move Down"
-									disabled={idx === columns.length - 1}
-									onclick={() => moveColumnDown(idx)}
-								>
-									<i class="angle down icon"></i>
-								</button>
-								<button
-									class="action-btn remove-btn"
-									title="Remove Column"
-									onclick={() => toggleColumn(col.field)}
-								>
-									<i class="close icon"></i>
-								</button>
-							</div>
-						</div>
-					{/each}
-				</div>
-			</div>
-
-			<!-- Available Fields Section -->
-			<div class="available-section">
-				<h4 class="section-title">Available Fields</h4>
-				<div class="ui icon input mini fluid search-input" class:inverted>
-					<input
-						type="text"
-						placeholder="Filter fields..."
-						bind:value={searchQuery}
-					/>
-					<i class="search icon"></i>
-				</div>
-				<div class="column-list scrollable" class:inverted>
-					{#if loadingMapping}
-						<div class="ui active mini inline loader"></div>
-					{:else}
-						{#each filteredAvailableFields as field}
-							<!-- svelte-ignore a11y_click_events_have_key_events -->
-							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<div
-								class="column-item available"
-								onclick={() => toggleColumn(field)}
-							>
-								<span class="col-name" title={field}>{field}</span>
-								<i class="plus icon add-icon"></i>
-							</div>
-						{:else}
-							<div class="no-fields">No fields found</div>
-						{/each}
-					{/if}
-				</div>
-			</div>
-		</div>
+		<ColumnsSidebar
+			{columns}
+			{inverted}
+			availableFields={selectableFields}
+			loading={loadingMapping}
+			onToggle={toggleColumn}
+			onMove={onMoveColumn}
+			onRename={onRenameColumn}
+			onReset={resetColumns}
+		/>
 	{/if}
 
-	<!-- Right Main Table Panel -->
 	<div class="table-panel">
-		<!-- Toolbar -->
 		<div class="table-toolbar" class:inverted>
 			<button
 				class="ui button mini"
 				class:inverted
 				onclick={() => (sidebarOpen = !sidebarOpen)}
-				title={sidebarOpen ? 'Hide Sidebar' : 'Show Sidebar'}
+				title={sidebarOpen ? 'Hide the column picker' : 'Show the column picker'}
 			>
 				<i class="columns icon"></i>
 				{sidebarOpen ? 'Hide Columns' : 'Columns'}
 			</button>
-			<button
-				class="ui button mini basic red"
-				class:inverted
-				onclick={resetColumns}
-				title="Reset to default columns"
-			>
-				<i class="undo icon"></i>
-				Reset
-			</button>
 			<div class="stats-label">
-				Showing {sortedResults.length} document{sortedResults.length === 1
-					? ''
-					: 's'}
+				{#if hiddenCount > 0}
+					Showing {visibleHits.length} of {hits.length} documents — reduce Size
+					or refine the query to see the rest
+				{:else}
+					Showing {hits.length} document{hits.length === 1 ? '' : 's'}
+				{/if}
 			</div>
 		</div>
 
-		<!-- Scrollable Table Container -->
 		<div class="table-scroll-wrapper">
-			{#if isEmpty(sortedResults)}
+			{#if isEmpty(visibleHits)}
 				<div class="ui placeholder segment center aligned" class:inverted>
 					<div class="ui icon header">
 						<i class="search icon"></i>
@@ -368,207 +297,110 @@
 					</div>
 				</div>
 			{:else}
-				<table class="ui celled compact table" class:inverted>
+				<table
+					class="ui celled compact table results-grid"
+					class:inverted
+					style="width: {tableWidth}px"
+				>
+					<colgroup>
+						<col style="width: {EXPAND_COLUMN_WIDTH}px" />
+						{#each columns as column (column.field)}
+							<col style="width: {displayWidth(column)}px" />
+						{/each}
+					</colgroup>
 					<thead>
 						<tr>
 							<th class="expand-header-col"></th>
-							{#each columns as col}
-								<!-- svelte-ignore a11y_click_events_have_key_events -->
-								<!-- svelte-ignore a11y_no_static_element_interactions -->
+							{#each columns as column (column.field)}
+								{@const direction = sortDirectionOf(column)}
+								{@const sortable = !!sortTargetOf(column)}
 								<th
-									class="sortable-header"
-									onclick={() => handleHeaderClick(col.field)}
+									class:resizing={resizeField === column.field}
+									title={headerTitle(column)}
 								>
-									<div class="header-content">
-										<span>{col.name}</span>
-										{#if sortField === col.field}
+									<button
+										type="button"
+										class="header-content"
+										class:sortable
+										disabled={!sortable}
+										onclick={() => onHeaderClick(column)}
+									>
+										<span class="header-label">{column.name}</span>
+										{#if direction}
 											<i
 												class="sort icon"
-												class:up={sortDirection === 'asc'}
-												class:down={sortDirection === 'desc'}
+												class:up={direction === 'asc'}
+												class:down={direction === 'desc'}
 											></i>
 										{/if}
-									</div>
+									</button>
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									<span
+										class="col-resizer"
+										onmousedown={event => onResizeStart(event, column)}
+									></span>
 								</th>
 							{/each}
 						</tr>
 					</thead>
 					<tbody>
-						{#each sortedResults as hit, hitIdx (rowKey(hit))}
-							{@const key = rowKey(hit)}
+						{#each visibleHits as hit, position (rowId(hit, position))}
+							{@const id = rowId(hit, position)}
+							{@const expanded = expandedRows.has(id)}
 							<tr class="data-row">
 								<td class="center aligned expand-cell">
 									<button
 										class="expand-row-btn"
-										onclick={() => toggleRowExpanded(key)}
-										title={expandedRows.has(key)
-											? 'Collapse row'
-											: 'Expand row'}
+										aria-expanded={expanded}
+										aria-label={expanded ? 'Collapse row' : 'Expand row'}
+										title={expanded ? 'Collapse row' : 'Expand row'}
+										onclick={() => toggleRowExpanded(id)}
 									>
 										<i
 											class="caret icon"
-											class:right={!expandedRows.has(key)}
-											class:down={expandedRows.has(key)}
+											class:right={!expanded}
+											class:down={expanded}
 										></i>
 									</button>
 								</td>
-								{#each columns as col}
-									<td class="cell-value" title={col.field}>
-										{#if col.field === '_id'}
-											<span class="meta-tag">{hit._id}</span>
-										{:else if col.field === '_index'}
-											<span class="meta-tag index-tag">{hit._index}</span>
-										{:else if col.field === '_source'}
-											{formatCompactJSON(hit._source)}
+								{#each columns as column (column.field)}
+									<td
+										class="cell-value"
+										title={formatCompactJSON(
+											cellValue(hit, column.field),
+											TITLE_MAX_CHARS
+										)}
+									>
+										{#if column.field === '_id' || column.field === '_index'}
+											<span
+												class="meta-tag"
+												class:index-tag={column.field === '_index'}
+											>
+												{cellValue(hit, column.field)}
+											</span>
 										{:else}
-											{formatCompactJSON(get(hit._source, col.field))}
+											{formatCompactJSON(
+												cellValue(hit, column.field),
+												CELL_MAX_CHARS
+											)}
 										{/if}
 									</td>
 								{/each}
 							</tr>
 
-							<!-- Expanded Row Detail Panel -->
-							{#if expandedRows.has(key)}
+							{#if expanded}
 								<tr class="expanded-row">
 									<td></td>
 									<td colspan={columns.length} class="detail-container-cell">
-										<div class="detail-panel" class:inverted>
-											<!-- Detail Tabs Menu -->
-											<div class="ui pointing secondary menu" class:inverted>
-												<button
-													type="button"
-													class="item"
-													class:active={getRowTab(key) === 'table'}
-													onclick={() => (rowTabs[key] = 'table')}
-												>
-													Table View
-												</button>
-												<button
-													type="button"
-													class="item"
-													class:active={getRowTab(key) === 'json'}
-													onclick={() => (rowTabs[key] = 'json')}
-												>
-													JSON View
-												</button>
-												<div class="right menu">
-													<button
-														class="ui button mini basic compact"
-														class:inverted
-														onclick={() =>
-															copyToClipboard(
-																JSON.stringify(hit._source, null, 2)
-															)}
-													>
-														<i class="copy icon"></i> Copy JSON
-													</button>
-												</div>
-											</div>
-
-											<!-- Tab Content -->
-											<div class="tab-content">
-												{#if getRowTab(hit._id) === 'table'}
-													<!-- Flattened key-value table -->
-													<div class="flattened-table-wrapper">
-														<table
-															class="ui very basic compact table flattened-table"
-															class:inverted
-														>
-															<thead>
-																<tr>
-																	<th width="35%">Field</th>
-																	<th width="50%">Value</th>
-																	<th width="15%">Actions</th>
-																</tr>
-															</thead>
-															<tbody>
-																<!-- _id row -->
-																<tr>
-																	<td class="field-key">_id</td>
-																	<td class="field-val">
-																		<span class="meta-tag">{hit._id}</span>
-																	</td>
-																	<td>
-																		<button
-																			class="ui button mini compact"
-																			class:inverted
-																			class:blue={columns.some(
-																				c => c.field === '_id'
-																			)}
-																			onclick={() => toggleColumn('_id')}
-																		>
-																			{columns.some(c => c.field === '_id')
-																				? 'Remove'
-																				: 'Add'}
-																		</button>
-																	</td>
-																</tr>
-																<!-- _index row -->
-																<tr>
-																	<td class="field-key">_index</td>
-																	<td class="field-val">
-																		<span class="meta-tag index-tag"
-																			>{hit._index}</span
-																		>
-																	</td>
-																	<td>
-																		<button
-																			class="ui button mini compact"
-																			class:inverted
-																			class:blue={columns.some(
-																				c => c.field === '_index'
-																			)}
-																			onclick={() => toggleColumn('_index')}
-																		>
-																			{columns.some(c => c.field === '_index')
-																				? 'Remove'
-																				: 'Add'}
-																		</button>
-																	</td>
-																</tr>
-
-																<!-- Flat _source properties -->
-																{#each flattenObject(hit._source) as field}
-																	<tr>
-																		<td class="field-key">{field}</td>
-																		<td class="field-val">
-																			<code>
-																				{JSON.stringify(
-																					get(hit._source, field)
-																				)}
-																			</code>
-																		</td>
-																		<td>
-																			<button
-																				class="ui button mini compact"
-																				class:inverted
-																				class:blue={columns.some(
-																					c => c.field === field
-																				)}
-																				onclick={() => toggleColumn(field)}
-																			>
-																				{columns.some(c => c.field === field)
-																					? 'Remove'
-																					: 'Add'}
-																			</button>
-																		</td>
-																	</tr>
-																{/each}
-															</tbody>
-														</table>
-													</div>
-												{:else}
-													<!-- Pretty raw JSON view -->
-													<div class="json-code-wrapper">
-														<pre><code>{JSON.stringify(
-																	hit._source,
-																	null,
-																	2
-																)}</code></pre>
-													</div>
-												{/if}
-											</div>
-										</div>
+										<RowDetail
+											{hit}
+											{columns}
+											{inverted}
+											tab={rowTabs[id] ?? 'table'}
+											onTab={tab => (rowTabs[id] = tab)}
+											onToggleColumn={toggleColumn}
+											onCopy={copyToClipboard}
+										/>
 									</td>
 								</tr>
 							{/if}
@@ -595,190 +427,6 @@
 		}
 	}
 
-	/* Sidebar Panel Styles */
-	.sidebar-panel {
-		width: 280px;
-		border-right: 1px solid #e0e0e0;
-		display: flex;
-		flex-direction: column;
-		padding: 1rem;
-		background: #fafafa;
-		flex-shrink: 0;
-
-		&.inverted {
-			border-color: #555;
-			background: #252627;
-		}
-
-		.panel-header h3 {
-			margin-top: 0;
-			margin-bottom: 1rem;
-		}
-
-		.section-title {
-			margin-top: 0.5rem;
-			margin-bottom: 0.5rem;
-			font-size: 0.9rem;
-			color: #666;
-			text-transform: uppercase;
-			letter-spacing: 0.5px;
-		}
-
-		.selected-section {
-			margin-bottom: 1.5rem;
-			max-height: 40%;
-			display: flex;
-			flex-direction: column;
-
-			.column-list {
-				overflow-y: auto;
-				flex: 1;
-				border: 1px solid #e0e0e0;
-				border-radius: 4px;
-				background: #fff;
-
-				&.inverted {
-					border-color: #555;
-					background: #1b1c1d;
-				}
-			}
-		}
-
-		.available-section {
-			flex: 1;
-			display: flex;
-			flex-direction: column;
-			min-height: 0;
-
-			.search-input {
-				margin-bottom: 0.5rem;
-			}
-
-			.column-list.scrollable {
-				flex: 1;
-				overflow-y: auto;
-				border: 1px solid #e0e0e0;
-				border-radius: 4px;
-				background: #fff;
-
-				&.inverted {
-					border-color: #555;
-					background: #1b1c1d;
-				}
-			}
-		}
-
-		.column-list {
-			padding: 4px;
-		}
-
-		.column-item {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			padding: 6px 8px;
-			margin-bottom: 4px;
-			border-radius: 3px;
-			font-size: 0.85rem;
-
-			&.selected {
-				background: #f0f4f8;
-				border: 1px solid #d0e0f0;
-
-				&.inverted {
-					background: #1e3a5f;
-					border-color: #2b5c8f;
-					color: #fff;
-				}
-			}
-
-			&.available {
-				cursor: pointer;
-				&:hover {
-					background: #f5f5f5;
-				}
-			}
-
-			.col-main {
-				flex: 1;
-				min-width: 0;
-				display: flex;
-				align-items: center;
-				gap: 4px;
-			}
-
-			.rename-input {
-				width: 100%;
-				padding: 2px 4px;
-				font-size: 0.85rem;
-				border: 1px solid #2185d0;
-				border-radius: 3px;
-				outline: none;
-			}
-
-			.col-name {
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-				font-weight: 500;
-			}
-
-			.col-original {
-				font-size: 0.75rem;
-				color: #888;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			}
-
-			.col-actions {
-				display: flex;
-				align-items: center;
-				gap: 2px;
-				flex-shrink: 0;
-			}
-
-			.action-btn {
-				background: none;
-				border: none;
-				padding: 2px;
-				cursor: pointer;
-				color: #777;
-
-				&:hover:not(:disabled) {
-					color: #2185d0;
-				}
-
-				&:disabled {
-					opacity: 0.3;
-					cursor: not-allowed;
-				}
-			}
-
-			.remove-btn:hover {
-				color: #db2828 !important;
-			}
-
-			.add-icon {
-				color: #21ba45;
-				font-size: 0.8rem;
-				opacity: 0.7;
-			}
-
-			&:hover .add-icon {
-				opacity: 1;
-			}
-		}
-
-		.no-fields {
-			padding: 10px;
-			color: #999;
-			text-align: center;
-			font-size: 0.85rem;
-		}
-	}
-
-	/* Table Panel Styles */
 	.table-panel {
 		flex: 1;
 		display: flex;
@@ -804,6 +452,7 @@
 			margin-left: auto;
 			font-size: 0.85rem;
 			color: #777;
+			text-align: right;
 		}
 	}
 
@@ -812,56 +461,46 @@
 		overflow: auto;
 	}
 
-	/* Table grid refinements */
-	table.table {
+	.results-grid {
 		margin: 0 !important;
 		border-radius: 0 !important;
 		border-left: none !important;
 		border-right: none !important;
 		border-bottom: none !important;
 		table-layout: fixed;
-		width: 100%;
+		min-width: 100%;
 
 		th {
+			// `sticky` also makes the header the containing block the resize
+			// handle positions itself against.
 			position: sticky;
 			top: 0;
 			z-index: 10;
+			overflow: hidden;
 			background: #f9fafb !important;
 			box-shadow: 0 1px 0 #d4d4d5;
+			padding: 0 !important;
+
+			&.resizing {
+				background: #eef3f8 !important;
+			}
 		}
 
 		&.inverted th {
 			background: #202122 !important;
 			box-shadow: 0 1px 0 #555;
 			color: #fff !important;
-		}
 
-		.sortable-header {
-			cursor: pointer;
-			user-select: none;
-
-			&:hover {
-				background: #f2f2f2 !important;
+			&.resizing {
+				background: #2d2e2f !important;
 			}
 		}
 
-		&.inverted .sortable-header:hover {
-			background: #2d2e2f !important;
-		}
-
-		.header-content {
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			gap: 6px;
-		}
-
 		.expand-header-col {
-			width: 45px;
+			padding: 0 !important;
 		}
 
 		.expand-cell {
-			width: 45px;
 			padding: 0 !important;
 		}
 
@@ -878,11 +517,19 @@
 			}
 		}
 
+		&.inverted .expand-row-btn {
+			color: #ccc;
+		}
+
 		.cell-value {
 			overflow: hidden;
 			text-overflow: ellipsis;
 			white-space: nowrap;
 			font-size: 0.85rem;
+			// Pinned in px to match `.header-content`: Semantic sizes header and
+			// body padding in `em` against two different font sizes, which left
+			// the column text a few pixels out of alignment with its heading.
+			padding: 6px 10px !important;
 		}
 
 		.meta-tag {
@@ -910,7 +557,54 @@
 		}
 	}
 
-	/* Expanded Details Styles */
+	.header-content {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 6px;
+		width: 100%;
+		padding: 10px;
+		background: none;
+		border: none;
+		font: inherit;
+		color: inherit;
+		text-align: left;
+		cursor: default;
+
+		&.sortable {
+			cursor: pointer;
+
+			&:hover {
+				background: rgba(0, 0, 0, 0.05);
+			}
+		}
+
+		&:disabled {
+			opacity: 0.75;
+		}
+	}
+
+	.header-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.col-resizer {
+		position: absolute;
+		top: 0;
+		right: 0;
+		width: 7px;
+		height: 100%;
+		cursor: col-resize;
+		user-select: none;
+
+		&:hover {
+			background: #2185d0;
+			opacity: 0.4;
+		}
+	}
+
 	.expanded-row {
 		background: #f9f9f9 !important;
 
@@ -919,7 +613,7 @@
 		}
 	}
 
-	:global(.inverted) .expanded-row {
+	.results-table-container.inverted .expanded-row {
 		background: #161718 !important;
 
 		&:hover {
@@ -930,104 +624,5 @@
 	.detail-container-cell {
 		padding: 1.2rem !important;
 		border-top: none !important;
-	}
-
-	.detail-panel {
-		background: #fff;
-		border: 1px solid #d4d4d5;
-		border-radius: 4px;
-		padding: 1rem;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-
-		&.inverted {
-			background: #1f2021;
-			border-color: #555;
-			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-		}
-
-		.menu {
-			margin-bottom: 1rem !important;
-		}
-
-		.tab-content {
-			min-height: 150px;
-		}
-	}
-
-	/* Flattened field table styling */
-	.flattened-table-wrapper {
-		max-height: 400px;
-		overflow-y: auto;
-		border: 1px solid #f0f0f0;
-		border-radius: 4px;
-	}
-
-	.flattened-table {
-		margin: 0 !important;
-
-		td {
-			padding: 8px 12px !important;
-			vertical-align: middle !important;
-		}
-
-		.field-key {
-			font-weight: bold;
-			color: #333;
-			font-family: monospace;
-			font-size: 0.85rem;
-		}
-
-		.field-val {
-			word-break: break-all;
-			font-size: 0.85rem;
-
-			code {
-				background: #f7f7f7;
-				padding: 2px 4px;
-				border-radius: 3px;
-				border: 1px solid #e0e0e0;
-			}
-		}
-	}
-
-	:global(.inverted) {
-		.flattened-table {
-			.field-key {
-				color: #ddd;
-			}
-
-			.field-val code {
-				background: #2b2b2b;
-				border-color: #444;
-				color: #eee;
-			}
-		}
-	}
-
-	/* JSON raw display styling */
-	.json-code-wrapper {
-		max-height: 400px;
-		overflow: auto;
-		background: #f7f7f7;
-		border: 1px solid #e0e0e0;
-		border-radius: 4px;
-		padding: 1rem;
-
-		pre {
-			margin: 0;
-		}
-
-		code {
-			font-family: monospace;
-			font-size: 0.85rem;
-			white-space: pre-wrap;
-			word-wrap: break-word;
-		}
-	}
-
-	:global(.inverted) .json-code-wrapper {
-		background: #111;
-		border-color: #444;
-		color: #21ba45;
 	}
 </style>
