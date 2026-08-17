@@ -98,6 +98,20 @@ describe('RowDetail', () => {
 		)
 	})
 
+	it('lists a metadata name once when _source carries it too', () => {
+		render(RowDetail, {
+			...props,
+			hit: { ...hit, _source: { ...hit._source, _id: 'inner' } },
+		})
+
+		const keys = screen
+			.getAllByText(/.+/, { selector: '.field-key' })
+			.map(node => node.textContent)
+
+		expect(keys.filter(key => key === '_id')).toHaveLength(1)
+		expect(within(fieldRow('_id')).getByText('abc')).toBeTruthy()
+	})
+
 	it('survives a hit with no _source', () => {
 		render(RowDetail, { ...props, hit: { _index: 'logs', _id: 'abc' } })
 		expect(screen.getByText('_id', { selector: '.field-key' })).toBeTruthy()

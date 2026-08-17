@@ -51,7 +51,8 @@
 		'mappings'
 	)
 
-	const EXPAND_COLUMN_WIDTH = 45
+	/** Just wide enough for the caret; never shares in the table's spare width. */
+	const EXPAND_COLUMN_WIDTH = 32
 
 	let sidebarOpen = $state(true)
 	let expandedRows = new SvelteSet()
@@ -146,11 +147,45 @@
 			: columnWidth(column)
 	}
 
-	const saveColumns = nextColumns =>
+	/**
+	 * The last column absorbs whatever width the others leave over, so a table
+	 * narrower than its container fills it instead of trailing off into dead
+	 * space. It is rendered widthless for that: a fixed layout hands an auto
+	 * column the remainder, and when the table overflows there is no remainder,
+	 * leaving it at exactly the width `tableWidth` already counted for it.
+	 *
+	 * A column mid-resize is exempt, otherwise the drag would have no effect to
+	 * show until the table grew past its container.
+	 */
+	const fillsRemainingWidth = (column, index) =>
+		index === columns.length - 1 && column.field !== resizeField
+
+	/**
+	 * Saves a layout, dropping the sort along with the column it was set from.
+	 *
+	 * A sort is put there by clicking a column header, so once that column is
+	 * gone the next query comes back ordered by a field the table does not show
+	 * and nothing on screen explains why. This covers a reset too: an empty
+	 * layout falls back to `_id` and `_source`, neither of which can be sorted
+	 * on, so no remaining column can claim the sort.
+	 *
+	 * The query is not re-run — the rows on screen keep the ordering they were
+	 * fetched with until the user runs it again.
+	 */
+	const saveColumns = nextColumns => {
 		dispatch('search/tableConfigs/update', {
 			index: indexName,
 			config: { columns: nextColumns },
 		})
+
+		if (!sortState) return
+		// What the table will actually show: `columnsOf` resolves an empty
+		// layout to the defaults.
+		const shown = columnsOf({ columns: nextColumns })
+		if (!shown.some(column => sortTargetOf(column) === sortState.field)) {
+			writeSort(null)
+		}
+	}
 
 	const toggleColumn = field => {
 		const selected = columns.some(column => column.field === field)
@@ -166,23 +201,35 @@
 	const onRenameColumn = (field, name) =>
 		saveColumns(renameColumn(columns, field, name))
 
-	// Saving an empty layout deletes the entry, returning the index to defaults.
 	const resetColumns = () => saveColumns([])
 
 	const onResizeStart = (event, column) => {
 		event.preventDefault()
 		event.stopPropagation()
-		resizeGeometry = { startX: event.clientX, startWidth: columnWidth(column) }
+		// Measured rather than configured: a column filling the table's spare
+		// width renders wider than the width it holds, and the drag has to start
+		// from what the user is looking at.
+		const rendered = event.currentTarget.closest('th')?.offsetWidth
+		resizeGeometry = {
+			startX: event.clientX,
+			startWidth: clampColumnWidth(rendered || columnWidth(column)),
+		}
 		resizePreview = resizeGeometry.startWidth
 		resizeField = column.field
 	}
 
 	/**
-	 * Sorting goes to the cluster, not to the loaded page: sorting ten of ten
-	 * thousand hits and presenting it as an ordering would be a lie. Offset is
-	 * reset because page 5 of a re-sorted result set is an arbitrary window.
+	 * Writes a sort into whichever place the current query mode keeps it, or
+	 * clears it when given `null`. The query is left un-run: whether the change
+	 * is worth a round trip is the caller's decision.
+	 *
+	 * Offset goes back to zero either way, because page 5 of one ordering is an
+	 * arbitrary window into another.
+	 *
+	 * @param {{ field: string, direction: 'asc'|'desc' } | null} next
+	 * @returns {boolean} whether the sort could be written
 	 */
-	const applySort = (field, direction) => {
+	const writeSort = next => {
 		if ($search.type === 'body') {
 			const { requestBody, error } = readEditorJson(qEditor, $search.requestBody)
 			if (error) {
@@ -190,24 +237,31 @@
 					type: 'error',
 					message: invalidJsonBodyMessage(error),
 				})
-				return
+				return false
 			}
 
-			const nextBody = {
-				...requestBody,
-				sort: buildBodySort(field, direction),
-				from: 0,
-			}
+			const nextBody = { ...requestBody, from: 0 }
+			if (next) nextBody.sort = buildBodySort(next.field, next.direction)
+			else delete nextBody.sort
+
 			if (typeof qEditor?.set === 'function') qEditor.set(nextBody)
 			dispatch('search/update', { requestBody: nextBody })
 		} else {
 			dispatch('search/update', {
-				sort: buildUriSort(field, direction),
+				sort: next ? buildUriSort(next.field, next.direction) : '',
 				from: 0,
 			})
 		}
 
-		dispatch('search/run')
+		return true
+	}
+
+	/**
+	 * Sorting goes to the cluster, not to the loaded page: sorting ten of ten
+	 * thousand hits and presenting it as an ordering would be a lie.
+	 */
+	const applySort = (field, direction) => {
+		if (writeSort({ field, direction })) dispatch('search/run')
 	}
 
 	const sortTargetOf = column => resolveSortTarget(column.field, fieldIndex)
@@ -304,8 +358,12 @@
 				>
 					<colgroup>
 						<col style="width: {EXPAND_COLUMN_WIDTH}px" />
-						{#each columns as column (column.field)}
-							<col style="width: {displayWidth(column)}px" />
+						{#each columns as column, index (column.field)}
+							<col
+								style:width={fillsRemainingWidth(column, index)
+									? null
+									: `${displayWidth(column)}px`}
+							/>
 						{/each}
 					</colgroup>
 					<thead>
@@ -505,12 +563,19 @@
 		}
 
 		.expand-row-btn {
+			display: block;
+			width: 100%;
 			background: none;
 			border: none;
-			padding: 8px 12px;
+			padding: 6px 0;
 			cursor: pointer;
 			color: #555;
 			outline: none;
+
+			// Semantic's trailing icon margin is dead space in a caret-only button.
+			.icon {
+				margin: 0;
+			}
 
 			&:hover {
 				color: #2185d0;

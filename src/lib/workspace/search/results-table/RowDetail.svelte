@@ -26,8 +26,12 @@
 	let selectedFields = $derived(new Set(columns.map(column => column.field)))
 
 	// Metadata first, then the document's own fields, so the two things a row
-	// can be identified by are always at the top.
-	let fields = $derived(['_id', '_index', '_score', ...flattenObject(hit?._source)])
+	// can be identified by are always at the top. Deduped because a `_source`
+	// is free to carry its own `_id` (common after a reindex) and the list is
+	// rendered as a keyed each block.
+	let fields = $derived([
+		...new Set(['_id', '_index', '_score', ...flattenObject(hit?._source)]),
+	])
 
 	let sourceJson = $derived(JSON.stringify(hit?._source ?? {}, null, 2))
 

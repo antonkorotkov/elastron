@@ -116,6 +116,28 @@ describe('ResultsTable', () => {
 			})
 		})
 
+		it('leaves the last column to fill the table, at a fixed expand column', () => {
+			const widths = () =>
+				[...document.querySelectorAll('colgroup col')].map(
+					col => col.style.width || 'auto'
+				)
+
+			const { unmount } = setup({
+				tableConfigs: { logs: { columns: [{ field: 'title' }] } },
+			})
+			expect(widths()).toEqual(['32px', 'auto'])
+			unmount()
+
+			// The expand column is sized the same either way: spare width goes to
+			// the auto column, never spread across every column in the table.
+			setup({
+				tableConfigs: {
+					logs: { columns: [{ field: 'title' }, { field: 'views' }] },
+				},
+			})
+			expect(widths()).toEqual(['32px', '220px', 'auto'])
+		})
+
 		it('offers metadata fields in the picker', () => {
 			setup({ tableConfigs: { logs: { columns: [{ field: 'title' }] } } })
 			expect(screen.getByTitle('Add _index as a column')).toBeTruthy()
@@ -250,6 +272,132 @@ describe('ResultsTable', () => {
 			expect(dispatch).toHaveBeenCalledWith(
 				'notification/add',
 				expect.objectContaining({ type: 'error' })
+			)
+		})
+
+		it('clears the sort when the layout is reset, without re-running', async () => {
+			const user = userEvent.setup()
+			setup(
+				{ ...configured('views'), sort: 'views:desc', from: 40 },
+				{ info: { logs: mapping } }
+			)
+
+			await user.click(screen.getByRole('button', { name: /Reset/ }))
+
+			// Otherwise the next query is ordered by a field the table no longer
+			// shows, with no header arrow to explain where the ordering came from.
+			expect(dispatch).toHaveBeenCalledWith('search/update', {
+				sort: '',
+				from: 0,
+			})
+			expect(dispatch).not.toHaveBeenCalledWith('search/run')
+		})
+
+		it('drops the sort out of the request body on reset', async () => {
+			const user = userEvent.setup()
+			const qEditor = {
+				getText: () =>
+					JSON.stringify({
+						query: { match_all: {} },
+						sort: [{ views: { order: 'desc' } }],
+					}),
+				set: vi.fn(),
+			}
+			setup(
+				{
+					...configured('views'),
+					type: 'body',
+					requestBody: { sort: [{ views: { order: 'desc' } }] },
+				},
+				{ info: { logs: mapping } },
+				{ qEditor }
+			)
+
+			await user.click(screen.getByRole('button', { name: /Reset/ }))
+
+			const expected = { query: { match_all: {} }, from: 0 }
+			expect(qEditor.set).toHaveBeenCalledWith(expected)
+			expect(dispatch).toHaveBeenCalledWith('search/update', {
+				requestBody: expected,
+			})
+		})
+
+		describe('when the sorted column is removed', () => {
+			const twoColumns = sort => ({
+				sort,
+				tableConfigs: {
+					logs: {
+						columns: [
+							{ field: 'title', name: 'title' },
+							{ field: 'views', name: 'views' },
+						],
+					},
+				},
+			})
+
+			const removeColumn = field =>
+				screen.getByRole('button', { name: `Remove column ${field}` })
+
+			it('clears the sort', async () => {
+				const user = userEvent.setup()
+				setup(twoColumns('views:asc'), { info: { logs: mapping } })
+
+				await user.click(removeColumn('views'))
+
+				expect(dispatch).toHaveBeenCalledWith('search/update', {
+					sort: '',
+					from: 0,
+				})
+			})
+
+			it('recognises a sort that went through a keyword multi-field', async () => {
+				const user = userEvent.setup()
+				setup(twoColumns('title.keyword:asc'), { info: { logs: mapping } })
+
+				await user.click(removeColumn('title'))
+
+				expect(dispatch).toHaveBeenCalledWith('search/update', {
+					sort: '',
+					from: 0,
+				})
+			})
+
+			it('keeps a sort belonging to a column that is still shown', async () => {
+				const user = userEvent.setup()
+				setup(twoColumns('views:asc'), { info: { logs: mapping } })
+
+				await user.click(removeColumn('title'))
+
+				expect(dispatch).not.toHaveBeenCalledWith(
+					'search/update',
+					expect.anything()
+				)
+			})
+		})
+
+		it('clears the sort when the last column is removed', async () => {
+			const user = userEvent.setup()
+			setup({ ...configured('views'), sort: 'views:desc' }, { info: { logs: mapping } })
+
+			await user.click(
+				screen.getByRole('button', { name: 'Remove column views' })
+			)
+
+			expect(dispatch).toHaveBeenCalledWith('search/update', {
+				sort: '',
+				from: 0,
+			})
+		})
+
+		it('leaves an unsorted query alone on reset', async () => {
+			const user = userEvent.setup()
+			setup(configured('views'), { info: { logs: mapping } })
+
+			await user.click(screen.getByRole('button', { name: /Reset/ }))
+
+			expect(dispatch).not.toHaveBeenCalledWith(
+				'search/update',
+				expect.anything()
 			)
 		})
 

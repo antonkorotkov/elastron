@@ -549,23 +549,28 @@ export const cellValue = (hit, field) => {
 }
 
 /**
- * Formats objects/arrays into a compact, truncated JSON string representation.
+ * Formats any value into a compact, truncated string representation.
+ *
+ * Truncation applies to primitives too: a single `text` field can hold a
+ * megabyte-long log line, and that must not reach the DOM either.
+ *
  * @param {any} value
  * @param {number} maxLen
  * @returns {string}
  */
 export const formatCompactJSON = (value, maxLen = 60) => {
 	if (value === null || value === undefined) return ''
+
+	let str
 	if (typeof value === 'object') {
 		try {
-			const str = JSON.stringify(value)
-			if (str.length > maxLen) {
-				return str.substring(0, maxLen - 3) + '...'
-			}
-			return str
+			str = JSON.stringify(value) ?? String(value)
 		} catch {
-			return String(value)
+			str = String(value)
 		}
+	} else {
+		str = String(value)
 	}
-	return String(value)
+
+	return str.length > maxLen ? str.substring(0, maxLen - 3) + '...' : str
 }

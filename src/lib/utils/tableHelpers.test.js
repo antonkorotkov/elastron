@@ -505,6 +505,11 @@ describe('formatCompactJSON', () => {
 		expect(formatCompactJSON(longObj, 25)).toBe('{"nested":{"a":"very l...')
 	})
 
+	it('truncates long primitives, not just objects', () => {
+		expect(formatCompactJSON('x'.repeat(100), 25)).toBe('x'.repeat(22) + '...')
+		expect(formatCompactJSON('x'.repeat(100)).length).toBe(60)
+	})
+
 	it('falls back to String() on a value JSON cannot represent', () => {
 		const circular = {}
 		circular.self = circular

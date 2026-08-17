@@ -275,6 +275,10 @@
 		width: 100%;
 		text-align: left;
 
+		&:last-child {
+			margin-bottom: 0;
+		}
+
 		&.selected {
 			background: #f0f4f8;
 			border: 1px solid #d0e0f0;
@@ -381,6 +385,7 @@
 		font-size: 0.8rem;
 		opacity: 0.7;
 		flex-shrink: 0;
+		line-height: 1;
 	}
 
 	.column-item:hover .add-icon {
