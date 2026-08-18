@@ -9,6 +9,7 @@
 	import EditControls from './EditControls.svelte'
 	import SearchControls from './SearchControls.svelte'
 	import ProfileTable from './ProfileTable.svelte'
+	import ResultsTable from './ResultsTable.svelte'
 	import {
 		invalidJsonBodyMessage,
 		isThemeToggleChecked,
@@ -485,7 +486,13 @@
 					<ProfileTable />
 				</div>
 			{/if}
-			<div class="editor-wrapper" class:hidden={$search.view === 'profile'}>
+			<div class="editor-wrapper" class:hidden={$search.view !== 'table'}>
+				<ResultsTable {qEditor} />
+			</div>
+			<div
+				class="editor-wrapper"
+				class:hidden={$search.view === 'table' || $search.view === 'profile'}
+			>
 				<div id="results-editor" bind:this={resultsEditor}></div>
 			</div>
 		</div>

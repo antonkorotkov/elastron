@@ -67,6 +67,9 @@
 				dispatch('search/hydrate', lastSearch)
 			}
 
+			const tableConfigs = await getStorage('tableConfigs', {})
+			dispatch('search/tableConfigs/hydrate', tableConfigs)
+
 			const theme = await getStorage('theme')
 			dispatch('app/hydrate', { theme: theme ?? 'light' })
 			dispatch('server/info')

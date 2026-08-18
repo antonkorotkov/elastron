@@ -35,7 +35,8 @@ describe('SearchControls', () => {
 
 	it('renders view toggle buttons', () => {
 		render(SearchControls, { qEditor: {} });
-		expect(screen.getByRole('button', { name: 'Hits' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'JSON' })).toBeTruthy();
+		expect(screen.getByRole('button', { name: 'Table' })).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Aggs' })).toBeTruthy();
 		expect(screen.getByRole('button', { name: 'Raw' })).toBeTruthy();
 	});
