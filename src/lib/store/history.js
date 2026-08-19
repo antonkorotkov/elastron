@@ -69,6 +69,21 @@ export const history = store => {
         }
     })
 
+    store.on('history/connection/replace', (state, { index, connection: rawConnection }) => {
+        if (index < 0 || index >= state.history.connection.length) return state
+
+        const savedConnections = [...state.history.connection]
+        savedConnections[index] = normalizeConnection(rawConnection)
+        setStorage('connection', savedConnections)
+
+        return {
+            history: {
+                ...state.history,
+                connection: savedConnections,
+            },
+        }
+    })
+
     store.on('history/connection/delete', (state, rawConnection) => {
         const connection = normalizeConnection(rawConnection)
 

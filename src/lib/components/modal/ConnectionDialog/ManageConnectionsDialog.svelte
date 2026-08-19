@@ -141,21 +141,21 @@
 		}
 
 		if (selectedIndex >= 0) {
-			// "Edit" requires deleting old and adding new
-			dispatch(
-				'history/connection/delete',
-				$state.snapshot($history.connection[selectedIndex])
-			)
+			// Replace in place, so editing never reorders the list
+			dispatch('history/connection/replace', {
+				index: selectedIndex,
+				connection: $state.snapshot(localConnection),
+			})
+		} else {
+			dispatch('history/connection/add', $state.snapshot(localConnection))
+			setTimeout(() => selectConnection($history.connection.length - 1), 0)
 		}
-		dispatch('history/connection/add', $state.snapshot(localConnection))
 
-		// Re-select it to stay on it
 		dispatch('notification/add', {
 			type: 'success',
 			message: 'Connection saved',
 		})
 		isEditingNew = false
-		setTimeout(() => selectConnection($history.connection.length - 1), 0)
 	}
 
 	const saveAndConnect = async e => {

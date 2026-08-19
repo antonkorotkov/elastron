@@ -80,6 +80,37 @@ describe('history store module', () => {
 		expect(store.get().history.connection).toEqual([expectedConn(conn2)]);
 	});
 
+	it('replaces a connection in place without reordering', () => {
+		store.dispatch('history/connection/add', conn1);
+		store.dispatch('history/connection/add', conn2);
+		store.dispatch('history/connection/replace', {
+			index: 0,
+			connection: { ...conn1, name: 'Renamed' },
+		});
+		const stored = store.get().history.connection;
+		expect(stored).toHaveLength(2);
+		expect(stored[0].name).toBe('Renamed');
+		expect(stored[1]).toEqual(expectedConn(conn2));
+	});
+
+	it('normalizes the connection it replaces', () => {
+		store.dispatch('history/connection/add', conn1);
+		store.dispatch('history/connection/replace', {
+			index: 0,
+			connection: { name: 'Bare', host: 'bare-host', port: '9200', version: '8.12.0' },
+		});
+		const stored = store.get().history.connection[0];
+		expect(stored.version).toBeUndefined();
+		expect(stored.ssh.port).toBe('22');
+	});
+
+	it('replace is a no-op for an out-of-range index', () => {
+		store.dispatch('history/connection/add', conn1);
+		store.dispatch('history/connection/replace', { index: 5, connection: conn2 });
+		store.dispatch('history/connection/replace', { index: -1, connection: conn2 });
+		expect(store.get().history.connection).toEqual([expectedConn(conn1)]);
+	});
+
 	it('delete is a no-op for non-existent connection', () => {
 		store.dispatch('history/connection/add', conn1);
 		store.dispatch('history/connection/delete', conn2);
