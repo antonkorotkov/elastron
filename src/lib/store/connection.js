@@ -24,6 +24,7 @@ export const initialConnection = {
 	headers: [{ name: '', value: '' }],
 	useSshTunnel: false,
 	ssh: { ...initialSshConfig },
+	color: '',
 }
 
 export const connection = store => {
@@ -55,6 +56,7 @@ export const connection = store => {
 				headers: [{ name: '', value: '' }],
 				useSshTunnel: false,
 				ssh: { ...initialSshConfig },
+				color: '',
 			},
 		}
 	})

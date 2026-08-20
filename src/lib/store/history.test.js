@@ -33,6 +33,7 @@ describe('history store module', () => {
 			privateKeyName: '',
 			passphrase: '',
 		},
+		color: '',
 		...conn
 	});
 
@@ -111,6 +112,19 @@ describe('history store module', () => {
 		expect(store.get().history.connection).toEqual([expectedConn(conn1)]);
 	});
 
+	it('deletes only one entry when two are identical', () => {
+		// replace can leave two entries deep-equal; deleting one must not take
+		// the other with it.
+		store.dispatch('history/connection/add', conn1);
+		store.dispatch('history/connection/add', conn2);
+		store.dispatch('history/connection/replace', { index: 1, connection: conn1 });
+		expect(store.get().history.connection).toHaveLength(2);
+
+		store.dispatch('history/connection/delete', conn1);
+
+		expect(store.get().history.connection).toEqual([expectedConn(conn1)]);
+	});
+
 	it('delete is a no-op for non-existent connection', () => {
 		store.dispatch('history/connection/add', conn1);
 		store.dispatch('history/connection/delete', conn2);
@@ -150,6 +164,49 @@ describe('history store module', () => {
 		expect(stored.ssh.host).toBe('');
 		expect(stored.ssh.port).toBe('22');
 		expect(stored.ssh.authMethod).toBe('password');
+	});
+
+	it('defaults connections saved before colors existed to no color', () => {
+		const oldConn = { name: 'Old', host: 'old-host', port: '9200' };
+		store.dispatch('history/connection/add', oldConn);
+		expect(store.get().history.connection[0].color).toBe('');
+	});
+
+	it('does not duplicate a stored connection that predates colors', () => {
+		// What an existing user has on disk, hydrated on first launch after the
+		// upgrade, then re-added by connection/save on connect.
+		const stored = {
+			name: 'Local',
+			host: 'localhost',
+			port: '9200',
+			useAuth: false,
+			user: '',
+			password: '',
+			addHeaders: false,
+			headers: [],
+			useSshTunnel: false,
+			ssh: {
+				host: '',
+				port: '22',
+				username: '',
+				authMethod: 'password',
+				password: '',
+				privateKeyContent: '',
+				privateKeyName: '',
+				passphrase: '',
+			},
+		};
+		store.dispatch('history/hydrate', { connection: [stored] });
+		store.dispatch('history/connection/add', { ...stored, version: '8.12.0' });
+		expect(store.get().history.connection).toHaveLength(1);
+	});
+
+	it('preserves a color through hydrate and re-add', () => {
+		const colored = { ...conn1, color: '#db2828' };
+		store.dispatch('history/hydrate', { connection: [colored] });
+		store.dispatch('history/connection/add', colored);
+		expect(store.get().history.connection).toHaveLength(1);
+		expect(store.get().history.connection[0].color).toBe('#db2828');
 	});
 
 	it('preserves SSH fields on connections that have them', () => {

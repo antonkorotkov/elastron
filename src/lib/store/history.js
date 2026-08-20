@@ -15,6 +15,7 @@ const normalizeConnection = connection => {
         headers: [],
         useSshTunnel: false,
         ssh: { ...initialSshConfig },
+        color: '',
         ...connection,
     }
     delete normalized.version
@@ -87,13 +88,17 @@ export const history = store => {
     store.on('history/connection/delete', (state, rawConnection) => {
         const connection = normalizeConnection(rawConnection)
 
-        if (!some(state.history.connection, item => isEqual(item, connection)))
-            return state
+        // Remove a single entry rather than every match. Identity here is deep
+        // equality, and replacing in place can leave two entries identical, so
+        // filtering would silently delete a connection the user did not pick.
+        const index = state.history.connection.findIndex(item =>
+            isEqual(item, connection)
+        )
 
-        let savedConnections = [...state.history.connection]
-        savedConnections = savedConnections.filter(c => {
-            return !isEqual(c, connection)
-        })
+        if (index === -1) return state
+
+        const savedConnections = [...state.history.connection]
+        savedConnections.splice(index, 1)
         setStorage('connection', savedConnections)
 
         return {

@@ -11,6 +11,9 @@ import {
 	indicesSortPredicate,
 	shardsSortPredicate,
 	allocationSortPredicate,
+	normalizeHex,
+	contrastTextColor,
+	CONNECTION_COLORS,
 } from './helpers';
 
 describe('humanStoreSizeToPseudoBytes', () => {
@@ -211,5 +214,85 @@ describe('allocationSortPredicate', () => {
 	it('returns byte value for disk.used', () => {
 		const fn = allocationSortPredicate('disk.used', 0);
 		expect(fn(['10gb'])).toBe(10000000000);
+	});
+});
+
+describe('normalizeHex', () => {
+	it('accepts the canonical form unchanged', () => {
+		expect(normalizeHex('#db2828')).toBe('#db2828');
+	});
+
+	it('lowercases and adds a missing hash', () => {
+		expect(normalizeHex('#DB2828')).toBe('#db2828');
+		expect(normalizeHex('db2828')).toBe('#db2828');
+		expect(normalizeHex('DB2828')).toBe('#db2828');
+	});
+
+	it('expands the 3-digit form', () => {
+		expect(normalizeHex('#d22')).toBe('#dd2222');
+		expect(normalizeHex('f00')).toBe('#ff0000');
+	});
+
+	it('trims surrounding whitespace', () => {
+		expect(normalizeHex('  #db2828  ')).toBe('#db2828');
+	});
+
+	it('returns null for anything that is not a color', () => {
+		expect(normalizeHex('')).toBeNull();
+		expect(normalizeHex('red')).toBeNull();
+		expect(normalizeHex('#db282')).toBeNull();
+		expect(normalizeHex('#db28288')).toBeNull();
+		expect(normalizeHex('#gggggg')).toBeNull();
+		expect(normalizeHex(null)).toBeNull();
+		expect(normalizeHex(undefined)).toBeNull();
+		expect(normalizeHex(123456)).toBeNull();
+	});
+});
+
+describe('contrastTextColor', () => {
+	it('puts black text on light backgrounds', () => {
+		expect(contrastTextColor('#fbbd08')).toBe('#000'); // yellow
+		expect(contrastTextColor('#ffffff')).toBe('#000');
+		expect(contrastTextColor('#21ba45')).toBe('#000'); // green
+	});
+
+	it('puts white text on dark backgrounds', () => {
+		expect(contrastTextColor('#000000')).toBe('#fff');
+		expect(contrastTextColor('#a333c8')).toBe('#fff'); // purple
+		expect(contrastTextColor('#db2828')).toBe('#fff'); // red
+	});
+
+	it('follows the contrast ratio rather than convention on mid-tones', () => {
+		// Semantic puts white on its blue buttons, but black clears AA here
+		// (5.33:1) where white does not (3.94:1).
+		expect(contrastTextColor('#2185d0')).toBe('#000');
+	});
+
+	it('accepts any form normalizeHex accepts', () => {
+		expect(contrastTextColor('FBBD08')).toBe('#000');
+		expect(contrastTextColor('#fff')).toBe('#000');
+	});
+
+	it('falls back to white for unparseable input', () => {
+		expect(contrastTextColor('')).toBe('#fff');
+		expect(contrastTextColor('nonsense')).toBe('#fff');
+	});
+
+	it('gives every preset readable text', () => {
+		for (const color of CONNECTION_COLORS) {
+			expect(['#000', '#fff']).toContain(contrastTextColor(color));
+		}
+	});
+});
+
+describe('CONNECTION_COLORS', () => {
+	it('is stored in the canonical form the native picker returns', () => {
+		for (const color of CONNECTION_COLORS) {
+			expect(normalizeHex(color)).toBe(color);
+		}
+	});
+
+	it('excludes the header background color', () => {
+		expect(CONNECTION_COLORS).not.toContain('#1b1c1d');
 	});
 });

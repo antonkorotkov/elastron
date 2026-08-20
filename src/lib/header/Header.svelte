@@ -4,6 +4,7 @@
 	import { page } from '$app/stores'
 	import { resolve } from '$app/paths'
 	import OnlineIndicator from './OnlineIndicator.svelte'
+	import { contrastTextColor } from '../utils/helpers'
 
 	const onHeaderDblClick = () =>
 		window.electron?.ipcRenderer?.send('header-doubleclick')
@@ -82,7 +83,18 @@
 
 		<div class="right menu">
 			{#if $connection.name}
-				<span class="item">{$connection.name}</span>
+				<span class="item">
+					{#if $connection.color}
+						<span
+							class="connection-pill"
+							style="background: {$connection.color}; color: {contrastTextColor(
+								$connection.color
+							)};">{$connection.name}</span
+						>
+					{:else}
+						{$connection.name}
+					{/if}
+				</span>
 			{/if}
 			{#if version}
 				<span class="item" title="ElasticSearch version">v{version}</span>
@@ -96,6 +108,19 @@
 				<OnlineIndicator />
 			</button>
 		</div>
+
+		<!--
+			Sits just below the bar rather than inside it, so it reads across the
+			full width without eating into the menu. The bar is `position: fixed`
+			and so is already a containing block — this cannot shift layout, and
+			the 4rem spacer on <header> stays correct.
+		-->
+		{#if $connection.color}
+			<div
+				class="connection-strip"
+				style="background: {$connection.color};"
+			></div>
+		{/if}
 	</div>
 </header>
 
@@ -111,5 +136,18 @@
 	}
 	header {
 		height: 4rem;
+	}
+	.connection-pill {
+		display: inline-block;
+		padding: 0.25rem 0.65rem;
+		border-radius: 4px;
+		font-weight: 700;
+	}
+	.connection-strip {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -4px;
+		height: 4px;
 	}
 </style>

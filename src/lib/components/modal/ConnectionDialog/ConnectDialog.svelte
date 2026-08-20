@@ -3,7 +3,10 @@
 	import { getContext } from 'svelte'
 
 	import API, { openTunnel, closeTunnel } from '../../../api/elasticsearch'
-	import { isThemeToggleChecked } from '../../../utils/helpers'
+	import {
+		isThemeToggleChecked,
+		contrastTextColor,
+	} from '../../../utils/helpers'
 	import { initialSshConfig } from '../../../store/connection'
 	import ManageConnectionsDialog from './ManageConnectionsDialog.svelte'
 	import SshTunnelFields from './SshTunnelFields.svelte'
@@ -32,6 +35,14 @@
 
 	// for saved connect
 	let selectedConnectionIndex = $state(-1)
+
+	let selectedConnection = $derived(
+		selectedConnectionIndex >= 0
+			? $history?.connection?.[selectedConnectionIndex]
+			: null
+	)
+	let selectedColor = $derived(selectedConnection?.color || '')
+	let selectedName = $derived(selectedConnection?.name || '')
 
 	let loading = $state(false)
 
@@ -119,6 +130,10 @@
 			headers: [],
 			useSshTunnel: quickUseSshTunnel,
 			ssh: $state.snapshot(quickSsh),
+			// Explicit, because connection/update merges over the previous
+			// connection — without it an ad-hoc localhost session would inherit
+			// the color of whichever cluster was connected before it.
+			color: '',
 		}
 
 		loading = true
@@ -193,21 +208,36 @@
 			style="min-height: 150px; padding-top: 1rem;"
 		>
 			<div class="field">
-				<select
-					id="saved-connection"
-					class="ui dropdown"
-					bind:value={selectedConnectionIndex}
-				>
-					<option value={-1}>-- Select --</option>
-					{#if $history && $history.connection}
-						{#each $history.connection as conn, i (i)}
-							<option value={i}
-								>{conn.name ||
-									conn.host + (conn.port ? ':' + conn.port : '')}</option
-							>
-						{/each}
+				<div class="connection-choice">
+					<select
+						id="saved-connection"
+						class="ui dropdown"
+						bind:value={selectedConnectionIndex}
+					>
+						<option value={-1}>-- Select --</option>
+						{#if $history && $history.connection}
+							{#each $history.connection as conn, i (i)}
+								<option value={i}
+									>{conn.name ||
+										conn.host + (conn.port ? ':' + conn.port : '')}</option
+								>
+							{/each}
+						{/if}
+					</select>
+					<!--
+						The color sits beside the select rather than on the options:
+						per-option backgrounds are honoured by Chromium's own listbox on
+						Windows and Linux, but ignored by the OS-drawn popup on macOS.
+					-->
+					{#if selectedColor}
+						<span
+							class="connection-chip"
+							style="background: {selectedColor}; color: {contrastTextColor(
+								selectedColor
+							)};">{selectedName}</span
+						>
 					{/if}
-				</select>
+				</div>
 			</div>
 			{#if !$history || !$history.connection || $history.connection.length === 0}
 				<div class="ui message" class:inverted>
@@ -324,6 +354,25 @@
 	}
 	.left.floated {
 		float: left;
+	}
+	.connection-choice {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+	.connection-choice select {
+		flex: 1;
+		min-width: 0;
+	}
+	.connection-chip {
+		flex: none;
+		max-width: 40%;
+		padding: 0.4rem 0.75rem;
+		border-radius: 4px;
+		font-weight: 700;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	/* Simple reset for buttons acting as tabs to not look like buttons */
 	button.item {

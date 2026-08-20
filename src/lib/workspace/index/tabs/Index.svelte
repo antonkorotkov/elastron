@@ -33,10 +33,30 @@
 		dispatch('elasticsearch/allocation/fetch')
 	}
 
+	/**
+	 * Names what is about to be destroyed and which cluster it lives on, so the
+	 * prompt can never read identically on localhost and on production.
+	 *
+	 * @param {string} indexName
+	 * @returns {string}
+	 */
+	const destructiveTarget = indexName => {
+		// Quick Connect sessions have no name, and those are the ones most
+		// likely to be pointed somewhere unexpected — fall back to the address
+		// rather than dropping the cluster from the prompt entirely.
+		const cluster =
+			$connection.name ||
+			[$connection.host, $connection.port].filter(Boolean).join(':')
+
+		return cluster ? `"${indexName}" on ${cluster}` : `"${indexName}"`
+	}
+
 	const onDeleteIndexClick = async indexName => {
 		if (
 			!confirm(
-				'Are you sure you want to delete the index? You will loose all index data without an ability to restore.'
+				`Are you sure you want to delete the index ${destructiveTarget(
+					indexName
+				)}? You will lose all index data without an ability to restore.`
 			)
 		)
 			return
@@ -122,7 +142,9 @@
 	const onWipeIndexClick = async indexName => {
 		if (
 			!confirm(
-				'Are you sure you want to wipe the index? It means you will loose all index data without an ability to restore.'
+				`Are you sure you want to wipe the index ${destructiveTarget(
+					indexName
+				)}? It means you will lose all index data without an ability to restore.`
 			)
 		)
 			return
