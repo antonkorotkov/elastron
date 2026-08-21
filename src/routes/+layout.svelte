@@ -14,9 +14,17 @@
 	// SvelteKit Context Provider for Storeon
 	provideStoreon(store)
 
-	const { dispatch, app } = useStoreon('app')
+	const { dispatch, app, connection } = useStoreon('app', 'connection')
 
 	let { children } = $props()
+
+	// The document title labels the window in the Window menu / taskbar
+	let windowTitle = $derived(
+		$connection?.name ||
+			($connection?.host
+				? $connection.host + ($connection.port ? ':' + $connection.port : '')
+				: 'Elastron')
+	)
 
 	// Client-side only logic for internet check
 	import { onMount } from 'svelte'
@@ -104,6 +112,7 @@
 </script>
 
 <svelte:head>
+	<title>{windowTitle}</title>
 	{#if PUBLIC_GA_ID}
 		<script async src="https://www.googletagmanager.com/gtag/js?id={PUBLIC_GA_ID}"></script>
 		<script>

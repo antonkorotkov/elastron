@@ -53,6 +53,9 @@ const startServer = async () => {
 	throw new Error('Server failed to start');
 };
 
+// Open windows, in the order they were created (drives the Window menu list)
+const openWindows = [];
+
 const createWindow = (port, routeSuffix = '') => {
 	const mainWindow = new BrowserWindow({
 		width: 1440,
@@ -87,8 +90,109 @@ const createWindow = (port, routeSuffix = '') => {
 		}
 	});
 
+	openWindows.push(mainWindow);
+
+	// Keep the Window menu in sync with what is actually open, focused and titled
+	mainWindow.on('closed', () => {
+		const index = openWindows.indexOf(mainWindow);
+		if (index >= 0) openWindows.splice(index, 1);
+		buildApplicationMenu();
+	});
+	mainWindow.on('focus', buildApplicationMenu);
+	// The title is applied right after this event, so rebuild on the next tick
+	mainWindow.webContents.on('page-title-updated', () => {
+		setImmediate(buildApplicationMenu);
+	});
+
+	buildApplicationMenu();
+
 	return mainWindow;
 };
+
+const focusWindow = (win) => {
+	if (win.isMinimized()) win.restore();
+	win.show();
+	win.focus();
+};
+
+const buildWindowMenuItems = () => {
+	const items = [
+		{ role: 'minimize' },
+		{ role: 'zoom' },
+		{ type: 'separator' },
+		{ role: 'close' }
+	];
+
+	if (process.platform === 'darwin') {
+		items.push({ type: 'separator' }, { role: 'front' });
+	}
+
+	if (openWindows.length) {
+		items.push({ type: 'separator' });
+
+		// Windows on the same connection share a title — number the duplicates
+		const seen = new Map();
+		openWindows.forEach((win, index) => {
+			const title = win.getTitle() || `Window ${index + 1}`;
+			const count = (seen.get(title) ?? 0) + 1;
+			seen.set(title, count);
+
+			items.push({
+				label: count > 1 ? `${title} (${count})` : title,
+				type: 'checkbox',
+				checked: win.isFocused(),
+				accelerator: index < 9 ? `CmdOrCtrl+${index + 1}` : undefined,
+				click: () => focusWindow(win)
+			});
+		});
+	}
+
+	return items;
+};
+
+function buildApplicationMenu() {
+	Menu.setApplicationMenu(
+		Menu.buildFromTemplate([
+			{
+				label: app.name,
+				submenu: [{ role: 'about' }, { role: 'quit' }],
+			},
+			{
+				role: 'editMenu'
+			},
+			{
+				label: 'Window',
+				submenu: buildWindowMenuItems()
+			},
+			{
+				role: 'help',
+				submenu: [
+					{
+						label: 'Learn More',
+						click: async () => {
+							await shell.openExternal('https://elastron.eney.solutions')
+						},
+					},
+					{
+						label: 'Check for Updates',
+						click: () => {
+							updater.checkForUpdates(true)
+						}
+					},
+					{
+						label: 'Debug',
+						click: () => {
+							const win = BrowserWindow.getFocusedWindow();
+							if (win) {
+								win.webContents.openDevTools();
+							}
+						}
+					}
+				]
+			}
+		])
+	);
+}
 
 let globalHandlersSetup = false;
 
@@ -124,43 +228,7 @@ function setupGlobalHandlers() {
 		}
 	});
 
-	Menu.setApplicationMenu(
-		Menu.buildFromTemplate([
-			{
-				label: app.name,
-				submenu: [{ role: 'about' }, { role: 'quit' }],
-			},
-			{
-				role: 'editMenu'
-			},
-			{
-				role: 'help',
-				submenu: [
-					{
-						label: 'Learn More',
-						click: async () => {
-							await shell.openExternal('https://elastron.eney.solutions')
-						},
-					},
-					{
-						label: 'Check for Updates',
-						click: () => {
-							updater.checkForUpdates(true)
-						}
-					},
-					{
-						label: 'Debug',
-						click: () => {
-							const win = BrowserWindow.getFocusedWindow();
-							if (win) {
-								win.webContents.openDevTools();
-							}
-						}
-					}
-				]
-			}
-		])
-	);
+	buildApplicationMenu();
 }
 
 app.whenReady().then(async () => {
