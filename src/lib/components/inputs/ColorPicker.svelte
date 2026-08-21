@@ -129,7 +129,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.75rem;
-		flex-wrap: wrap;
 	}
 
 	.swatches {
@@ -180,7 +179,6 @@
 	}
 
 	.hex-input {
-		width: 110px !important;
 		font-family: monospace;
 	}
 
