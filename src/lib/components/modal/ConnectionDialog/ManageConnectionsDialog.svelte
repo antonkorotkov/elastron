@@ -4,11 +4,17 @@
 
 	import API, { openTunnel, closeTunnel } from '../../../api/elasticsearch'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
+	import { setStorage } from '../../../utils/storage'
 	import { initialSshConfig } from '../../../store/connection'
 	import Headers from './Headers.svelte'
 	import SshTunnelFields from './SshTunnelFields.svelte'
+	import ColorPicker from '../../inputs/ColorPicker.svelte'
 
-	const { dispatch, history, app } = useStoreon('history', 'app')
+	const { dispatch, history, app, connection } = useStoreon(
+		'history',
+		'app',
+		'connection'
+	)
 
 	let { onCancel = () => {} } = $props()
 
@@ -38,7 +44,13 @@
 		selectedIndex = index
 		isEditingNew = false
 		if (index >= 0) {
-			localConnection = JSON.parse(JSON.stringify($history.connection[index]))
+			// `color` is defaulted here as well as in the store, because a
+			// connection reaching the form without it would break `bind:value`
+			// on the color picker.
+			localConnection = {
+				color: '',
+				...JSON.parse(JSON.stringify($history.connection[index])),
+			}
 		} else {
 			localConnection = null
 		}
@@ -56,6 +68,7 @@
 			headers: [{ name: '', value: '' }],
 			useSshTunnel: false,
 			ssh: { ...initialSshConfig },
+			color: '',
 		}
 		selectedIndex = -1
 		isEditingNew = true
@@ -132,6 +145,46 @@
 		}
 	}
 
+	/**
+	 * Relabelling the connection you are currently on should repaint the header
+	 * straight away, without making you reconnect.
+	 *
+	 * Only `name` and `color` are pushed across — the two fields that describe
+	 * the connection rather than address it. Sending the whole edited connection
+	 * would swap the host or credentials of a live session without reconnecting,
+	 * leaving the header advertising a cluster the app is not talking to, which
+	 * is the exact mistake this feature exists to prevent. They travel together
+	 * because syncing one without the other is its own kind of lie: a red badge
+	 * still carrying the old name is worse than one that has not changed at all.
+	 *
+	 * `lastConnection` has to be rewritten too: the layout prefers it over the
+	 * saved list when hydrating, so without this the change would revert on the
+	 * next launch.
+	 *
+	 * @param {object} previous the saved entry as it was before this save
+	 */
+	const syncLabelToActiveConnection = previous => {
+		// Port is part of the match: two entries can share a name and host and
+		// still be different clusters, and relabelling one must not repaint the
+		// header for the other.
+		const isActive =
+			previous.name === $connection.name &&
+			previous.host === $connection.host &&
+			previous.port === $connection.port
+
+		const { name, color } = localConnection
+		const unchanged = previous.name === name && previous.color === color
+
+		if (!isActive || unchanged) return
+
+		dispatch('connection/update', { name, color })
+		setStorage('lastConnection', {
+			...$state.snapshot($connection),
+			name,
+			color,
+		})
+	}
+
 	const save = e => {
 		if (e) e.preventDefault()
 
@@ -141,21 +194,27 @@
 		}
 
 		if (selectedIndex >= 0) {
-			// "Edit" requires deleting old and adding new
-			dispatch(
-				'history/connection/delete',
-				$state.snapshot($history.connection[selectedIndex])
-			)
-		}
-		dispatch('history/connection/add', $state.snapshot(localConnection))
+			// Compare against the entry as it was before this save, so a rename
+			// alongside a recolor still recognizes the live connection.
+			const previous = $history.connection[selectedIndex]
 
-		// Re-select it to stay on it
+			// Replace in place, so editing never reorders the list
+			dispatch('history/connection/replace', {
+				index: selectedIndex,
+				connection: $state.snapshot(localConnection),
+			})
+
+			syncLabelToActiveConnection(previous)
+		} else {
+			dispatch('history/connection/add', $state.snapshot(localConnection))
+			setTimeout(() => selectConnection($history.connection.length - 1), 0)
+		}
+
 		dispatch('notification/add', {
 			type: 'success',
 			message: 'Connection saved',
 		})
 		isEditingNew = false
-		setTimeout(() => selectConnection($history.connection.length - 1), 0)
 	}
 
 	const saveAndConnect = async e => {
@@ -221,6 +280,13 @@
 					onclick={() => selectConnection(i)}
 					style="cursor: pointer;"
 				>
+					{#if conn.color}
+						<span
+							class="connection-dot"
+							style="background: {conn.color};"
+							aria-hidden="true"
+						></span>
+					{/if}
 					{conn.name || conn.host + (conn.port ? ':' + conn.port : '')}
 				</div>
 			{/each}
@@ -251,6 +317,13 @@
 							bind:value={localConnection.name}
 							maxlength="32"
 						/>
+					</div>
+				</div>
+				<div class="fields">
+					<div class="sixteen wide field">
+						<!-- svelte-ignore a11y_label_has_associated_control -->
+						<label>Color</label>
+						<ColorPicker bind:value={localConnection.color} {inverted} />
 					</div>
 				</div>
 				<div class="fields">
@@ -372,5 +445,14 @@
 <style>
 	.left.floated {
 		float: left;
+	}
+
+	.connection-dot {
+		display: inline-block;
+		width: 10px;
+		height: 10px;
+		margin-right: 0.5rem;
+		border-radius: 50%;
+		vertical-align: baseline;
 	}
 </style>

@@ -61,6 +61,82 @@ export const isThemeToggleChecked = theme => {
 }
 
 /**
+ * Preset colors offered when tagging a connection. Taken from the Semantic UI
+ * palette so they sit well next to the rest of the chrome, and written in the
+ * lowercase 6-digit form `<input type="color">` hands back — a preset and the
+ * native picker must produce byte-identical strings, or the deep-equality
+ * identity in the history store sees two colors as two different connections.
+ * Semantic's `black` (#1b1c1d) is deliberately absent: it is the exact header
+ * background, so it renders as an invisible strip and an unreadable pill.
+ */
+export const CONNECTION_COLORS = [
+    '#db2828', // red
+    '#f2711c', // orange
+    '#fbbd08', // yellow
+    '#21ba45', // green
+    '#00b5ad', // teal
+    '#2185d0', // blue
+    '#a333c8', // purple
+    '#767676', // grey
+]
+
+/**
+ * Parse anything a user might paste into the hex field — with or without the
+ * leading `#`, in either case, 3-digit or 6-digit — into the canonical
+ * lowercase `#rrggbb` form. Returns null when the input is not a color, so
+ * callers can simply decline to commit it.
+ *
+ * @param {string} input
+ * @returns {string|null}
+ */
+export const normalizeHex = input => {
+    if (typeof input !== 'string') return null
+
+    const hex = input.trim().replace(/^#/, '').toLowerCase()
+
+    if (/^[0-9a-f]{3}$/.test(hex))
+        return '#' + [...hex].map(char => char + char).join('')
+
+    if (/^[0-9a-f]{6}$/.test(hex)) return '#' + hex
+
+    return null
+}
+
+/**
+ * @param {string} channel two hex digits
+ * @returns {number} the channel's contribution to relative luminance
+ */
+const channelLuminance = channel => {
+    const value = parseInt(channel, 16) / 255
+    return value <= 0.03928
+        ? value / 12.92
+        : Math.pow((value + 0.055) / 1.055, 2.4)
+}
+
+/**
+ * Pick black or white text for an arbitrary background, whichever gives the
+ * better WCAG contrast ratio. Users can assign any color to a connection, so
+ * the text color on the header pill can never be hardcoded.
+ *
+ * @param {string} color
+ * @returns {string} '#000' or '#fff'
+ */
+export const contrastTextColor = color => {
+    const hex = normalizeHex(color)
+    if (!hex) return '#fff'
+
+    const luminance =
+        0.2126 * channelLuminance(hex.slice(1, 3)) +
+        0.7152 * channelLuminance(hex.slice(3, 5)) +
+        0.0722 * channelLuminance(hex.slice(5, 7))
+
+    const contrastWithBlack = (luminance + 0.05) / 0.05
+    const contrastWithWhite = 1.05 / (luminance + 0.05)
+
+    return contrastWithBlack > contrastWithWhite ? '#000' : '#fff'
+}
+
+/**
  * @param {*} indexData
  * @returns
  */
