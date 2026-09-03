@@ -96,7 +96,7 @@ export const connection = store => {
 					version
 				};
 
-				store.dispatch('history/connection/add', updatedConnection)
+				store.dispatch('connections/add', updatedConnection)
 				store.dispatch('server/update', { version })
 				store.dispatch('connection/update', { version })
 				setStorage('lastConnection', updatedConnection);

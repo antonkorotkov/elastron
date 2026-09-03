@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/svelte';
 import ManageConnectionsDialog from './ManageConnectionsDialog.svelte';
 import { setStorage } from '../../../utils/storage';
 
 const mockDispatch = vi.fn();
 
-const stores = vi.hoisted(() => ({ history: null, connection: null }));
+const stores = vi.hoisted(() => ({ connections: null, connection: null }));
 
 const savedConnection = () => ({
 	name: 'Local Test',
@@ -38,12 +38,12 @@ vi.mock('../../../utils/storage', () => ({
 
 vi.mock('@storeon/svelte', () => {
 	const { writable } = require('svelte/store');
-	stores.history = writable({ connection: [] });
+	stores.connections = writable({ connection: [] });
 	stores.connection = writable({});
 	return {
 		useStoreon: () => ({
 			app: writable({ theme: 'light' }),
-			history: stores.history,
+			connections: stores.connections,
 			connection: stores.connection,
 			dispatch: mockDispatch,
 		}),
@@ -66,7 +66,7 @@ describe('ManageConnectionsDialog', () => {
 	beforeEach(() => {
 		mockDispatch.mockClear();
 		setStorage.mockClear();
-		stores.history.set({ connection: [savedConnection()] });
+		stores.connections.set({ connection: [savedConnection()] });
 		// The connection the app is currently talking to
 		stores.connection.set({
 			name: 'Local Test',
@@ -107,7 +107,7 @@ describe('ManageConnectionsDialog', () => {
 	});
 
 	it('shows a color dot in the sidebar for a colored connection', () => {
-		stores.history.set({
+		stores.connections.set({
 			connection: [{ ...savedConnection(), color: '#db2828' }],
 		});
 		const { container } = renderDialog();
@@ -134,12 +134,12 @@ describe('ManageConnectionsDialog', () => {
 
 			await recolorAndSave(container);
 
-			expect(dispatchedPayload('history/connection/replace')).toMatchObject({
+			expect(dispatchedPayload('connections/replace')).toMatchObject({
 				index: 0,
 			});
 			expect(
 				mockDispatch.mock.calls.some(
-					([name]) => name === 'history/connection/delete'
+					([name]) => name === 'connections/delete'
 				)
 			).toBe(false);
 		});
@@ -258,6 +258,66 @@ describe('ManageConnectionsDialog', () => {
 			expect(
 				setStorage.mock.calls.some(([name]) => name === 'lastConnection')
 			).toBe(false);
+		});
+	});
+
+	describe('deleting a connection', () => {
+		let confirmSpy;
+
+		beforeEach(() => {
+			confirmSpy = vi.spyOn(window, 'confirm');
+		});
+
+		afterEach(() => {
+			confirmSpy.mockRestore();
+		});
+
+		it('deletes the connection when the confirmation is accepted', async () => {
+			confirmSpy.mockReturnValue(true);
+			renderDialog();
+
+			await fireEvent.click(screen.getByText('Delete'));
+
+			expect(dispatchedPayload('connections/delete')).toEqual(
+				savedConnection()
+			);
+		});
+
+		it('does not delete the connection when the confirmation is cancelled', async () => {
+			confirmSpy.mockReturnValue(false);
+			renderDialog();
+
+			await fireEvent.click(screen.getByText('Delete'));
+
+			expect(
+				mockDispatch.mock.calls.some(([name]) => name === 'connections/delete')
+			).toBe(false);
+			expect(screen.getByText('Local Test')).toBeTruthy();
+		});
+
+		it('names the connection in the confirmation prompt', async () => {
+			confirmSpy.mockReturnValue(false);
+			renderDialog();
+
+			await fireEvent.click(screen.getByText('Delete'));
+
+			expect(confirmSpy).toHaveBeenCalledWith(
+				'Delete the connection "Local Test"?'
+			);
+		});
+
+		it('falls back to host:port in the prompt for an unnamed connection', async () => {
+			stores.connections.set({
+				connection: [{ ...savedConnection(), name: '' }],
+			});
+			confirmSpy.mockReturnValue(false);
+			renderDialog();
+
+			await fireEvent.click(screen.getByText('Delete'));
+
+			expect(confirmSpy).toHaveBeenCalledWith(
+				'Delete the connection "http://localhost:9200"?'
+			);
 		});
 	});
 });

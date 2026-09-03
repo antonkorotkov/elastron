@@ -5,7 +5,7 @@ import ConnectDialog from './ConnectDialog.svelte';
 
 const mockDispatch = vi.fn();
 
-const stores = vi.hoisted(() => ({ history: null }));
+const stores = vi.hoisted(() => ({ connections: null }));
 
 vi.mock('../../../api/elasticsearch', () => ({
 	default: class {
@@ -19,7 +19,7 @@ vi.mock('../../../api/elasticsearch', () => ({
 
 vi.mock('@storeon/svelte', () => {
 	const { writable } = require('svelte/store');
-	stores.history = writable({
+	stores.connections = writable({
 		connection: [
 			{ name: 'Server A', host: 'http://server-a', port: '9200', useAuth: false },
 			{ name: 'Server B', host: 'http://server-b', port: '9200', useAuth: false }
@@ -29,7 +29,7 @@ vi.mock('@storeon/svelte', () => {
 		useStoreon: () => ({
 			app: writable({ theme: 'light' }),
 			connection: writable({ name: 'current' }),
-			history: stores.history,
+			connections: stores.connections,
 			dispatch: mockDispatch,
 		})
 	};
@@ -94,7 +94,7 @@ describe('ConnectDialog', () => {
 	});
 
 	it('shows a chip in the color of the selected connection', async () => {
-		stores.history.set({
+		stores.connections.set({
 			connection: [
 				{ name: 'Server A', host: 'http://server-a', port: '9200', color: '' },
 				{ name: 'Production', host: 'http://prod', port: '9200', color: '#db2828' }

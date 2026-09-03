@@ -68,7 +68,7 @@
 
 			dispatch('connection/hydrate', currentConnection)
 			dispatch('connection/save')
-			dispatch('history/hydrate', { connection: connections })
+			dispatch('connections/hydrate', { connection: connections })
 
 			const lastSearch = await getStorage('lastSearch', null)
 			if (lastSearch) {

@@ -11,9 +11,9 @@
 	import ManageConnectionsDialog from './ManageConnectionsDialog.svelte'
 	import SshTunnelFields from './SshTunnelFields.svelte'
 
-	const { dispatch, connection, history, app } = useStoreon(
+	const { dispatch, connection, connections, app } = useStoreon(
 		'connection',
-		'history',
+		'connections',
 		'app'
 	)
 
@@ -38,7 +38,7 @@
 
 	let selectedConnection = $derived(
 		selectedConnectionIndex >= 0
-			? $history?.connection?.[selectedConnectionIndex]
+			? $connections?.connection?.[selectedConnectionIndex]
 			: null
 	)
 	let selectedColor = $derived(selectedConnection?.color || '')
@@ -49,11 +49,11 @@
 	$effect(() => {
 		if (
 			selectedConnectionIndex === -1 &&
-			$history &&
-			$history.connection &&
+			$connections &&
+			$connections.connection &&
 			$connection
 		) {
-			const idx = $history.connection.findIndex(
+			const idx = $connections.connection.findIndex(
 				c => c.name === $connection.name && c.host === $connection.host
 			)
 			if (idx >= 0) {
@@ -110,7 +110,7 @@
 			return
 		}
 		loading = true
-		const conn = $history.connection[selectedConnectionIndex]
+		const conn = $connections.connection[selectedConnectionIndex]
 		dispatch('connection/update', $state.snapshot(conn))
 		dispatch('connection/save', () => {
 			loading = false
@@ -215,8 +215,8 @@
 						bind:value={selectedConnectionIndex}
 					>
 						<option value={-1}>-- Select --</option>
-						{#if $history && $history.connection}
-							{#each $history.connection as conn, i (i)}
+						{#if $connections && $connections.connection}
+							{#each $connections.connection as conn, i (i)}
 								<option value={i}
 									>{conn.name ||
 										conn.host + (conn.port ? ':' + conn.port : '')}</option
@@ -239,7 +239,7 @@
 					{/if}
 				</div>
 			</div>
-			{#if !$history || !$history.connection || $history.connection.length === 0}
+			{#if !$connections || !$connections.connection || $connections.connection.length === 0}
 				<div class="ui message" class:inverted>
 					No saved connections. Go to Manage Connections to add one.
 				</div>
