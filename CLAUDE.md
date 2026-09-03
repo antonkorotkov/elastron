@@ -55,6 +55,10 @@ IPC is intentionally minimal (window management, persisted store, updates). Do n
 
 `svelte.config.js` defines `$store`, `$components`, `$utils`, `$api` aliases — but they point to `src/store`, `src/components`, etc. (no `lib/` prefix). The actual code lives in `src/lib/...`, so most imports use relative paths or `$lib/...`. Double-check before using the aliases.
 
+## Code style
+
+- Use arrow functions (`const foo = () => {}`) for all new functions — top-level helpers, store module exports, and component-local functions alike. Do not use `function` declarations or named `function` expressions in new code. This matches the existing convention in `src/lib/store/*.js` (e.g. `search.js`, `app.js`, `connection.js`) and `Search.svelte`.
+
 ## Additional context
 
 `AGENTS.md` in the repo root has an agent-oriented overview that overlaps with this file; prefer this file but consult `AGENTS.md` for the Storeon/IPC skill pointers.

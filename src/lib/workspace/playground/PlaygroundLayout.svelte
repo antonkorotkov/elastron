@@ -1,4 +1,5 @@
 <script>
+	import isEqual from 'lodash/isEqual'
 	import { useStoreon } from '@storeon/svelte'
 	import API from '$lib/api/elasticsearch'
 	import JsonEditor from '$lib/components/JsonEditor.svelte'
@@ -17,17 +18,14 @@
 		'app'
 	)
 
-	let method = $state('GET')
-	let path = $state('{{index}}/_search')
-	let selectedIndex = $state(null)
+	let requestEditor = $state(null)
 
-	let requestBody = $state({})
-	let requestBodyText = $state('{}')
-	let responseBody = $state({})
-
-	let activeTab = $state('body')
-	let headerItems = $state([])
-	let isRequestLoading = $state(false)
+	let method = $derived($playground.draft.method)
+	let path = $derived($playground.draft.path)
+	let activeTab = $derived($playground.draft.activeTab)
+	let selectedIndex = $derived($playground.selectedIndex)
+	let responseBody = $derived($playground.responseBody)
+	let isRequestLoading = $derived($playground.isRequestLoading)
 
 	let isDrawerOpen = $derived($playground.isDrawerOpen)
 	let inverted = $derived(isThemeToggleChecked($app.theme))
@@ -39,19 +37,19 @@
 		dispatch('notification/add', { type: 'error', message })
 
 	/**
-	 * Parse the current editor text. Reports malformed JSON and returns
+	 * Parse the current draft's body text. Reports malformed JSON and returns
 	 * `{ error }` instead of throwing out of an event handler.
 	 */
-	function readRequestBody() {
+	const readRequestBody = () => {
 		try {
-			return { body: parseJsonBody(requestBodyText) }
+			return { body: parseJsonBody($playground.draft.bodyText) }
 		} catch (error) {
 			notifyError(invalidJsonBodyMessage(error))
 			return { error }
 		}
 	}
 
-	function saveTemplate() {
+	const saveTemplate = () => {
 		if (templateName.trim()) {
 			const { body, error } = readRequestBody()
 			if (error) return
@@ -61,27 +59,57 @@
 				method,
 				path,
 				body,
-				headers: headerItems,
+				headers: $playground.draft.headers,
 			})
 			templateName = ''
 			showSaveInput = false
 		}
 	}
 
-	// Sync global store template loading to local states
+	// The JSON body editor is uncontrolled: it owns the text while the user
+	// types, and only gets pushed a new value when the store's bodyText
+	// diverges from what the editor is last known to hold — on hydrate
+	// (which can land after mount) and on template load. A value that
+	// originated from the editor's own `onChangeText` always matches, so this
+	// never fights the cursor mid-edit.
+	let lastEditorText = null
 	$effect(() => {
-		const req = $playground.currentRequest
-		if (req) {
-			try {
-				method = req.method || 'GET'
-				path = req.path || ''
-				const text = JSON.stringify(req.body || {}, null, 2)
-				requestBodyText = text
-				requestBody = JSON.parse(text)
-				headerItems = req.headers || []
-			} catch (error) {
-				notifyError(`Could not load the request: ${error.message}`)
-			}
+		const bodyText = $playground.draft.bodyText
+		if (requestEditor && bodyText !== lastEditorText) {
+			lastEditorText = bodyText
+			requestEditor.setText(bodyText)
+		}
+	})
+
+	// KeyValueList needs a deeply-mutable array to back its per-row
+	// checkbox/text bindings, which a plain object from the store cannot be.
+	// `headerItems` is that local buffer: reseeded from the store whenever the
+	// store's headers are a genuinely different array (hydrate, template
+	// load), and mirrored back to the store whenever its contents diverge
+	// from what was last synced (the user editing a row). Both directions
+	// compare by content (`isEqual`), not reference, so this stays correct
+	// even if `playground/update` starts cloning `headers` instead of storing
+	// the patch by reference.
+	let lastSyncedHeaders = $playground.draft.headers || []
+	let headerItems = $state(lastSyncedHeaders.map(h => ({ ...h })))
+
+	$effect(() => {
+		const stored = $playground.draft.headers || []
+		if (!isEqual(stored, lastSyncedHeaders)) {
+			lastSyncedHeaders = stored
+			headerItems = stored.map(h => ({ ...h }))
+		}
+	})
+
+	$effect(() => {
+		const snapshot = headerItems.map(h => ({
+			key: h.key,
+			value: h.value,
+			enabled: h.enabled,
+		}))
+		if (!isEqual(snapshot, lastSyncedHeaders)) {
+			lastSyncedHeaders = snapshot
+			dispatch('playground/update', { headers: snapshot })
 		}
 	})
 
@@ -89,7 +117,8 @@
 		mode: 'code',
 		modes: ['code', 'tree'],
 		onChangeText: text => {
-			requestBodyText = text
+			lastEditorText = text
+			dispatch('playground/update', { bodyText: text })
 		},
 	}
 
@@ -98,19 +127,24 @@
 		modes: ['view', 'code', 'tree'],
 	}
 
-	async function sendRequest() {
+	const sendRequest = async () => {
 		if (!$connection) return
 
 		const { body, error } = readRequestBody()
 		if (error) return
 
-		try {
-			isRequestLoading = true
+		// Captured so a response arriving after the user has switched
+		// connections is discarded instead of repopulating the just-cleared
+		// response pane with data from the connection they left.
+		const requestConnection = $connection
 
-			const api = new API($connection)
+		try {
+			dispatch('playground/update', { isRequestLoading: true })
+
+			const api = new API(requestConnection)
 
 			let customHeaders = {}
-			for (const { key, value, enabled } of headerItems) {
+			for (const { key, value, enabled } of $playground.draft.headers) {
 				if (enabled && key) {
 					customHeaders[key] = value
 				}
@@ -129,22 +163,27 @@
 				if (!resolvedPath.startsWith('/')) resolvedPath = '/' + resolvedPath
 			}
 
-			responseBody = await api.genericRequest({
+			const response = await api.genericRequest({
 				method,
 				path: resolvedPath,
 				elasticBody: Object.keys(body).length > 0 ? body : undefined,
 				headers:
 					Object.keys(customHeaders).length > 0 ? customHeaders : undefined,
 			})
+			if ($connection === requestConnection) {
+				dispatch('playground/update', { responseBody: response })
+			}
 		} catch (error) {
-			try {
-				responseBody = JSON.parse(error.message)
-			} catch {
-				responseBody = { error: error.message }
-				notifyError(error.message)
+			if ($connection === requestConnection) {
+				try {
+					dispatch('playground/update', { responseBody: JSON.parse(error.message) })
+				} catch {
+					dispatch('playground/update', { responseBody: { error: error.message } })
+					notifyError(error.message)
+				}
 			}
 		} finally {
-			isRequestLoading = false
+			dispatch('playground/update', { isRequestLoading: false })
 		}
 	}
 </script>
@@ -155,7 +194,12 @@
 			<div class="fields top-bar">
 				<div class="field" style="width: 120px;">
 					<label for="method">Method</label>
-					<select id="method" bind:value={method} class="ui dropdown">
+					<select
+						id="method"
+						class="ui dropdown"
+						value={method}
+						onchange={e => dispatch('playground/update', { method: e.target.value })}
+					>
 						<option value="GET">GET</option>
 						<option value="POST">POST</option>
 						<option value="PUT">PUT</option>
@@ -170,8 +214,8 @@
 					<IndexSelector
 						id="index"
 						currentlySelected={selectedIndex}
-						onSelect={e => (selectedIndex = e.detail.value)}
-						onClear={() => (selectedIndex = null)}
+						onSelect={e => dispatch('playground/update', { selectedIndex: e.detail.value })}
+						onClear={() => dispatch('playground/update', { selectedIndex: null })}
 						allowCustom={true}
 						placeholder="Target Index..."
 					/>
@@ -183,7 +227,8 @@
 						<input
 							id="uri"
 							type="text"
-							bind:value={path}
+							value={path}
+							oninput={e => dispatch('playground/update', { path: e.target.value })}
 							placeholder={'e.g. {{index}}/_search'}
 							onkeydown={e => e.key === 'Enter' && sendRequest()}
 						/>
@@ -261,14 +306,14 @@
 				<button
 					class="tab"
 					class:active={activeTab === 'body'}
-					onclick={() => (activeTab = 'body')}
+					onclick={() => dispatch('playground/update', { activeTab: 'body' })}
 				>
 					Request Body
 				</button>
 				<button
 					class="tab"
 					class:active={activeTab === 'headers'}
-					onclick={() => (activeTab = 'headers')}
+					onclick={() => dispatch('playground/update', { activeTab: 'headers' })}
 				>
 					Headers
 				</button>
@@ -280,7 +325,7 @@
 			>
 				<JsonEditor
 					id="playgroundRequestEditor"
-					value={requestBody}
+					bind:editor={requestEditor}
 					options={requestEditorOptions}
 					onError={error => notifyError(error.message)}
 				/>
