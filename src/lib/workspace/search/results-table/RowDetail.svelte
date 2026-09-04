@@ -1,5 +1,10 @@
 <script>
-	import { cellValue, flattenObject } from '../../../utils/tableHelpers'
+	import {
+		cellValue,
+		flattenObject,
+		DETAIL_MAX_FIELDS,
+		DETAIL_MAX_JSON_LINES,
+	} from '../../../utils/tableHelpers'
 
 	/**
 	 * @typedef {Object} Props
@@ -34,6 +39,24 @@
 	])
 
 	let sourceJson = $derived(JSON.stringify(hit?._source ?? {}, null, 2))
+	let sourceJsonLines = $derived(sourceJson.split('\n'))
+
+	let fieldsRevealed = $state(false)
+	let jsonRevealed = $state(false)
+
+	let hiddenFieldCount = $derived(Math.max(0, fields.length - DETAIL_MAX_FIELDS))
+	let visibleFields = $derived(
+		fieldsRevealed ? fields : fields.slice(0, DETAIL_MAX_FIELDS)
+	)
+
+	let hiddenJsonLineCount = $derived(
+		Math.max(0, sourceJsonLines.length - DETAIL_MAX_JSON_LINES)
+	)
+	let visibleJson = $derived(
+		jsonRevealed
+			? sourceJson
+			: sourceJsonLines.slice(0, DETAIL_MAX_JSON_LINES).join('\n')
+	)
 
 	const displayValue = field => {
 		const value = cellValue(hit, field)
@@ -82,7 +105,7 @@
 						</tr>
 					</thead>
 					<tbody>
-						{#each fields as field (field)}
+						{#each visibleFields as field (field)}
 							<tr>
 								<td class="field-key">{field}</td>
 								<td class="field-val">
@@ -109,10 +132,30 @@
 					</tbody>
 				</table>
 			</div>
+			{#if !fieldsRevealed && hiddenFieldCount > 0}
+				<button
+					type="button"
+					class="ui button mini basic compact reveal-button"
+					class:inverted
+					onclick={() => (fieldsRevealed = true)}
+				>
+					Show {hiddenFieldCount} more field{hiddenFieldCount === 1 ? '' : 's'}
+				</button>
+			{/if}
 		{:else}
 			<div class="json-code-wrapper" class:inverted>
-				<pre><code>{sourceJson}</code></pre>
+				<pre><code>{visibleJson}</code></pre>
 			</div>
+			{#if !jsonRevealed && hiddenJsonLineCount > 0}
+				<button
+					type="button"
+					class="ui button mini basic compact reveal-button"
+					class:inverted
+					onclick={() => (jsonRevealed = true)}
+				>
+					Show {hiddenJsonLineCount} more line{hiddenJsonLineCount === 1 ? '' : 's'}
+				</button>
+			{/if}
 		{/if}
 	</div>
 </div>
@@ -141,14 +184,16 @@
 	}
 
 	.flattened-table-wrapper {
-		max-height: 400px;
-		overflow-y: auto;
 		border: 1px solid #f0f0f0;
 		border-radius: 4px;
 
 		&.inverted {
 			border-color: #444;
 		}
+	}
+
+	.reveal-button {
+		margin-top: 0.75rem !important;
 	}
 
 	.flattened-table {
@@ -224,8 +269,6 @@
 	}
 
 	.json-code-wrapper {
-		max-height: 400px;
-		overflow: auto;
 		background: #f7f7f7;
 		border: 1px solid #e0e0e0;
 		border-radius: 4px;

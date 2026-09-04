@@ -40,6 +40,12 @@ export const TITLE_MAX_CHARS = 2000
 /** Rows rendered at most, regardless of how many hits the query returned. */
 export const MAX_RENDERED_ROWS = 500
 
+/** Fields rendered at most in an expanded row's Table View before a reveal control appears. */
+export const DETAIL_MAX_FIELDS = 50
+
+/** Lines rendered at most in an expanded row's JSON View before a reveal control appears. */
+export const DETAIL_MAX_JSON_LINES = 100
+
 /** Saved per-index layouts kept before the least recently touched is dropped. */
 export const MAX_TABLE_CONFIGS = 100
 
