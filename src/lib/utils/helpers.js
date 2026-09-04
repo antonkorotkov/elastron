@@ -65,7 +65,7 @@ export const isThemeToggleChecked = theme => {
  * palette so they sit well next to the rest of the chrome, and written in the
  * lowercase 6-digit form `<input type="color">` hands back — a preset and the
  * native picker must produce byte-identical strings, or the deep-equality
- * identity in the history store sees two colors as two different connections.
+ * identity in the connections store sees two colors as two different connections.
  * Semantic's `black` (#1b1c1d) is deliberately absent: it is the exact header
  * background, so it renders as an invisible strip and an unreadable pill.
  */

@@ -10,7 +10,7 @@ import { search } from './search'
 import { indices } from './elasticsearch/indices'
 import { allocation } from './elasticsearch/allocation'
 import { shards } from './elasticsearch/shards'
-import { history } from './history'
+import { connections } from './connections'
 import { index } from './elasticsearch/index'
 import { mappings } from './elasticsearch/mappings'
 import { monitoring } from './elasticsearch/monitoring'
@@ -21,7 +21,7 @@ export const store = createStoreon([
 	app,
 	server,
 	internet,
-	history,
+	connections,
 	connection,
 	notifications,
 	search,

@@ -22,88 +22,85 @@ const normalizeConnection = connection => {
     return normalized
 }
 
-export const history = store => {
+export const connections = store => {
     store.on('@init', () => ({
-        history: {
+        connections: {
             connection: [], // Will be hydrated
         },
     }))
 
-    store.on('history/hydrate', (state, data) => {
+    store.on('connections/hydrate', (state, data) => {
         return {
-            history: {
-                ...state.history,
+            connections: {
+                ...state.connections,
                 connection: (data.connection || []).map(normalizeConnection),
             }
         }
     })
 
-    store.on('history/connection/clear', state => {
+    store.on('connections/clear', state => {
         setStorage('connection', [])
 
         return {
-            history: {
-                ...state.history,
+            connections: {
+                ...state.connections,
                 connection: [],
             },
         }
     })
 
-    store.on('history/connection/add', (state, rawConnection) => {
+    store.on('connections/add', (state, rawConnection) => {
         const connection = normalizeConnection(rawConnection)
 
-        if (some(state.history.connection, item => isEqual(item, connection)))
+        if (some(state.connections.connection, item => isEqual(item, connection)))
             return state
 
-        const savedConnections = [...state.history.connection]
-        if (savedConnections.length >= 10) {
-            savedConnections.shift()
-        }
+        const savedConnections = [...state.connections.connection]
         savedConnections.push(connection)
         setStorage('connection', savedConnections)
 
         return {
-            history: {
-                ...state.history,
+            connections: {
+                ...state.connections,
                 connection: savedConnections,
             },
         }
     })
 
-    store.on('history/connection/replace', (state, { index, connection: rawConnection }) => {
-        if (index < 0 || index >= state.history.connection.length) return state
+    store.on('connections/replace', (state, { index, connection: rawConnection }) => {
+        if (index < 0 || index >= state.connections.connection.length) return state
 
-        const savedConnections = [...state.history.connection]
+        const savedConnections = [...state.connections.connection]
         savedConnections[index] = normalizeConnection(rawConnection)
         setStorage('connection', savedConnections)
 
         return {
-            history: {
-                ...state.history,
+            connections: {
+                ...state.connections,
                 connection: savedConnections,
             },
         }
     })
 
-    store.on('history/connection/delete', (state, rawConnection) => {
+    store.on('connections/delete', (state, rawConnection) => {
         const connection = normalizeConnection(rawConnection)
 
         // Remove a single entry rather than every match. Identity here is deep
         // equality, and replacing in place can leave two entries identical, so
         // filtering would silently delete a connection the user did not pick.
-        const index = state.history.connection.findIndex(item =>
+        const index = state.connections.connection.findIndex(item =>
             isEqual(item, connection)
         )
 
         if (index === -1) return state
 
-        const savedConnections = [...state.history.connection]
+        const savedConnections = [...state.connections.connection]
         savedConnections.splice(index, 1)
         setStorage('connection', savedConnections)
 
         return {
-            history: {
-                ...state.history,
+            connections: {
+                ...state.connections,
                 connection: savedConnections,
             },
         }

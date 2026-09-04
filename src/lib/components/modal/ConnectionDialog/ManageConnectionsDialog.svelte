@@ -10,8 +10,8 @@
 	import SshTunnelFields from './SshTunnelFields.svelte'
 	import ColorPicker from '../../inputs/ColorPicker.svelte'
 
-	const { dispatch, history, app, connection } = useStoreon(
-		'history',
+	const { dispatch, connections, app, connection } = useStoreon(
+		'connections',
 		'app',
 		'connection'
 	)
@@ -31,11 +31,11 @@
 	$effect(() => {
 		if (
 			selectedIndex === -1 &&
-			$history.connection.length > 0 &&
+			$connections.connection.length > 0 &&
 			!isEditingNew
 		) {
 			selectConnection(0)
-		} else if ($history.connection.length === 0 && !isEditingNew) {
+		} else if ($connections.connection.length === 0 && !isEditingNew) {
 			addNewConnection()
 		}
 	})
@@ -49,7 +49,7 @@
 			// on the color picker.
 			localConnection = {
 				color: '',
-				...JSON.parse(JSON.stringify($history.connection[index])),
+				...JSON.parse(JSON.stringify($connections.connection[index])),
 			}
 		} else {
 			localConnection = null
@@ -84,18 +84,20 @@
 	const deleteConnection = () => {
 		try {
 			if (selectedIndex >= 0) {
-				dispatch(
-					'history/connection/delete',
-					$history.connection[selectedIndex]
-				)
-				if ($history.connection.length > 0) {
+				const target = $connections.connection[selectedIndex]
+				const targetLabel =
+					target.name || target.host + (target.port ? ':' + target.port : '')
+				if (!confirm(`Delete the connection "${targetLabel}"?`)) return
+
+				dispatch('connections/delete', target)
+				if ($connections.connection.length > 0) {
 					selectConnection(Math.max(0, selectedIndex - 1))
 				} else {
 					addNewConnection()
 				}
 			} else if (isEditingNew) {
 				// just cancel editing new
-				if ($history.connection.length > 0) {
+				if ($connections.connection.length > 0) {
 					selectConnection(0)
 				}
 			}
@@ -196,18 +198,18 @@
 		if (selectedIndex >= 0) {
 			// Compare against the entry as it was before this save, so a rename
 			// alongside a recolor still recognizes the live connection.
-			const previous = $history.connection[selectedIndex]
+			const previous = $connections.connection[selectedIndex]
 
 			// Replace in place, so editing never reorders the list
-			dispatch('history/connection/replace', {
+			dispatch('connections/replace', {
 				index: selectedIndex,
 				connection: $state.snapshot(localConnection),
 			})
 
 			syncLabelToActiveConnection(previous)
 		} else {
-			dispatch('history/connection/add', $state.snapshot(localConnection))
-			setTimeout(() => selectConnection($history.connection.length - 1), 0)
+			dispatch('connections/add', $state.snapshot(localConnection))
+			setTimeout(() => selectConnection($connections.connection.length - 1), 0)
 		}
 
 		dispatch('notification/add', {
@@ -257,7 +259,7 @@
 	<div
 		class="ui vertical menu"
 		class:inverted
-		style="width: 250px; margin: 0; border-radius: 0; border-top: none; border-bottom: none; border-left: none;"
+		style="width: 250px; margin: 0; border-radius: 0; border-top: none; border-bottom: none; border-left: none; max-height: 440px; overflow-y: auto;"
 	>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_interactive_supports_focus -->
@@ -269,8 +271,8 @@
 		>
 			<i class="plus icon"></i> Add New
 		</div>
-		{#if $history && $history.connection}
-			{#each $history.connection as conn, i (i)}
+		{#if $connections && $connections.connection}
+			{#each $connections.connection as conn, i (i)}
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<!-- svelte-ignore a11y_interactive_supports_focus -->
 				<div

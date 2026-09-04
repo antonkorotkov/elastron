@@ -22,7 +22,7 @@
 		onClear = () => {}
 	} = $props();
 
-	const { history } = useStoreon('history')
+	const { connections } = useStoreon('connections')
 </script>
 
 <div class="connection-selector" style={containerStyle}>
@@ -30,7 +30,7 @@
 		isClearable={allowClear}
 		isCreatable={false}
 		{isDisabled}
-		items={$history.connection.map((value, index) => ({
+		items={$connections.connection.map((value, index) => ({
 			value: index,
 			label: value.name,
 		}))}

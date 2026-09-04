@@ -6,8 +6,8 @@ import { writable } from 'svelte/store';
 
 vi.mock('@storeon/svelte', () => ({
 	useStoreon: (key) => {
-		if (key === 'history') {
-			return { history: writable({ connection: [{ name: 'Local Dev' }] }) };
+		if (key === 'connections') {
+			return { connections: writable({ connection: [{ name: 'Local Dev' }] }) };
 		}
 		if (key === 'app') {
 			return { app: writable({ theme: 'light' }) };
