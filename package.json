@@ -4,6 +4,7 @@
   "description": "Full featured elasticsearch client",
   "type": "module",
   "main": "main.js",
+  "desktopName": "elastron.desktop",
   "scripts": {
     "dev": "concurrently \"vite dev\" \"wait-on tcp:5173 && electron .\"",
     "build": "vite build",
@@ -85,6 +86,7 @@
     "linux": {
       "icon": "static/icon.png",
       "category": "Utility",
+      "syncDesktopName": true,
       "publish": {
         "provider": "github",
         "repo": "elastron",
