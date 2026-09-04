@@ -31,6 +31,7 @@
 	import { browser } from '$app/environment'
 	import { getStorage } from '$lib/utils/storage.js'
 	import { initialConnection } from '$lib/store/connection.js'
+	import { flushPlaygroundDraft } from '$lib/store/playground.js'
 
 	onMount(async () => {
 		if (browser) {
@@ -67,6 +68,13 @@
 				initialConnection
 
 			dispatch('connection/hydrate', currentConnection)
+
+			// Hydrated before `connection/save` so a persisted draft exists before
+			// the `connected` event it triggers can reset the draft's index/response.
+			const playgroundTemplates = await getStorage('playground_templates', [])
+			const playgroundDraft = await getStorage('playground_draft', null)
+			dispatch('playground/hydrate', { templates: playgroundTemplates, draft: playgroundDraft })
+
 			dispatch('connection/save')
 			dispatch('history/hydrate', { connection: connections })
 
@@ -82,11 +90,10 @@
 			dispatch('app/hydrate', { theme: theme ?? 'light' })
 			dispatch('server/info')
 
-			const playgroundTemplates = await getStorage('playground_templates', [])
-			dispatch('playground/hydrate', playgroundTemplates)
-
 			// Clean up SSH tunnel on window close
 			window.addEventListener('beforeunload', () => {
+				flushPlaygroundDraft()
+
 				const state = store.get()
 				if (state.connection?.useSshTunnel && state.app?.windowId) {
 					fetch('/api/elastic/tunnel/close', {

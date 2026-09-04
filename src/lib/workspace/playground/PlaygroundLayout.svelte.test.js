@@ -2,19 +2,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent, screen } from '@testing-library/svelte'
 import { tick } from 'svelte'
-import { writable } from 'svelte/store'
+import { get, writable } from 'svelte/store'
 
-const playgroundStore = writable({
-	currentRequest: {
+const defaultPlaygroundState = () => ({
+	draft: {
+		name: 'New Request',
 		method: 'GET',
 		path: '{{index}}/_search',
-		body: {},
+		bodyText: '{}',
 		headers: [],
+		activeTab: 'body',
 	},
+	selectedIndex: null,
+	responseBody: {},
+	isRequestLoading: false,
 	builtinTemplates: [],
 	customTemplates: [],
 	isDrawerOpen: false,
 })
+
+const playgroundStore = writable(defaultPlaygroundState())
 
 const stores = {
 	connection: writable({ id: 'c1', version: '8.0.0' }),
@@ -23,7 +30,29 @@ const stores = {
 	indices: writable({ data: [], columns: [] }),
 }
 
-const dispatch = vi.fn()
+/**
+ * A minimal stand-in for the real `playground/update` reducer, just enough
+ * for the component's read-from-store-after-dispatch flow (e.g. sendRequest
+ * reading `draft.bodyText`) to behave as it does against the real store.
+ */
+const dispatch = vi.fn((event, payload) => {
+	if (event === 'playground/update') {
+		playgroundStore.update(state => {
+			const memoryKeys = ['selectedIndex', 'responseBody', 'isRequestLoading']
+			const draftPatch = {}
+			const memoryPatch = {}
+			for (const key of Object.keys(payload)) {
+				if (memoryKeys.includes(key)) memoryPatch[key] = payload[key]
+				else draftPatch[key] = payload[key]
+			}
+			return {
+				...state,
+				...memoryPatch,
+				draft: { ...state.draft, ...draftPatch },
+			}
+		})
+	}
+})
 
 vi.mock('@storeon/svelte', () => ({
 	useStoreon: (...keys) => {
@@ -52,6 +81,9 @@ vi.mock('jsoneditor', () => {
 			this.text = '{}'
 			this.update = vi.fn(json => {
 				this.text = JSON.stringify(json, null, 2)
+			})
+			this.setText = vi.fn(text => {
+				this.text = text
 			})
 			this.destroy = vi.fn()
 			instances.push(this)
@@ -83,6 +115,8 @@ const renderPlayground = async () => {
 
 describe('PlaygroundLayout request body', () => {
 	beforeEach(() => {
+		playgroundStore.set(defaultPlaygroundState())
+		stores.connection.set({ id: 'c1', version: '8.0.0' })
 		dispatch.mockClear()
 		genericRequest.mockClear()
 	})
@@ -138,23 +172,41 @@ describe('PlaygroundLayout request body', () => {
 		const { requestEditor } = await renderPlayground()
 		requestEditor.type('{"query":')
 		await tick()
-		requestEditor.update.mockClear()
+		requestEditor.setText.mockClear()
 
+		const newBodyText = JSON.stringify({ query: { term: { a: 1 } } }, null, 2)
 		playgroundStore.set({
-			currentRequest: {
+			...defaultPlaygroundState(),
+			draft: {
+				...defaultPlaygroundState().draft,
 				method: 'POST',
 				path: '{{index}}/_count',
-				body: { query: { term: { a: 1 } } },
-				headers: [],
+				bodyText: newBodyText,
 			},
-			builtinTemplates: [],
-			customTemplates: [],
-			isDrawerOpen: false,
 		})
 		await tick()
 
-		expect(requestEditor.update).toHaveBeenCalledWith({
-			query: { term: { a: 1 } },
-		})
+		expect(requestEditor.setText).toHaveBeenCalledWith(newBodyText)
+	})
+
+	it('discards a response that arrives after the user switched connections', async () => {
+		let resolveRequest
+		genericRequest.mockImplementation(
+			() => new Promise(resolve => { resolveRequest = resolve })
+		)
+
+		await renderPlayground()
+		await fireEvent.click(screen.getByText('Send'))
+		await tick()
+
+		// Switch connections while the request is still in flight.
+		stores.connection.set({ id: 'c2', version: '8.0.0' })
+		await tick()
+
+		resolveRequest({ took: 1, hits: {} })
+		await tick()
+
+		expect(get(playgroundStore).responseBody).toEqual({})
+		expect(get(playgroundStore).isRequestLoading).toBe(false)
 	})
 })
