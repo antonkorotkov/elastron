@@ -4,13 +4,13 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer: {
         send: (channel, data) => {
             // whitelist channels
-            let validChannels = ['header-doubleclick', 'check-for-updates', 'window:new'];
+            let validChannels = ['header-doubleclick', 'check-for-updates', 'window:new', 'restart-and-install'];
             if (validChannels.includes(channel)) {
                 ipcRenderer.send(channel, data);
             }
         },
         on: (channel, func) => {
-            let validChannels = ['update_available', 'update_downloaded'];
+            let validChannels = ['update_available', 'update_downloaded', 'update-download-progress'];
             if (validChannels.includes(channel)) {
                 // Deliberately strip event as it includes `sender`
                 ipcRenderer.on(channel, (event, ...args) => func(...args));
