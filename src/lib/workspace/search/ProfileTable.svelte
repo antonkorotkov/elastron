@@ -5,16 +5,18 @@
 	import Shard from './profiling/Shard.svelte'
 	import { isThemeToggleChecked } from '../../utils/helpers'
 
-	const { app, search } = useStoreon('search', 'app')
+	let { tab } = $props()
+
+	const { app } = useStoreon('app')
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
 <div class="profile-table">
-	{#if !isEmpty($search.profile)}
+	{#if !isEmpty(tab.profile)}
 		<h4 class="ui header" class:inverted>Affected Shards</h4>
 		<div class="ui fluid accordion styled" class:inverted>
-			{#each $search.profile.shards as shard, i (i)}
+			{#each tab.profile.shards as shard, i (i)}
 				<Shard {shard} />
 			{/each}
 		</div>

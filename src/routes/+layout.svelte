@@ -32,6 +32,7 @@
 	import { getStorage } from '$lib/utils/storage.js'
 	import { initialConnection } from '$lib/store/connection.js'
 	import { flushPlaygroundDraft } from '$lib/store/playground.js'
+	import { flushSearchTabs, migrateLastSearch } from '$lib/store/search.js'
 
 	onMount(async () => {
 		if (browser) {
@@ -78,13 +79,21 @@
 			dispatch('connection/save')
 			dispatch('connections/hydrate', { connection: connections })
 
-			const lastSearch = await getStorage('lastSearch', null)
-			if (lastSearch) {
-				dispatch('search/hydrate', lastSearch)
+			// Tabs replaced the single persisted search; an older install still
+			// holds only `lastSearch`, which becomes the first tab. `lastSearch`
+			// is left in place so a downgrade can still find it.
+			const searchTabs = await getStorage('searchTabs', null)
+			if (searchTabs) {
+				dispatch('search/hydrate', searchTabs)
+			} else {
+				const lastSearch = await getStorage('lastSearch', null)
+				if (lastSearch) {
+					dispatch('search/hydrate', migrateLastSearch(lastSearch))
+				}
 			}
 
 			const tableConfigs = await getStorage('tableConfigs', {})
-			dispatch('search/tableConfigs/hydrate', tableConfigs)
+			dispatch('tableConfigs/hydrate', tableConfigs)
 
 			const theme = await getStorage('theme')
 			dispatch('app/hydrate', { theme: theme ?? 'light' })
@@ -93,6 +102,7 @@
 			// Clean up SSH tunnel on window close
 			window.addEventListener('beforeunload', () => {
 				flushPlaygroundDraft()
+				flushSearchTabs()
 
 				const state = store.get()
 				if (state.connection?.useSshTunnel && state.app?.windowId) {

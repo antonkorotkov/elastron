@@ -7,6 +7,7 @@ import { internet } from './internet'
 import { connection } from './connection'
 import { notifications } from './notifications'
 import { search } from './search'
+import { tableConfigs } from './tableConfigs'
 import { indices } from './elasticsearch/indices'
 import { allocation } from './elasticsearch/allocation'
 import { shards } from './elasticsearch/shards'
@@ -25,6 +26,7 @@ export const store = createStoreon([
 	connection,
 	notifications,
 	search,
+	tableConfigs,
 	indices,
 	allocation,
 	shards,

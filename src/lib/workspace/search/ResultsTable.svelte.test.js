@@ -3,25 +3,28 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within, fireEvent } from '@testing-library/svelte'
 import { userEvent } from '@testing-library/user-event'
 import { tick } from 'svelte'
-import { writable, get } from 'svelte/store'
+import { writable } from 'svelte/store'
 import ResultsTable from './ResultsTable.svelte'
 
 const dispatch = vi.fn()
-const searchStore = writable({})
 const mappingsStore = writable({ info: {}, loading: {}, error: {} })
+const tableConfigsStore = writable({})
 
 vi.mock('@storeon/svelte', () => ({
 	useStoreon: () => ({
 		app: writable({ theme: 'light' }),
-		search: searchStore,
 		mappings: mappingsStore,
+		tableConfigs: tableConfigsStore,
 		dispatch,
 	}),
 }))
 
+const TAB = 'tab-1'
+
 const hit = (id, source) => ({ _index: 'logs', _id: id, _score: 1, _source: source })
 
 const baseSearch = {
+	id: TAB,
 	type: 'uri',
 	view: 'table',
 	index: 'logs',
@@ -29,7 +32,6 @@ const baseSearch = {
 	from: 0,
 	size: 10,
 	requestBody: {},
-	tableConfigs: {},
 	results: [
 		hit('1', { title: 'Alpha', views: 10 }),
 		hit('2', { title: 'Beta', views: 20 }),
@@ -48,11 +50,23 @@ const mapping = {
 	},
 }
 
-const setup = (search = {}, mappings = {}, props = {}) => {
-	searchStore.set({ ...baseSearch, ...search })
+// Layouts live in their own slice; tests still pass them alongside the
+// tab state for brevity. `patch` re-renders with changed tab fields, standing
+// in for the store update that would reach the table through its prop.
+const setup = ({ tableConfigs = {}, ...search } = {}, mappings = {}, props = {}) => {
+	const tab = { ...baseSearch, ...search }
+	tableConfigsStore.set(tableConfigs)
 	mappingsStore.set({ info: {}, loading: {}, error: {}, ...mappings })
-	return render(ResultsTable, props)
+	const result = render(ResultsTable, { tab, ...props })
+	return {
+		...result,
+		tab,
+		patch: changes => result.rerender({ tab: { ...tab, ...changes }, ...props }),
+	}
 }
+
+const expectUpdate = patch =>
+	expect(dispatch).toHaveBeenCalledWith('search/update', { id: TAB, patch })
 
 const columnHeaders = () =>
 	screen
@@ -98,7 +112,7 @@ describe('ResultsTable', () => {
 
 			await user.click(screen.getByTitle('Add views as a column'))
 
-			expect(dispatch).toHaveBeenCalledWith('search/tableConfigs/update', {
+			expect(dispatch).toHaveBeenCalledWith('tableConfigs/update', {
 				index: 'logs',
 				config: { columns: [{ field: 'views', name: 'views' }] },
 			})
@@ -110,7 +124,7 @@ describe('ResultsTable', () => {
 
 			await user.click(screen.getByRole('button', { name: /Reset/ }))
 
-			expect(dispatch).toHaveBeenCalledWith('search/tableConfigs/update', {
+			expect(dispatch).toHaveBeenCalledWith('tableConfigs/update', {
 				index: 'logs',
 				config: { columns: [] },
 			})
@@ -156,11 +170,11 @@ describe('ResultsTable', () => {
 
 			await user.click(screen.getByRole('button', { name: 'views' }))
 
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				sort: 'views:asc',
 				from: 0,
 			})
-			expect(dispatch).toHaveBeenCalledWith('search/run')
+			expect(dispatch).toHaveBeenCalledWith('search/run', TAB)
 		})
 
 		it('resets the offset so page 5 of a new ordering is not shown', async () => {
@@ -169,7 +183,7 @@ describe('ResultsTable', () => {
 
 			await user.click(screen.getByRole('button', { name: 'views' }))
 
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				sort: 'views:asc',
 				from: 0,
 			})
@@ -184,7 +198,7 @@ describe('ResultsTable', () => {
 
 			await user.click(screen.getByRole('button', { name: 'views' }))
 
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				sort: 'views:desc',
 				from: 0,
 			})
@@ -196,7 +210,7 @@ describe('ResultsTable', () => {
 
 			await user.click(screen.getByRole('button', { name: 'title' }))
 
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				sort: 'title.keyword:asc',
 				from: 0,
 			})
@@ -210,7 +224,7 @@ describe('ResultsTable', () => {
 			expect(header.disabled).toBe(true)
 
 			await user.click(header)
-			expect(dispatch).not.toHaveBeenCalledWith('search/run')
+			expect(dispatch).not.toHaveBeenCalledWith('search/run', TAB)
 		})
 
 		it('refuses to sort on _id, which the cluster rejects', () => {
@@ -224,7 +238,7 @@ describe('ResultsTable', () => {
 
 			await user.click(screen.getByRole('button', { name: 'dynamic' }))
 
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				sort: 'dynamic:asc',
 				from: 0,
 			})
@@ -250,10 +264,10 @@ describe('ResultsTable', () => {
 				sort: [{ views: { order: 'asc' } }],
 			}
 			expect(qEditor.set).toHaveBeenCalledWith(expected)
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				requestBody: expected,
 			})
-			expect(dispatch).toHaveBeenCalledWith('search/run')
+			expect(dispatch).toHaveBeenCalledWith('search/run', TAB)
 		})
 
 		it('reports a malformed request body instead of running a query', async () => {
@@ -268,7 +282,7 @@ describe('ResultsTable', () => {
 			await user.click(screen.getByRole('button', { name: 'views' }))
 
 			expect(qEditor.set).not.toHaveBeenCalled()
-			expect(dispatch).not.toHaveBeenCalledWith('search/run')
+			expect(dispatch).not.toHaveBeenCalledWith('search/run', TAB)
 			expect(dispatch).toHaveBeenCalledWith(
 				'notification/add',
 				expect.objectContaining({ type: 'error' })
@@ -286,11 +300,11 @@ describe('ResultsTable', () => {
 
 			// Otherwise the next query is ordered by a field the table no longer
 			// shows, with no header arrow to explain where the ordering came from.
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				sort: '',
 				from: 0,
 			})
-			expect(dispatch).not.toHaveBeenCalledWith('search/run')
+			expect(dispatch).not.toHaveBeenCalledWith('search/run', TAB)
 		})
 
 		it('drops the sort out of the request body on reset', async () => {
@@ -317,7 +331,7 @@ describe('ResultsTable', () => {
 
 			const expected = { query: { match_all: {} }, from: 0 }
 			expect(qEditor.set).toHaveBeenCalledWith(expected)
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				requestBody: expected,
 			})
 		})
@@ -344,7 +358,7 @@ describe('ResultsTable', () => {
 
 				await user.click(removeColumn('views'))
 
-				expect(dispatch).toHaveBeenCalledWith('search/update', {
+				expectUpdate({
 					sort: '',
 					from: 0,
 				})
@@ -356,7 +370,7 @@ describe('ResultsTable', () => {
 
 				await user.click(removeColumn('title'))
 
-				expect(dispatch).toHaveBeenCalledWith('search/update', {
+				expectUpdate({
 					sort: '',
 					from: 0,
 				})
@@ -383,7 +397,7 @@ describe('ResultsTable', () => {
 				screen.getByRole('button', { name: 'Remove column views' })
 			)
 
-			expect(dispatch).toHaveBeenCalledWith('search/update', {
+			expectUpdate({
 				sort: '',
 				from: 0,
 			})
@@ -454,7 +468,7 @@ describe('ResultsTable', () => {
 				.closest('tr')
 			await user.click(within(viewsRow).getByRole('button', { name: 'Add' }))
 
-			expect(dispatch).toHaveBeenCalledWith('search/tableConfigs/update', {
+			expect(dispatch).toHaveBeenCalledWith('tableConfigs/update', {
 				index: 'logs',
 				config: {
 					columns: [
@@ -491,7 +505,7 @@ describe('ResultsTable', () => {
 			drag(resizerFor('title'), 60)
 			await tick()
 
-			expect(dispatch).toHaveBeenCalledWith('search/tableConfigs/update', {
+			expect(dispatch).toHaveBeenCalledWith('tableConfigs/update', {
 				index: 'logs',
 				config: {
 					columns: [
@@ -509,7 +523,7 @@ describe('ResultsTable', () => {
 			await tick()
 
 			const [, payload] = dispatch.mock.calls.find(
-				([event]) => event === 'search/tableConfigs/update'
+				([event]) => event === 'tableConfigs/update'
 			)
 			expect(payload.config.columns[0].width).toBe(60)
 		})
@@ -525,7 +539,7 @@ describe('ResultsTable', () => {
 			await tick()
 
 			expect(dispatch).not.toHaveBeenCalledWith(
-				'search/tableConfigs/update',
+				'tableConfigs/update',
 				expect.anything()
 			)
 		})
@@ -585,21 +599,19 @@ describe('ResultsTable', () => {
 			).length
 
 		it('does not refetch when unrelated search state changes', async () => {
-			setup()
+			const { patch } = setup()
 			expect(fetchCount()).toBe(1)
 
-			searchStore.update(state => ({ ...state, loading: true }))
-			await tick()
+			await patch({ loading: true })
 
 			expect(fetchCount()).toBe(1)
 		})
 
 		it('refetches when the selected index changes', async () => {
-			setup()
+			const { patch } = setup()
 			expect(fetchCount()).toBe(1)
 
-			searchStore.update(state => ({ ...state, index: 'metrics' }))
-			await tick()
+			await patch({ index: 'metrics' })
 
 			expect(dispatch).toHaveBeenCalledWith('elasticsearch/mappings/fetch', {
 				index: 'metrics',
@@ -608,21 +620,18 @@ describe('ResultsTable', () => {
 		})
 
 		it('fetches when the table becomes the active view', async () => {
-			setup({ view: 'hits' })
+			const { patch } = setup({ view: 'hits' })
 			expect(fetchCount()).toBe(0)
 
-			searchStore.update(state => ({ ...state, view: 'table' }))
-			await tick()
+			await patch({ view: 'table' })
 
 			expect(fetchCount()).toBe(1)
 		})
 
 		it('lists fields from the mapping that no hit contains', () => {
-			setup({}, { info: { logs: mapping } })
+			const { tab } = setup({}, { info: { logs: mapping } })
 			expect(screen.getByTitle('Add body as a column')).toBeTruthy()
-			expect(get(searchStore).results.every(h => !('body' in h._source))).toBe(
-				true
-			)
+			expect(tab.results.every(h => !('body' in h._source))).toBe(true)
 		})
 	})
 })

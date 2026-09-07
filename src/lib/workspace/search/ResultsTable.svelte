@@ -37,19 +37,22 @@
 
 	/**
 	 * @typedef {Object} Props
+	 * @property {object} tab the search tab this table belongs to
 	 * @property {{ getText?: () => string, set?: (json: object) => void }} [qEditor]
 	 *   the request body editor, so sorting in body mode rewrites the body the
 	 *   user can see rather than a copy of it
 	 */
 
 	/** @type {Props} */
-	let { qEditor = null } = $props()
+	let { tab, qEditor = null } = $props()
 
-	const { dispatch, search, app, mappings } = useStoreon(
-		'search',
+	const { dispatch, app, mappings, tableConfigs } = useStoreon(
 		'app',
-		'mappings'
+		'mappings',
+		'tableConfigs'
 	)
+
+	const update = patch => dispatch('search/update', { id: tab.id, patch })
 
 	/** Just wide enough for the caret; never shares in the table's spare width. */
 	const EXPAND_COLUMN_WIDTH = 32
@@ -67,26 +70,26 @@
 
 	let inverted = $derived(isThemeToggleChecked($app?.theme))
 
-	let active = $derived($search?.view === 'table')
-	let indexName = $derived(String($search?.index ?? '').trim() || '_all')
+	let active = $derived(tab?.view === 'table')
+	let indexName = $derived(String(tab?.index ?? '').trim() || '_all')
 
 	let mappingInfo = $derived($mappings?.info?.[indexName] ?? null)
 	let loadingMapping = $derived(!!$mappings?.loading?.[indexName])
 	let fieldIndex = $derived(buildFieldIndex(mappingInfo))
 
-	let config = $derived($search?.tableConfigs?.[indexName] ?? null)
+	let config = $derived($tableConfigs?.[indexName] ?? null)
 	let configured = $derived(isConfigured(config))
 	let columns = $derived(columnsOf(config))
 
-	let observedFields = $derived(getAvailableFields(mappingInfo, $search?.results))
+	let observedFields = $derived(getAvailableFields(mappingInfo, tab?.results))
 	let selectableFields = $derived([
 		...META_FIELDS,
 		...observedFields.filter(field => !META_FIELDS.includes(field)),
 	])
 
-	let sortState = $derived(currentSortState($search))
+	let sortState = $derived(currentSortState(tab))
 
-	let hits = $derived(Array.isArray($search?.results) ? $search.results : [])
+	let hits = $derived(Array.isArray(tab?.results) ? tab.results : [])
 	let visibleHits = $derived(hits.slice(0, MAX_RENDERED_ROWS))
 	let hiddenCount = $derived(hits.length - visibleHits.length)
 
@@ -108,7 +111,7 @@
 	// Matching a row across two different queries is coincidence, not intent.
 	let lastResults = null
 	$effect(() => {
-		const results = $search?.results
+		const results = tab?.results
 		if (results === lastResults) return
 		lastResults = results
 		expandedRows.clear()
@@ -173,7 +176,7 @@
 	 * fetched with until the user runs it again.
 	 */
 	const saveColumns = nextColumns => {
-		dispatch('search/tableConfigs/update', {
+		dispatch('tableConfigs/update', {
 			index: indexName,
 			config: { columns: nextColumns },
 		})
@@ -230,8 +233,8 @@
 	 * @returns {boolean} whether the sort could be written
 	 */
 	const writeSort = next => {
-		if ($search.type === 'body') {
-			const { requestBody, error } = readEditorJson(qEditor, $search.requestBody)
+		if (tab.type === 'body') {
+			const { requestBody, error } = readEditorJson(qEditor, tab.requestBody)
 			if (error) {
 				dispatch('notification/add', {
 					type: 'error',
@@ -245,9 +248,9 @@
 			else delete nextBody.sort
 
 			if (typeof qEditor?.set === 'function') qEditor.set(nextBody)
-			dispatch('search/update', { requestBody: nextBody })
+			update({ requestBody: nextBody })
 		} else {
-			dispatch('search/update', {
+			update({
 				sort: next ? buildUriSort(next.field, next.direction) : '',
 				from: 0,
 			})
@@ -261,7 +264,7 @@
 	 * thousand hits and presenting it as an ordering would be a lie.
 	 */
 	const applySort = (field, direction) => {
-		if (writeSort({ field, direction })) dispatch('search/run')
+		if (writeSort({ field, direction })) dispatch('search/run', tab.id)
 	}
 
 	const sortTargetOf = column => resolveSortTarget(column.field, fieldIndex)
