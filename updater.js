@@ -30,8 +30,13 @@ const init = window => {
 		})
 
 		if (answer.response === 0) {
+			window.webContents.send('update_available')
 			autoUpdater.downloadUpdate()
 		}
+	})
+
+	autoUpdater.on('download-progress', progress => {
+		window.webContents.send('update-download-progress', { percent: progress.percent })
 	})
 
 	autoUpdater.on('update-not-available', async () => {
@@ -45,6 +50,8 @@ const init = window => {
 	})
 
 	autoUpdater.on('update-downloaded', async () => {
+		window.webContents.send('update_downloaded')
+
 		const answer = await dialog.showMessageBox(window, {
 			type: 'info',
 			title: 'Install Updates',
@@ -70,4 +77,8 @@ const checkForUpdates = (notify = false) => {
 	})
 }
 
-export default { init, checkForUpdates }
+const restartAndInstall = () => {
+	autoUpdater.quitAndInstall()
+}
+
+export default { init, checkForUpdates, restartAndInstall }
