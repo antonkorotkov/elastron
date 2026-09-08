@@ -1,6 +1,6 @@
 {
   "name": "elastron",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Full featured elasticsearch client",
   "type": "module",
   "main": "main.js",
