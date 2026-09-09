@@ -17,6 +17,7 @@ import { mappings } from './elasticsearch/mappings'
 import { monitoring } from './elasticsearch/monitoring'
 import { playground } from './playground'
 import { updater } from './updater'
+import { analytics } from './analytics'
 
 
 export const store = createStoreon([
@@ -36,6 +37,7 @@ export const store = createStoreon([
 	monitoring,
 	playground,
 	updater,
+	analytics,
 	storeonDevtools
 ])
 

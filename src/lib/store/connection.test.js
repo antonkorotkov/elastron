@@ -103,6 +103,31 @@ describe('connection store module', () => {
 			await save();
 			expect(store.get().connection.version).toBe(null);
 		});
+
+		it('dispatches connected with the cluster version and build flavor', async () => {
+			mockTest({ success: true, version: { number: '8.12.0', build_flavor: 'default' } });
+			const connected = vi.fn();
+			store.on('connected', (state, payload) => connected(payload));
+			await save();
+			expect(connected).toHaveBeenCalledTimes(1);
+			expect(connected).toHaveBeenCalledWith({ version: '8.12.0', flavor: 'default' });
+		});
+
+		it('dispatches connected with an undefined flavor when the server omits it', async () => {
+			mockTest({ success: true, version: { number: '8.12.0' } });
+			const connected = vi.fn();
+			store.on('connected', (state, payload) => connected(payload));
+			await save();
+			expect(connected).toHaveBeenCalledWith({ version: '8.12.0', flavor: undefined });
+		});
+
+		it('does not dispatch connected when the test fails', async () => {
+			mockTest({ success: false });
+			const connected = vi.fn();
+			store.on('connected', connected);
+			await save();
+			expect(connected).not.toHaveBeenCalled();
+		});
 	});
 
 	it('clears SSH tunnel fields on connection/clear', () => {
