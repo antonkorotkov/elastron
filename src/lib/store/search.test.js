@@ -587,6 +587,86 @@ describe('search store', () => {
 		})
 	})
 
+	describe('search/tabs/open', () => {
+		it('appends an active default tab on the index and runs it', () => {
+			const { a } = twoTabs()
+			api.uriSearch.mockResolvedValue({})
+
+			store.dispatch('search/tabs/open', { index: 'products' })
+
+			expect(state().tabs).toHaveLength(3)
+			const opened = state().tabs[2]
+			expect(opened).toMatchObject({ ...defaultConfig(), index: 'products' })
+			expect(opened.title).toBeNull()
+			expect(tabTitle(opened)).toBe('products')
+			expect(state().activeId).toBe(opened.id)
+			expect(opened.loading).toBe(true)
+			expect(api.uriSearch).toHaveBeenCalledTimes(1)
+			expect(api.uriSearch).toHaveBeenCalledWith(
+				expect.objectContaining({ index: 'products' })
+			)
+			expect(tab(a.id).loading).toBe(false)
+		})
+
+		it('lands the results in the opened tab', async () => {
+			const hits = [{ _id: '1', _index: 'products' }]
+			api.uriSearch.mockResolvedValue({ hits: { total: { value: 1 }, hits } })
+
+			store.dispatch('search/tabs/open', { index: 'products' })
+			await flush()
+
+			expect(activeTab(state()).results).toEqual(hits)
+			expect(activeTab(state()).loading).toBe(false)
+		})
+
+		it('refuses at the cap, runs nothing and says why', () => {
+			const tabs = Array.from({ length: MAX_TABS }, () => createTab())
+			store.dispatch('test/set', { tabs, activeId: tabs[0].id })
+
+			store.dispatch('search/tabs/open', { index: 'products' })
+
+			expect(state().tabs).toHaveLength(MAX_TABS)
+			expect(state().activeId).toBe(tabs[0].id)
+			expect(api.uriSearch).not.toHaveBeenCalled()
+			expect(notifications).toEqual([
+				expect.objectContaining({ type: 'error', message: expect.stringContaining(String(MAX_TABS)) }),
+			])
+		})
+
+		it('opens a second tab when one on that index already exists', () => {
+			const existing = createTab({ index: 'products', uriQuery: 'name:x', results: [{ _id: '9' }] })
+			store.dispatch('test/set', { tabs: [existing], activeId: existing.id })
+			api.uriSearch.mockResolvedValue({})
+
+			store.dispatch('search/tabs/open', { index: 'products' })
+
+			expect(state().tabs).toHaveLength(2)
+			expect(state().activeId).not.toBe(existing.id)
+			expect(tab(existing.id)).toMatchObject({
+				uriQuery: 'name:x',
+				results: [{ _id: '9' }],
+				loading: false,
+			})
+			expect(activeTab(state()).uriQuery).toBe('*')
+		})
+
+		it('persists the opened tab with its index', () => {
+			twoTabs()
+			api.uriSearch.mockResolvedValue({})
+			setStorage.mockReset()
+
+			store.dispatch('search/tabs/open', { index: 'products' })
+			flushSearchTabs()
+
+			expect(setStorage).toHaveBeenCalledTimes(1)
+			const [key, persisted] = setStorage.mock.calls[0]
+			expect(key).toBe('searchTabs')
+			expect(persisted.tabs).toHaveLength(3)
+			expect(persisted.tabs[2].index).toBe('products')
+			expect(persisted.activeId).toBe(persisted.tabs[2].id)
+		})
+	})
+
 	describe('search/tabs/close', () => {
 		const threeTabs = () => {
 			const tabs = [createTab({ index: 'a' }), createTab({ index: 'b' }), createTab({ index: 'c' })]

@@ -220,6 +220,19 @@ export const search = store => {
 	})
 
 	/**
+	 * Opens a tab for one index and runs it, so a caller elsewhere in the app
+	 * (the dashboard's index list) can show an index's documents in one step.
+	 * The id is minted here so the run can target the tab without reading it
+	 * back; when `search/tabs/add` refuses at the cap the tab never lands and
+	 * nothing runs.
+	 */
+	store.on('search/tabs/open', (_state, { index }) => {
+		const id = newId()
+		store.dispatch('search/tabs/add', { id, index })
+		if (findTab(store.get().search, id)) store.dispatch('search/run', id)
+	})
+
+	/**
 	 * Closing the active tab moves to its right neighbour, or the left one when
 	 * it was rightmost. Closing the only tab leaves a fresh default one, so the
 	 * view is never empty.
