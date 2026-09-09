@@ -3,12 +3,14 @@
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '../utils/helpers'
 
-	const { dispatch, app } = useStoreon('app')
+	const { dispatch, app, updater } = useStoreon('app', 'updater')
 
 	const onThemeChange = isChecked => {
 		const theme = isChecked ? 'dark' : 'light'
 		dispatch('app/toggleTheme', theme)
 	}
+
+	const onRestartClick = () => dispatch('updater/restart')
 
 	let toggleChecked = $derived(isThemeToggleChecked($app.theme))
 	let inverted = $derived(isThemeToggleChecked($app.theme))
@@ -17,7 +19,19 @@
 <footer class="ui segment" class:inverted>
 	<div class="ui grid">
 		<div class="six wide column left aligned">
-			<span>v{pkg.version}</span>
+			{#if $updater.downloading}
+				<span class="update-progress" title="Downloading update: {Math.round($updater.percent)}%">
+					<progress max="100" value={$updater.percent}></progress>
+					<span class="update-progress-label">{Math.round($updater.percent)}%</span>
+				</span>
+			{:else}
+				<span>v{pkg.version}</span>
+				{#if $updater.downloaded}
+					<button class="ui mini button footer-item" onclick={onRestartClick}>
+						Restart to update
+					</button>
+				{/if}
+			{/if}
 			<span>
 				Made with {#if !inverted}&#x1F5A4{:else}&#x1F49B{/if} by
 				<a href="https://github.com/antonkorotkov" target="_blank">
@@ -59,5 +73,16 @@
 
 	.footer-item {
 		margin-left: 1rem;
+	}
+
+	.update-progress {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.update-progress progress {
+		width: 6rem;
+		height: 0.5rem;
 	}
 </style>

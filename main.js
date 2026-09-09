@@ -211,7 +211,11 @@ function setupGlobalHandlers() {
 	});
 
 	ipcMain.on('check-for-updates', () => {
-		console.log('Checking for updates...');
+		updater.checkForUpdates();
+	});
+
+	ipcMain.on('restart-and-install', () => {
+		updater.restartAndInstall();
 	});
 
 	ipcMain.handle('store:get', (event, key, defaultValue) => {

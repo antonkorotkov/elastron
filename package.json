@@ -1,6 +1,6 @@
 {
   "name": "elastron",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "description": "Full featured elasticsearch client",
   "type": "module",
   "main": "main.js",
@@ -120,7 +120,7 @@
     "compare-versions": "~6.1.1",
     "concurrently": "^10.0.4",
     "electron": "^43.3.0",
-    "electron-builder": "^26.15.3",
+    "electron-builder": "26.16.1",
     "eslint": "^10.8.1",
     "eslint-plugin-svelte": "^3.22.0",
     "globals": "^17.9.0",
