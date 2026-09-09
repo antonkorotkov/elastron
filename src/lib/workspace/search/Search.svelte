@@ -16,7 +16,20 @@
 		parseJsonBody,
 	} from '../../utils/helpers'
 
-	const { dispatch, search, app } = useStoreon('search', 'app')
+	/**
+	 * @typedef {Object} Props
+	 * @property {object} tab the search tab this view renders. Everything the
+	 *   view reads comes from here, and everything it writes goes to `tab.id`.
+	 * @property {boolean} [active] whether this tab is the one on screen. The
+	 *   host keeps inactive tabs mounted but hidden.
+	 */
+
+	/** @type {Props} */
+	let { tab, active = true } = $props()
+
+	const { dispatch, app } = useStoreon('app')
+
+	const update = patch => dispatch('search/update', { id: tab.id, patch })
 
 	let requestBodyEditor, resultsEditor
 	let qEditor = $state()
@@ -34,7 +47,7 @@
 		try {
 			if (qEditor) {
 				const requestBody = qEditor.get()
-				dispatch('search/update', { requestBody })
+				update({ requestBody })
 			}
 		} catch (err) {
 			// Malformed JSON is expected while typing — the store keeps the last
@@ -60,33 +73,31 @@
 
 	const onDocTypeChange = e => {
 		const docType = e.target.value.trim() || '_doc'
-		dispatch('search/update', { docType })
+		update({ docType })
 		e.target.value = docType
 	}
 
 	const onSearchRun = e => {
-		if ($search.type === 'body' && qEditor) {
+		if (tab.type === 'body' && qEditor) {
 			const { requestBody, error } = readRequestBody()
 			if (error) return
-			dispatch('search/update', { requestBody })
+			update({ requestBody })
 		}
 
-		if ($search.view === 'edit') {
-			dispatch('search/update', {
-				view: 'hits',
-			})
+		if (tab.view === 'edit') {
+			update({ view: 'hits' })
 		}
-		dispatch('search/run')
+		dispatch('search/run', tab.id)
 	}
 
-	const onStateFieldChange = data => dispatch('search/update', data)
+	const onStateFieldChange = data => update(data)
 
 	const onSizeChange = e => {
 		const size =
 			!e.target.value.trim() || Number(e.target.value.trim()) < 0
 				? 10
 				: Number(e.target.value.trim())
-		dispatch('search/update', { size })
+		update({ size })
 		e.target.value = size
 	}
 
@@ -95,26 +106,26 @@
 			!e.target.value.trim() || Number(e.target.value.trim()) < 0
 				? 0
 				: Number(e.target.value.trim())
-		dispatch('search/update', { from })
+		update({ from })
 		e.target.value = from
 	}
 
-	const onClickRemove = index => {
+	const onClickRemove = position => {
 		if (
 			confirm('Are you sure you want to delete this document from the index?')
 		)
-			dispatch('search/documents/delete', index)
+			dispatch('search/documents/delete', { id: tab.id, position })
 	}
 
 	let canEditDoc = $state(false)
 	const onClickEditDocument = index => {
-		if (isEmpty($search.results[index]?._source)) {
+		if (isEmpty(tab.results[index]?._source)) {
 			return dispatch('notification/add', {
 				type: 'error',
 				message: 'Document must have `_source` field in order to be edited',
 			})
 		}
-		dispatch('search/update', { editDoc: $search.results[index] })
+		update({ editDoc: tab.results[index] })
 		canEditDoc = false
 		switchView('edit')
 	}
@@ -138,7 +149,7 @@
 					mode: 'code',
 					onChange: onEditorChange,
 				},
-				$search.requestBody
+				tab.requestBody
 			)
 		}
 
@@ -190,7 +201,7 @@
 						return []
 					},
 				},
-				$search.results
+				tab.results
 			)
 		}
 	}
@@ -200,23 +211,23 @@
 		try {
 			if (rEditor) {
 				let json = {}
-				switch ($search.view) {
+				switch (tab.view) {
 					case 'hits':
-						json = $search.results
+						json = tab.results
 						rEditor.setMode('tree')
 						break
 					case 'aggs':
-						json = !isEmpty($search.aggs) ? $search.aggs : $search.results
+						json = !isEmpty(tab.aggs) ? tab.aggs : tab.results
 						rEditor.setMode('tree')
 						break
 					case 'raw':
-						json = !isEmpty($search.response)
-							? $search.response
-							: $search.results
+						json = !isEmpty(tab.response)
+							? tab.response
+							: tab.results
 						rEditor.setMode('tree')
 						break
 					case 'edit':
-						json = !isEmpty($search.editDoc) ? $search.editDoc._source : {}
+						json = !isEmpty(tab.editDoc) ? tab.editDoc._source : {}
 						rEditor.setMode('code')
 						rEditor.aceEditor.setOptions({ maxLines: 100 })
 						break
@@ -225,18 +236,27 @@
 				}
 
 				if (!isEqual(rEditor.get(), json)) {
-					if ($search.view != prevView) rEditor.set(json)
+					if (tab.view != prevView) rEditor.set(json)
 					else {
-						if ($search.view !== 'edit') rEditor.update(json)
+						if (tab.view !== 'edit') rEditor.update(json)
 					}
 				}
 
-				prevView = $search.view
+				prevView = tab.view
 			}
 		} catch (e) {
 			// `rEditor.get()` throws while the user is editing a document into
 			// invalid JSON; the view sync simply waits for it to become valid.
 		}
+	})
+
+	// Ace sizes itself from its container, and a container that was
+	// `display: none` measured as nothing. Re-measure whenever this tab is
+	// brought back on screen.
+	$effect(() => {
+		if (!active) return
+		qEditor?.aceEditor?.resize()
+		rEditor?.aceEditor?.resize()
 	})
 
 	onDestroy(() => {
@@ -264,8 +284,7 @@
 
 		try {
 			qEditor.set(requestBody)
-			dispatch('search/update', { requestBody })
-			onStateFieldChange({ [stateField]: checked })
+			update({ requestBody, [stateField]: checked })
 		} catch (err) {
 			notifyError(err)
 		}
@@ -277,9 +296,7 @@
 	const onExplainChanged = checked =>
 		toggleRequestBodyFlag('explain', checked, 'explain')
 
-	const switchView = view => {
-		dispatch('search/update', { view })
-	}
+	const switchView = view => update({ view })
 </script>
 
 <div class="ui segments playground-container">
@@ -292,7 +309,7 @@
 						id="type"
 						class="ui dropdown"
 						onchange={e => onStateFieldChange({ type: e.target.value })}
-						value={$search.type}
+						value={tab.type}
 					>
 						<option value="uri">URI Search</option>
 						<option value="body">Request Body</option>
@@ -303,20 +320,20 @@
 					<IndexSelector
 						containerStyle="min-width:300px;"
 						allowCustom={true}
-						currentlySelected={$search.index}
+						currentlySelected={tab.index}
 						onSelect={e => onStateFieldChange({ index: e.detail.value })}
 						onClear={() => onStateFieldChange({ index: '_all' })}
 					/>
 				</div>
 
-				{#if $search.type === 'body'}
+				{#if tab.type === 'body'}
 					<div class="field">
 						<label for="run">&nbsp;</label>
 						<button
 							class="ui green button"
 							class:inverted
-							class:loading={$search.loading}
-							disabled={$search.loading}
+							class:loading={tab.loading}
+							disabled={tab.loading}
 							onclick={onSearchRun}
 						>
 							Run
@@ -324,14 +341,14 @@
 					</div>
 				{/if}
 
-				{#if $search.type === 'uri'}
+				{#if tab.type === 'uri'}
 					<div class="field">
 						<label for="size">Size</label>
 						<input
 							type="number"
 							id="size"
 							onchange={onSizeChange}
-							value={$search.size}
+							value={tab.size}
 						/>
 					</div>
 					<div class="field">
@@ -340,7 +357,7 @@
 							type="number"
 							id="from"
 							onchange={onFromChange}
-							value={$search.from}
+							value={tab.from}
 						/>
 					</div>
 					<div class="field">
@@ -352,7 +369,7 @@
 								onStateFieldChange({
 									sort: e.target.value.trim(),
 								})}
-							value={$search.sort}
+							value={tab.sort}
 						/>
 					</div>
 
@@ -366,20 +383,20 @@
 									onStateFieldChange({
 										useSource: e.target.checked,
 									})}
-								checked={$search.useSource}
+								checked={tab.useSource}
 							/>
 							<label for="source">Enable</label>
 						</div>
 					</div>
 
-					{#if $search.useSource}
+					{#if tab.useSource}
 						<div class="field">
 							<label for="source-value">&nbsp;</label>
 							<input
 								type="text"
 								id="source-value"
 								onchange={e => onStateFieldChange({ _source: e.target.value })}
-								value={$search._source}
+								value={tab._source}
 							/>
 						</div>
 					{/if}
@@ -395,20 +412,20 @@
 								onStateFieldChange({
 									useDocType: e.target.checked,
 								})}
-							checked={$search.useDocType}
+							checked={tab.useDocType}
 						/>
 						<label for="use-doc-type">Enable</label>
 					</div>
 				</div>
 
-				{#if $search.useDocType}
+				{#if tab.useDocType}
 					<div class="field">
 						<label for="type-value">&nbsp;</label>
 						<input
 							type="text"
 							id="type-value"
 							onchange={onDocTypeChange}
-							value={$search.docType}
+							value={tab.docType}
 						/>
 					</div>
 				{/if}
@@ -420,13 +437,13 @@
 							id="explain"
 							type="checkbox"
 							onchange={e => onExplainChanged(e.target.checked)}
-							checked={$search.explain}
+							checked={tab.explain}
 						/>
 						<label for="explain">Enable</label>
 					</div>
 				</div>
 
-				{#if $search.type === 'body'}
+				{#if tab.type === 'body'}
 					<div class="field">
 						<label for="profiling">Profiling</label>
 						<div class="ui checkbox">
@@ -434,14 +451,14 @@
 								id="profiling"
 								type="checkbox"
 								onchange={e => onProfilingChanged(e.target.checked)}
-								checked={$search.profiling}
+								checked={tab.profiling}
 							/>
 							<label for="profiling">Enable</label>
 						</div>
 					</div>
 				{/if}
 			</div>
-			<div class="field" class:hidden={$search.type !== 'uri'}>
+			<div class="field" class:hidden={tab.type !== 'uri'}>
 				<label for="uri">URI Query</label>
 				<div class="ui fluid action input">
 					<input
@@ -449,13 +466,13 @@
 						type="text"
 						onchange={e => onStateFieldChange({ uriQuery: e.target.value })}
 						onkeyup={e => (e.keyCode == 13 ? onSearchRun() : null)}
-						value={$search.uriQuery}
+						value={tab.uriQuery}
 					/>
 					<button
 						class="ui green button"
 						class:inverted
-						class:loading={$search.loading}
-						disabled={$search.loading}
+						class:loading={tab.loading}
+						disabled={tab.loading}
 						onclick={onSearchRun}
 					>
 						Run
@@ -466,32 +483,32 @@
 	</div>
 
 	<div class="ui segment" class:inverted>
-		{#if $search.view === 'edit' && $search.editDoc}
-			<EditControls {canEditDoc} {rEditor} />
+		{#if tab.view === 'edit' && tab.editDoc}
+			<EditControls {tab} {canEditDoc} {rEditor} />
 		{:else}
-			<SearchControls {qEditor} />
+			<SearchControls {tab} {qEditor} />
 		{/if}
 	</div>
 
 	<div class="ui segment split-view" class:inverted>
-		<div class="editor-panel" class:hidden={$search.type !== 'body'}>
+		<div class="editor-panel" class:hidden={tab.type !== 'body'}>
 			<div class="editor-wrapper">
 				<div id="request-body-editor" bind:this={requestBodyEditor}></div>
 			</div>
 		</div>
 
 		<div class="editor-panel">
-			{#if $search.view === 'profile'}
+			{#if tab.view === 'profile'}
 				<div class="editor-wrapper" style="overflow-y: auto;">
-					<ProfileTable />
+					<ProfileTable {tab} />
 				</div>
 			{/if}
-			<div class="editor-wrapper" class:hidden={$search.view !== 'table'}>
-				<ResultsTable {qEditor} />
+			<div class="editor-wrapper" class:hidden={tab.view !== 'table'}>
+				<ResultsTable {tab} {qEditor} />
 			</div>
 			<div
 				class="editor-wrapper"
-				class:hidden={$search.view === 'table' || $search.view === 'profile'}
+				class:hidden={tab.view === 'table' || tab.view === 'profile'}
 			>
 				<div id="results-editor" bind:this={resultsEditor}></div>
 			</div>
@@ -519,7 +536,8 @@
 	.playground-container {
 		display: flex;
 		flex-direction: column;
-		height: calc(100vh - 130px);
+		/* Header, footer and the tab bar above this view. */
+		height: calc(100vh - 130px - var(--search-tab-bar-height, 0px));
 		border-radius: 4px;
 	}
 	.split-view {

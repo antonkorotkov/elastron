@@ -11,31 +11,31 @@
 		parseJsonBody,
 	} from '../../utils/helpers'
 
-	let { qEditor } = $props()
+	let { tab, qEditor } = $props()
 
-	const { dispatch, search, app } = useStoreon('search', 'app')
+	const { dispatch, app } = useStoreon('app')
+
+	const update = patch => dispatch('search/update', { id: tab.id, patch })
 
 	let uriPaginationCurrentPage = $derived(() =>
-		Math.round($search.from / $search.size)
+		Math.round(tab.from / tab.size)
 	)
-	let bodyPaginationOffset = $derived(() => get($search.requestBody, 'from', 0))
+	let bodyPaginationOffset = $derived(() => get(tab.requestBody, 'from', 0))
 	let bodyPaginationItemsPerPage = $derived(() =>
-		get($search.requestBody, 'size', 10)
+		get(tab.requestBody, 'size', 10)
 	)
 	let bodyPaginationCurrentPage = $derived(() => {
-		const body = $search.requestBody
+		const body = tab.requestBody
 		const from = get(body, 'from', 0)
 		const size = get(body, 'size', 10)
 		return Math.round(from / size)
 	})
 
-	const switchView = view => {
-		dispatch('search/update', { view })
-	}
+	const switchView = view => update({ view })
 
 	const onUriPaginationChanged = page => {
-		dispatch('search/update', { from: $search.size * page })
-		dispatch('search/run')
+		update({ from: tab.size * page })
+		dispatch('search/run', tab.id)
 	}
 
 	const onBodyPaginationChanged = page => {
@@ -44,8 +44,8 @@
 			const size = get(requestBody, 'size', 10)
 			requestBody.from = size * page
 			qEditor.set(requestBody)
-			dispatch('search/update', { requestBody })
-			dispatch('search/run')
+			update({ requestBody })
+			dispatch('search/run', tab.id)
 		} catch (error) {
 			dispatch('notification/add', {
 				type: 'error',
@@ -64,29 +64,29 @@
 	<div class="twelve wide column" style="align-content: center">
 		<div class="ui circular labels stats">
 			Documents found: &nbsp;
-			<span class="ui label">{$search.stats.total_results}</span>
+			<span class="ui label">{tab.stats.total_results}</span>
 			Time: &nbsp;
-			<span class="ui label">{$search.stats.time / 1000}s</span>
+			<span class="ui label">{tab.stats.time / 1000}s</span>
 			Shards: &nbsp;
 			<span class="ui blue label" title="Total">
-				{$search.stats.total_shards}
+				{tab.stats.total_shards}
 			</span>
 			<span class="ui green label" title="Successful">
-				{$search.stats.successful_shards}
+				{tab.stats.successful_shards}
 			</span>
 			<span class="ui yellow label" title="Skipped">
-				{$search.stats.skipped_shards}
+				{tab.stats.skipped_shards}
 			</span>
 			<span class="ui red label" title="Failed">
-				{$search.stats.failed_shards}
+				{tab.stats.failed_shards}
 			</span>
 			View: &nbsp;
 			<span class="ui text">
 				<button
 					class:inverted
 					class="mini ui button"
-					class:active={$search.view == 'hits'}
-					class:disabled={isEmpty($search.results)}
+					class:active={tab.view == 'hits'}
+					class:disabled={isEmpty(tab.results)}
 					onclick={() => switchView('hits')}
 				>
 					JSON
@@ -94,8 +94,8 @@
 				<button
 					class:inverted
 					class="mini ui button"
-					class:active={$search.view == 'table'}
-					class:disabled={isEmpty($search.results)}
+					class:active={tab.view == 'table'}
+					class:disabled={isEmpty(tab.results)}
 					onclick={() => switchView('table')}
 				>
 					Table
@@ -103,8 +103,8 @@
 				<button
 					class:inverted
 					class="mini ui button"
-					class:active={$search.view == 'aggs'}
-					class:disabled={isEmpty($search.aggs)}
+					class:active={tab.view == 'aggs'}
+					class:disabled={isEmpty(tab.aggs)}
 					onclick={() => switchView('aggs')}
 				>
 					Aggs
@@ -112,13 +112,13 @@
 				<button
 					class:inverted
 					class="mini ui button"
-					class:active={$search.view == 'raw'}
-					class:disabled={isEmpty($search.response)}
+					class:active={tab.view == 'raw'}
+					class:disabled={isEmpty(tab.response)}
 					onclick={() => switchView('raw')}
 				>
 					Raw
 				</button>
-				{#if !isEmpty($search.profile)}
+				{#if !isEmpty(tab.profile)}
 					<button
 						class:inverted
 						class="mini ui button blue"
@@ -131,26 +131,26 @@
 		</div>
 	</div>
 	<div class="four wide column pagination" style="align-content: center">
-		{#if $search.type === 'uri'}
+		{#if tab.type === 'uri'}
 			<Pagination
 				className="mini"
-				disable={$search.loading}
+				disable={tab.loading}
 				current_page={uriPaginationCurrentPage()}
-				offset={$search.from}
-				items_per_page={$search.size}
-				total_items={$search.stats.total_results}
+				offset={tab.from}
+				items_per_page={tab.size}
+				total_items={tab.stats.total_results}
 				change={onUriPaginationChanged}
 			/>
 		{/if}
 
-		{#if $search.type === 'body'}
+		{#if tab.type === 'body'}
 			<Pagination
 				className="mini"
-				disable={$search.loading}
+				disable={tab.loading}
 				current_page={bodyPaginationCurrentPage()}
 				offset={bodyPaginationOffset()}
 				items_per_page={bodyPaginationItemsPerPage()}
-				total_items={$search.stats.total_results}
+				total_items={tab.stats.total_results}
 				change={onBodyPaginationChanged}
 			/>
 		{/if}

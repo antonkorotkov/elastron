@@ -19,8 +19,10 @@
 			await import('../components/modal/ConnectionDialog/ConnectDialog.svelte')
 		).default
 
+		// Leave the document editor before the connection can change under it.
 		dispatch('search/update', {
-			view: 'hits',
+			id: $search?.activeId,
+			patch: { view: 'hits' },
 		})
 
 		open(
@@ -33,7 +35,11 @@
 		)
 	}
 
-	const { dispatch, connection, server } = useStoreon('connection', 'server')
+	const { dispatch, connection, server, search } = useStoreon(
+		'connection',
+		'server',
+		'search'
+	)
 
 	let version = $derived($server?.version || false)
 	let pathname = $derived($page.url.pathname)

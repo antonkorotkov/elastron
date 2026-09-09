@@ -30,6 +30,7 @@ vi.mock('@storeon/svelte', () => {
 			connection: stores.connection,
 			server: writable({ version: '8.12.0' }),
 			internet: writable({ online: true }),
+			search: writable({ tabs: [], activeId: 'tab-1' }),
 		}),
 	};
 });

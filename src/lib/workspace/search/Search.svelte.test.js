@@ -7,7 +7,11 @@ import { writable } from 'svelte/store';
 
 const dispatch = vi.fn();
 
-const searchStore = writable({
+const TAB = 'tab-1';
+
+const baseTab = {
+	id: TAB,
+	title: null,
 	type: 'body',
 	view: 'hits',
 	index: '_all',
@@ -15,16 +19,16 @@ const searchStore = writable({
 	results: {},
 	stats: { total_results: 0, time: 0 },
 	loading: false
-});
+};
 
 vi.mock('@storeon/svelte', () => ({
 	useStoreon: () => ({
 		app: writable({ theme: 'light' }),
-		search: searchStore,
 		indices: writable({ data: [['idx', 'yellow', 'open']], columns: ['index', 'health', 'status'] }),
 		connection: writable({}),
 		server: writable({ version: '8.0.0' }),
 		mappings: writable({ info: {}, loading: {}, error: {} }),
+		tableConfigs: writable({}),
 		dispatch
 	})
 }));
@@ -67,9 +71,9 @@ vi.mock('jsoneditor', () => {
 
 vi.mock('jsoneditor/dist/jsoneditor.min.css', () => ({}));
 
-const renderSearch = async () => {
+const renderSearch = async (tab = {}) => {
 	instances.length = 0;
-	const result = render(SearchTab);
+	const result = render(SearchTab, { tab: { ...baseTab, ...tab } });
 	// the editors are created from a dynamic import in onMount
 	for (let i = 0; i < 20 && instances.length === 0; i++) await tick();
 	await tick();
@@ -77,6 +81,8 @@ const renderSearch = async () => {
 };
 
 const runClick = () => fireEvent.click(screen.getAllByText('Run')[0]);
+
+const ranQuery = () => dispatch.mock.calls.some(([event]) => event === 'search/run');
 
 describe('Search Tab', () => {
 	beforeEach(() => {
@@ -99,10 +105,10 @@ describe('Search Tab', () => {
 			'notification/add',
 			expect.objectContaining({ type: 'error' })
 		);
-		expect(dispatch).not.toHaveBeenCalledWith('search/run');
+		expect(ranQuery()).toBe(false);
 	});
 
-	it('runs the query with the body currently in the editor', async () => {
+	it('runs the query against its own tab with the body currently in the editor', async () => {
 		const { qEditor } = await renderSearch();
 		qEditor.type('{"query":{"match_all":{}}}');
 		await tick();
@@ -110,9 +116,37 @@ describe('Search Tab', () => {
 		await runClick();
 
 		expect(dispatch).toHaveBeenCalledWith('search/update', {
-			requestBody: { query: { match_all: {} } }
+			id: TAB,
+			patch: { requestBody: { query: { match_all: {} } } }
 		});
-		expect(dispatch).toHaveBeenCalledWith('search/run');
+		expect(dispatch).toHaveBeenCalledWith('search/run', TAB);
+	});
+
+	it('addresses its own tab, not whichever tab is active', async () => {
+		const { qEditor } = await renderSearch({ id: 'other-tab' });
+		qEditor.type('{"query":{"match_all":{}}}');
+		await tick();
+
+		await runClick();
+
+		expect(dispatch).toHaveBeenCalledWith('search/run', 'other-tab');
+		expect(dispatch).not.toHaveBeenCalledWith('search/run', TAB);
+	});
+
+	it('leaves the edit view before running', async () => {
+		const { qEditor } = await renderSearch({
+			view: 'edit',
+			editDoc: { _id: '1', _index: 'idx', _source: { a: 1 } }
+		});
+		qEditor.type('{"query":{"match_all":{}}}');
+		await tick();
+
+		await runClick();
+
+		expect(dispatch).toHaveBeenCalledWith('search/update', {
+			id: TAB,
+			patch: { view: 'hits' }
+		});
 	});
 
 	it('reports a malformed body instead of throwing when toggling profiling', async () => {
@@ -126,5 +160,25 @@ describe('Search Tab', () => {
 			'notification/add',
 			expect.objectContaining({ type: 'error' })
 		);
+	});
+
+	it('writes a toggled flag into both the body and the tab', async () => {
+		const { qEditor } = await renderSearch();
+		qEditor.type('{"query":{"match_all":{}}}');
+		await tick();
+
+		await fireEvent.click(screen.getByLabelText('Profiling'));
+
+		expect(qEditor.set).toHaveBeenCalledWith({
+			query: { match_all: {} },
+			profile: true
+		});
+		expect(dispatch).toHaveBeenCalledWith('search/update', {
+			id: TAB,
+			patch: {
+				requestBody: { query: { match_all: {} }, profile: true },
+				profiling: true
+			}
+		});
 	});
 });
