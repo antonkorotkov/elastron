@@ -87,9 +87,10 @@ export const connection = store => {
 			const api = new API(state.connection, windowId)
 			const test = await api.test()
 			if (test.success) {
-				store.dispatch('connected')
-
 				const version = getVersionNumber(test.version)
+				const flavor = test.version?.build_flavor
+
+				store.dispatch('connected', { version, flavor })
 
 				const updatedConnection = {
 					...state.connection,

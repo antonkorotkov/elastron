@@ -6,6 +6,7 @@
 	import {
 		isThemeToggleChecked,
 		contrastTextColor,
+		getVersionNumber,
 	} from '../../../utils/helpers'
 	import { initialSshConfig } from '../../../store/connection'
 	import ManageConnectionsDialog from './ManageConnectionsDialog.svelte'
@@ -161,7 +162,10 @@
 			const api = new API($state.snapshot(quickConn), windowId)
 			const test = await api.test()
 			if (test.success) {
-				dispatch('connected')
+				dispatch('connected', {
+					version: getVersionNumber(test.version),
+					flavor: test.version?.build_flavor,
+				})
 				dispatch('server/update', { version: test.version })
 				close()
 			} else {

@@ -6,11 +6,12 @@ import ConnectDialog from './ConnectDialog.svelte';
 const mockDispatch = vi.fn();
 
 const stores = vi.hoisted(() => ({ connections: null }));
+const api = vi.hoisted(() => ({ testResult: { success: false, message: 'unreachable' } }));
 
 vi.mock('../../../api/elasticsearch', () => ({
 	default: class {
 		async test() {
-			return { success: false, message: 'unreachable' };
+			return api.testResult;
 		}
 	},
 	openTunnel: vi.fn(async () => ({})),
@@ -38,6 +39,7 @@ vi.mock('@storeon/svelte', () => {
 describe('ConnectDialog', () => {
     beforeEach(() => {
         mockDispatch.mockClear();
+        api.testResult = { success: false, message: 'unreachable' };
     });
 
 	it('renders saved connections tab by default', () => {
@@ -91,6 +93,30 @@ describe('ConnectDialog', () => {
 			([name]) => name === 'connection/update'
 		);
 		expect(payload.color).toBe('');
+	});
+
+	it('dispatches connected with the cluster version and flavor on quick connect', async () => {
+		api.testResult = { success: true, version: { number: '8.12.0', build_flavor: 'default' } };
+		const { container } = render(ConnectDialog, {
+			context: new Map([['modal-window', { close: vi.fn(), open: vi.fn() }]]),
+		});
+		await fireEvent.click(screen.getByText('Quick Connect'));
+		await fireEvent.submit(container.querySelector('#quick-form'));
+		await new Promise(resolve => setTimeout(resolve, 0));
+
+		expect(mockDispatch).toHaveBeenCalledWith('connected', { version: '8.12.0', flavor: 'default' });
+	});
+
+	it('does not dispatch connected when quick connect fails', async () => {
+		const { container } = render(ConnectDialog, {
+			context: new Map([['modal-window', { close: vi.fn(), open: vi.fn() }]]),
+		});
+		await fireEvent.click(screen.getByText('Quick Connect'));
+		await fireEvent.submit(container.querySelector('#quick-form'));
+		await new Promise(resolve => setTimeout(resolve, 0));
+
+		const connectedCalls = mockDispatch.mock.calls.filter(([event]) => event === 'connected');
+		expect(connectedCalls).toHaveLength(0);
 	});
 
 	it('shows a chip in the color of the selected connection', async () => {

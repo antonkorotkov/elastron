@@ -2,6 +2,8 @@
 	import { provideStoreon, useStoreon } from '@storeon/svelte'
 	import { afterNavigate } from '$app/navigation'
 	import { PUBLIC_GA_ID } from '$env/static/public'
+	import pkg from '../../package.json'
+	import { trackPageView, setUserProperties } from '$lib/utils/analytics'
 
 	import Header from '$lib/header/Header.svelte'
 	import Footer from '$lib/footer/Footer.svelte'
@@ -36,6 +38,9 @@
 
 	onMount(async () => {
 		if (browser) {
+			// Set before the first page view so every event from this window carries it
+			setUserProperties({ app_version: pkg.version })
+
 			const windowId = crypto.randomUUID();
 			window.__elastronWindowId = windowId;
 			dispatch('app/hydrate', { windowId });
@@ -118,11 +123,7 @@
 	})
 
 	afterNavigate(({ to }) => {
-		if (PUBLIC_GA_ID && typeof gtag !== 'undefined' && to) {
-			gtag('config', PUBLIC_GA_ID, {
-				page_path: to.url.pathname
-			})
-		}
+		if (to) trackPageView(to.url.pathname)
 	})
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
@@ -138,9 +139,6 @@
 				dataLayer.push(arguments);
 			}
 			gtag('js', new Date());
-			gtag('config', '{PUBLIC_GA_ID}', {
-				page_path: window.location.pathname
-			});
 		</script>
 	{/if}
 </svelte:head>
