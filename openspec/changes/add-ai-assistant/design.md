@@ -2,96 +2,128 @@
 
 See proposal.md for motivation. Relevant existing architecture (see `CLAUDE.md`):
 
-- The renderer never talks to Elasticsearch directly; every operation goes through a SvelteKit `+server.js` route under `src/routes/api/elastic/**`, which uses `src/lib/server/elastic.js`'s `createClient`/`handleElasticRequest`. A generic passthrough already exists at `/api/elastic/request`.
-- Electron `main.js` forks the adapter-node server and IPC is deliberately minimal (window management, persisted store, updates) — ES/business logic does not belong in `main.js`.
-- App state is Storeon modules under `src/lib/store/`, composed in `store/index.js`; persistence goes through `setStorage`/`getStorage` (`src/lib/utils/storage.js`) to an encrypted `electron-store` via IPC.
-- There is exactly one active connection per window (`connection` store), and existing per-window "draft" state (Playground's draft, Search tabs) is persisted under flat, non-window-scoped keys — the app already accepts "last write wins" for that kind of state rather than reconciling multiple windows.
-- Two UI precedents already exist that this change reuses rather than inventing new primitives: a slide-out drawer (Playground's `TemplateDrawer`, driven by `isDrawerOpen` in `playground.js`), and a vertical tab sidebar (`ui vertical fluid pointing menu` + `ui grid`, used for per-index tabs in `src/routes/index/+layout.svelte`). Styling is Semantic UI (`static/semantic.min.css`), including its icon font classes.
+- The renderer never talks to Elasticsearch directly. Every operation goes through a SvelteKit `+server.js` route under `src/routes/api/elastic/**`, which calls `handleElasticRequest` in `src/lib/server/elastic.js`. That helper parses the HTTP request, rewrites the connection to `127.0.0.1:<tunnelPort>` when the window has an active SSH tunnel, creates a v8 or v9 client, runs the action, closes the client, and returns an HTTP response. Every error becomes a 500 with a reason string; nothing distinguishes an unreachable cluster from an Elasticsearch error response.
+- On the renderer side, every call goes through `API._request` in `src/lib/api/elasticsearch.js`, which sends the full connection object, credentials included, in each request body.
+- In production the SvelteKit server is a process forked by Electron `main.js`; in development it is the Vite dev server. Either way it has no access to `electron-store`, which lives in Electron main and is reached only by the renderer through the `store:get`/`store:set` IPC bridge. IPC is deliberately minimal.
+- App state is Storeon modules under `src/lib/store/`, composed in `store/index.js` and hydrated in `src/routes/+layout.svelte`'s `onMount`.
+- The `connected` and `disconnected` store events fire only on the outcome of a connection attempt. `disconnected` also closes the SSH tunnel, resets the indices, shards, allocation, mappings, and monitoring stores, and posts a "Disconnected from the server" notice. Nothing detects a cluster going away after a successful connect.
+- Connections have no stable ID; the saved list deduplicates by deep equality.
+- UI precedents reused here: Playground's slide-out `TemplateDrawer`, the `ui vertical fluid pointing menu` + `ui grid` tab sidebar in `src/routes/index/+layout.svelte`, the `modal-window` context used by `ConnectionDialog`, and Semantic UI's icon classes. `IconButton.svelte` toggles the `green` class on hover, so it can't carry a status color.
+- The search store's `search/tabs/add` accepts config overrides and refuses at `MAX_TABS` (20) with a notification. The Playground's `playground/loadTemplate` replaces the draft's method, path, body, and headers.
+- The `usage-analytics` spec allows only the fields it names.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Land a working assistant (chat + shared tool layer + confirmation flow + provider settings + generic Settings shell + header rework) using the existing architectural conventions above, not new ones.
-- Shape the tool layer (typed functions with schemas, one module per operation plus one generic fallback) so a future real-MCP wrapper could reuse the same modules without rewriting them.
+- Land the assistant (chat, tool layer, confirmation flow, provider settings, query handoff, generic Settings shell, and header rework) using the existing conventions above.
+- Keep tool modules self-contained (schema plus execute) so a future MCP wrapper could reuse them unchanged.
 
 **Non-Goals:**
-- A spec-compliant MCP server or any endpoint reachable by external processes (explicitly deferred, per proposal.md).
-- Reconciling assistant state across multiple windows open on the same connection simultaneously — this follows the same last-write-wins behavior the app already has for Playground drafts and Search tabs.
-- Any input modality beyond text (voice, file upload, etc.).
-- Migrating the Footer's theme toggle into the new Settings modal.
+- A spec-compliant MCP server or any endpoint reachable by external processes.
+- Per-connection overrides of the AI settings. Deferred to a later change, which will first need a stable connection identity.
+- Reconciling assistant state across multiple windows on the same endpoint. It follows the last-write-wins behavior the app already has for Playground drafts and Search tabs.
+- Input beyond text, and migrating the Footer theme toggle into Settings.
 
 ## Decisions
 
-**1. Tool layer is plain AI SDK `tool()` functions, not a protocol server.**
-Each tool is a module under `src/lib/server/ai/tools/` exporting a schema and an `execute` that calls the existing `createClient`/`handleElasticRequest` helpers — the same helpers every `+server.js` route already uses. This matches the project rule that ES logic lives in SvelteKit server code, and avoids standing up a second process/transport inside Electron for a v1 with exactly one consumer. Alternative considered: build the real MCP server now. Rejected — it adds an authn/authz surface (token issuance, network exposure, resolving which connection an external, window-less caller targets) with no user yet; that's explicitly a later, separate effort.
+**1. The tool layer is AI SDK `tool()` modules running in the SvelteKit server, sharing a tunnel-aware client helper with the routes.**
+Each tool lives in `src/lib/server/ai/tools/` and exports an input schema and an `execute`. Tools run in-process with the chat route and must not call the app's own `/api/elastic/**` routes over HTTP. They can't reuse `handleElasticRequest` as-is either, because it speaks HTTP and holds the SSH-tunnel rewrite. So `elastic.js` gets a lower-level helper that takes a connection and window ID, applies the tunnel rewrite, creates the client, runs a function, and always closes the client. `handleElasticRequest` becomes a thin HTTP wrapper around it, and tools call it directly. Without this, tools on tunneled connections would bypass the tunnel and hit the wrong host.
+Alternative considered: a real MCP server now. Rejected for v1. It needs an authentication and connection-targeting model for external callers that has no user yet.
 
-Tools call the shared ES-client helpers in-process — the same `createClient`/`handleElasticRequest` pattern (or `client.transport.request` directly) every `+server.js` route body already uses — rather than issuing an HTTP request to the existing `/api/elastic/**` routes over the network. That means a tool is not limited to operations that already have a dedicated route: `get-mapping` and `get-index-settings` below are reads the ES client already supports (mirroring the *write* side of `index/mapping` and `index/settings`, which are PUT-only today) that get added directly against the client, not by adding new public HTTP endpoints for them.
-
-**Tool catalog.** Confirmed against the actual route handlers in `src/routes/api/elastic/**` during exploration. "Policy" is `auto` (the ai-assistant spec's "read-only actions run automatically") or `confirm` (its "mutating actions require explicit confirmation").
+**Tool catalog.** Checked against the route handlers in `src/routes/api/elastic/**`. `auto` runs without confirmation; `confirm` sets `needsApproval` (decision 4).
 
 | Tool | Underlying ES operation | Policy |
 | --- | --- | --- |
-| `list-indices` | `GET /_cat/indices` (same op as `/api/elastic/indices`) | auto |
-| `get-index` | `GET /{index}` — full definition: settings, mappings, aliases (same op as `/api/elastic/index/get`) | auto |
-| `get-mapping` | `GET /{index}/_mapping` (new — no dedicated existing route; mirrors the write side already in `/api/elastic/index/mapping`) | auto |
-| `get-index-settings` | `GET /{index}/_settings` (new — no dedicated existing route; mirrors the write side already in `/api/elastic/index/settings`) | auto |
+| `list-indices` | `GET /_cat/indices?format=json` (same op as `/api/elastic/indices`) | auto |
+| `list-aliases` | `GET /_cat/aliases?format=json` (new, no existing route) | auto |
+| `get-index` | `GET /{index}`: settings, mappings, aliases (same op as `/api/elastic/index/get`) | auto |
+| `get-mapping` | `GET /{index}/_mapping` (new; the existing `index/mapping` route only writes) | auto |
+| `get-index-settings` | `GET /{index}/_settings` (new; the existing `index/settings` route only writes) | auto |
+| `get-document` | `GET /{index}/_doc/{id}` (new, no existing route) | auto |
 | `run-search-body` | `POST /{index}/_search` with a JSON query body (same op as `/api/elastic/search/body`) | auto |
 | `run-search-uri` | `GET /{index}/_search` with query-string params (same op as `/api/elastic/search/uri`) | auto |
+| `count` | `POST /{index}/_count` with an optional query (new, no existing route) | auto |
+| `validate-query` | `POST /{index}/_validate/query?explain=true` with a query body (new, no existing route) | auto |
 | `cluster-health` | `GET /_cluster/health` (same op as `/api/elastic/cluster/health`) | auto |
 | `cluster-stats` | `GET /_cluster/stats` (same op as `/api/elastic/cluster/stats`) | auto |
-| `get-allocation` | `GET /_cat/allocation` (same op as `/api/elastic/allocation`) | auto |
-| `get-shards` | `GET /_cat/shards` (same op as `/api/elastic/shards`) | auto |
+| `get-allocation` | `GET /_cat/allocation?format=json` (same op as `/api/elastic/allocation`) | auto |
+| `get-shards` | `GET /_cat/shards?format=json` (same op as `/api/elastic/shards`) | auto |
 | `get-nodes-stats` | `GET /_nodes/stats/os,jvm,fs` (same op as `/api/elastic/nodes/stats`) | auto |
 | `create-index` | `PUT /{index}` (same op as `/api/elastic/index/create`) | confirm |
-| `delete-index` | `DELETE /{index}` (same op as `/api/elastic/index/delete`) | confirm — destructive |
+| `delete-index` | `DELETE /{index}` (same op as `/api/elastic/index/delete`) | confirm, destructive |
 | `clone-index` | `POST /{existingIndex}/_clone/{newIndex}` (same op as `/api/elastic/index/clone`) | confirm |
 | `close-index` | `POST /{index}/_close` (same op as `/api/elastic/index/close`) | confirm |
 | `open-index` | `POST /{index}/_open` (same op as `/api/elastic/index/open`) | confirm |
-| `wipe-index` | `POST /{index}/_delete_by_query` matching all documents — the index itself is not removed (same op as `/api/elastic/index/wipe`) | confirm — destructive |
-| `update-mapping` | `PUT`/per-type `POST` on `/{index}/_mapping...` (same op as `/api/elastic/index/mapping`) | confirm |
+| `wipe-index` | `POST /{index}/_delete_by_query` over all documents; the index stays (same op as `/api/elastic/index/wipe`) | confirm, destructive |
+| `update-mapping` | `PUT /{index}/_mapping` (same op as `/api/elastic/index/mapping`) | confirm |
 | `update-index-settings` | `PUT /{index}/_settings` (same op as `/api/elastic/index/settings`) | confirm |
 | `create-alias` | `POST /{index}/_alias/{alias}` (same op as `/api/elastic/alias/create`) | confirm |
 | `delete-alias` | `DELETE /{index}/_alias/{alias}` (same op as `/api/elastic/alias/delete`) | confirm |
-| `index-document` | `PUT /{index}/{type}/{id}` (same op as `/api/elastic/document/index`) | confirm |
+| `index-document` | `PUT /{index}/_doc/{id}` (same op as `/api/elastic/document/index`) | confirm |
 | `update-document` | `POST /{index}/_update/{id}` (same op as `/api/elastic/document/update`) | confirm |
-| `delete-document` | `DELETE /{index}/{type}/{id}` (same op as `/api/elastic/document/delete`) | confirm — destructive |
-| `run-es-request` | Arbitrary `{method, path, querystring, body, headers}` (same op as the `/api/elastic/request` passthrough) | confirm, always — regardless of the underlying method |
+| `delete-document` | `DELETE /{index}/_doc/{id}` (same op as `/api/elastic/document/delete`) | confirm, destructive |
+| `run-es-request` | Arbitrary `{method, path, querystring, body, headers}` (same op as `/api/elastic/request`) | confirm, always, regardless of method |
+| `propose-query` | No ES call. Takes a structured `{kind: 'search' \| 'request', index, method, path, body}` and returns it for the UI to render as a query card (decision 9) | auto |
 
-Excluded from the tool catalog: connection testing (`/api/elastic/test`) and SSH tunnel open/close (`/api/elastic/tunnel/**`). Both are connection-lifecycle plumbing tied to a specific window, not actions a conversation should trigger directly.
+Excluded: connection testing (`/api/elastic/test`) and SSH tunnel open/close (`/api/elastic/tunnel/**`). They are per-window connection plumbing, not conversational actions.
 
-**2. Chat endpoint and streaming.**
-One route, `src/routes/api/ai/chat/+server.js`, built on the `ai` package's `streamText`, given the resolved provider/model/key and the full tool set, returning a stream the renderer consumes via `@ai-sdk/svelte`. Provider selection (OpenAI/Anthropic/Google/custom OpenAI-compatible) happens server-side by constructing the matching provider client from the resolved settings before calling `streamText` — the API key is never sent to or read back from the renderer beyond populating the settings form.
+**2. One streaming chat route with an explicit step limit and cluster context.**
+`src/routes/api/ai/chat/+server.js` calls the `ai` package's `streamText` with the resolved provider model, the tool set, a system prompt, and an explicit `stopWhen` step limit lower than the SDK's default of 20. It returns a UI message stream consumed by the `Chat` class from `@ai-sdk/svelte`. The request body carries the messages, the connection and window ID for the tools, the active provider's settings (decision 3), and the cluster's version and flavor. The system prompt, built in `src/lib/server/ai/`, states the cluster version and flavor, describes the tools, and tells the model to check a query with `validate-query` before proposing it and to hand queries to the user through `propose-query`. It contains no credentials or hostnames. `src/lib/store/server.js` already holds the version; it also starts recording the flavor from the `connected` event payload.
 
-**3. Settings precedence resolution.**
-A small server-side resolver picks the active connection's AI override when present, else the global settings, immediately before each chat request — kept server-side since the API key must not round-trip through the renderer more than necessary.
+**3. The API key travels from the renderer with each chat request.**
+The server has no access to `electron-store`, so the renderer loads the AI settings through the existing bridge and sends the active provider's key, model, and base URL with each chat request. This is the same loopback path ES credentials already take on every `/api/elastic/**` call. The route builds the provider client per request, never logs or persists the key, and strips it from any error text it returns. With only global settings, choosing the provider is a lookup of `activeProvider`; there is no precedence logic.
+Alternative considered: pass the key from Electron main to the forked server. Rejected. It adds an IPC channel against the project's minimal-IPC rule, doesn't exist in development where Vite is the server, and protects nothing, because the renderer already holds ES passwords the same way.
 
-**4. Confirmation flow for mutating tools.**
-Mutating tools omit a direct `execute` (or return a pending marker) so the SDK's tool loop stops before running them; the client renders a confirmation card from the proposed call's arguments, and approval re-invokes the tool with its execute step. Read-only tools define `execute` directly and run inline. This reuses the AI SDK's own tool-approval mechanism rather than inventing a bespoke pause/resume protocol.
+**4. Confirmation uses the SDK's tool approval, with execution staying on the server.**
+Mutating tools keep their server-side `execute` and set `needsApproval: true`, as does `run-es-request`. The stream pauses with a tool-approval request, and the drawer renders a confirmation card showing the tool, method, full path, and pretty-printed body, with destructive tools styled in red. The user's choice goes back through the `Chat` class's `addToolApprovalResponse`. On approval the server runs `execute`; on denial the model is told the action was declined.
+Alternative rejected: leaving out `execute` would make these client-side tools, so the renderer would have to run the ES write itself, which breaks the rule that ES logic lives in SvelteKit server code.
 
-**5. Connected-state tracking for the header icon.**
-`src/lib/store/server.js` gains a `connected` boolean, set `true`/`false` by the existing `connected`/`disconnected` events that `connection.js` already dispatches on save success/failure. No new event wiring — just a new field reacting to events that already fire.
+**5. Reachability is a separate flag, fed from the one request choke point.**
+`server.js` gains a `reachable` boolean. It is set `true` by the existing `connected` event, `false` by the existing `disconnected` event, and both ways by a new `server/reachability` event. The shared helper from decision 1 classifies client errors by name: `ConnectionError`, `TimeoutError`, and `NoLivingConnectionsError` mark the error response `unreachable: true`; `ResponseError` does not. `API._request` reports every outcome: success means reachable, and a response carrying `unreachable` means unreachable. The `API` class has no store reference today, so it reports through a listener the store registers at startup. It must never dispatch `disconnected`, because that closes the tunnel, resets five data stores, and posts a disconnection notice. The header icon reads `reachable`.
+Tool calls made by the chat route don't feed the flag in v1. Their failures show as tool errors in the conversation instead.
 
-**6. Chat history storage shape and retention enforcement.**
-Stored under a per-connection key (same pattern as `lastConnection`/`playground_draft`) as a message list, capped to the most recent N messages, trimmed from the front on every write so the persisted payload can never exceed the cap regardless of conversation length. N is a fixed constant chosen during implementation (task-level detail, not a spec-level one).
+**6. Settings shape.**
+Stored under the `aiSettings` key and hydrated in `+layout.svelte` with the other stores:
+`{ activeProvider: 'openai' | 'anthropic' | 'google' | 'custom' | null, providers: { openai: { apiKey, model }, anthropic: { apiKey, model }, google: { apiKey, model }, custom: { apiKey, model, baseUrl } } }`.
 
-**7. Settings modal reuses the existing modal-window context and tab layout.**
-`SettingsDialog` opens via the same `getContext('modal-window').open()` mechanism `ConnectionDialog` already uses from `Header.svelte`; its section list reuses the `ui vertical fluid pointing menu` + `ui grid` layout already present in `src/routes/index/+layout.svelte` — no new tab-switching primitive.
+**7. History is keyed by cluster endpoint and capped at write time.**
+Connections have no stable ID, so each conversation is stored under a key derived from the connection's `host`, `port`, and `user`. Profiles pointing at the same cluster share history, and editing a profile's name, color, headers, or password keeps it. The assistant store loads the conversation for the new endpoint on each `connected` event. Every append trims from the oldest end to the most recent N messages before persisting. Tool results are persisted in their truncated form, so a single message can't carry a large payload into storage.
+
+**8. The Settings modal reuses the existing modal context and tab layout.**
+`SettingsDialog` opens through `getContext('modal-window').open()`, like `ConnectionDialog`. Its section list reuses the index view's vertical tab sidebar. Sections are a list of `{ id, title, component }`, so adding one doesn't touch the others.
+
+**9. Query handoff goes through a structured tool, not text parsing.**
+The model hands queries over by calling `propose-query`, so the UI never has to find JSON inside prose. Its result renders as a query card with three actions:
+- Open in Search, only for `kind: 'search'`, dispatches `search/tabs/add` with `{ type: 'body', index, requestBody }` and switches to the Search view without running the query. The existing `MAX_TABS` refusal and its notification apply.
+- Load into Playground dispatches `playground/loadTemplate` with the method, path, body, and headers, then switches to the Playground view. Like loading a template, it replaces the current draft.
+- Copy puts the request on the clipboard.
+
+**10. Header controls.**
+The connection icon is a plain Semantic UI icon button, not `IconButton`, colored from `$server.reachable`. The settings gear and the assistant toggle sit beside it. All three need `-webkit-app-region: no-drag`, because the header bar is a window drag region.
+
+**11. Analytics stays untouched.**
+No new analytics events. The drawer is not a route, so it produces no page views, and no chat, tool, provider, or model data reaches `trackPageView` or `gtag`.
 
 ## Risks / Trade-offs
 
-- [Risk] A provider outage or bad API key breaks the assistant mid-conversation. → Mitigation: surface provider errors as a distinct inline chat message, and never discard the user's in-progress draft message on failure.
-- [Risk] An API key leaks via logs or a support bundle. → Mitigation: same treatment already given to connection passwords — masked in the settings form, only ever persisted through the encrypted `electron-store` bridge, never written to client-side console logging.
-- [Risk] The rolling message cap silently drops old context. → Mitigation: the manual "Clear history" action gives an explicit way to manage history, and trimming only removes from the oldest end, preserving the most relevant recent context.
-- [Risk] A confirmation card under-describes a mutating action, leading to an unintended approval. → Mitigation: the ai-assistant spec requires at minimum the operation and its target; tasks should render the full request path/body for every mutating tool, not just its name.
-- [Trade-off] Bounding tool-result size by default means a request like "summarize all 50,000 documents" won't literally see all 50,000. Accepted, given the explicit priority on not leaking large amounts of cluster data to a third party by default.
+- [Risk] The API key sits in renderer memory and crosses loopback with each chat request. → Same exposure ES passwords already have. Mitigated by masking in the form, never logging, and stripping the key from error text.
+- [Risk] Error classification depends on the ES client's error class names, and both client versions are bundled. → Unit tests cover the v8 and v9 error classes.
+- [Risk] A dead cluster takes up to the client's timeout times its retries before the icon turns red. → Accepted. The icon reflects the last completed request.
+- [Risk] Persisted history inflates the store as endpoints accumulate. → Each endpoint holds at most N messages with truncated tool results, and the user can clear history.
+- [Risk] The model proposes a query invalid for the cluster's version. → The version is in the system prompt, and the prompt directs the model to `validate-query` before proposing.
+- [Risk] A confirmation card under-describes an action. → The card always shows the method, full path, and body.
+- [Risk] A provider outage or bad key breaks the conversation. → Errors appear as a distinct message in the conversation, and the user's unsent draft is kept.
+- [Trade-off] Load into Playground overwrites an unsaved draft. Accepted, for consistency with how loading a template already behaves.
+- [Trade-off] The result ceiling means "summarize all 50,000 documents" won't see them all. Accepted. The truncation marker lets the model say so.
 
 ## Migration Plan
 
-- Additive only: existing connection objects gain an optional `ai` override field; its absence means "use global settings," so existing saved connections remain valid unchanged.
-- Removing the internet-online-tracking subsystem is a clean deletion — confirmed during exploration that nothing outside its own files (`internet.js`, `internet.test.js`, `onlineCheck.js`, `OnlineIndicator.svelte`, its test, and their registration in `store/index.js`/`+layout.svelte`) reads `$internet.online`.
-- No migration of existing `electron-store` data; new keys (global AI settings, per-connection AI override, per-connection chat history) are additive.
-- Rollback removes the new routes/store modules/UI; no persisted data format is left in a shape older code can't read, since nothing existing is restructured.
+- Connection objects and the saved-connections list don't change.
+- New `electron-store` keys are additive: `aiSettings` and one history key per endpoint.
+- The `handleElasticRequest` refactor keeps every route's behavior. Error responses gain an optional `unreachable` field, which existing callers ignore.
+- Removing the internet-tracking subsystem is a clean deletion. Nothing outside its own files, its registration in `store/index.js`, its wiring in `+layout.svelte`, and `Header.svelte.test.js` references it.
+- Rollback removes the new routes, modules, and UI. No persisted data is left in a shape older code can't read.
 
 ## Open Questions
 
-- Exact numeric values for the message-cap retention limit and the per-tool-result truncation size are implementation constants — both are just "a bounded number" at the spec level, so they can be picked during task execution rather than resolved here.
+- Exact values for the history message cap, the tool-result ceiling, and the step limit. They are implementation constants that don't change the specs or the task breakdown.

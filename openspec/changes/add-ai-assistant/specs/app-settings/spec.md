@@ -19,11 +19,15 @@ The Settings panel SHALL organize its content into named sections, presented as 
 - **THEN** the panel SHALL display that section's content in place of the previous section's, without closing the panel
 
 ### Requirement: AI Integration section
-The Settings panel SHALL include an "AI Integration" section that hosts the assistant's provider, API key, and model configuration, as defined by the ai-assistant capability.
+The Settings panel SHALL include an "AI Integration" section where the user chooses the active AI provider and, for each provider, views and edits its API key and model, plus the base URL for the custom provider, as defined by the ai-assistant capability. API keys SHALL be masked when displayed.
 
 #### Scenario: Configuring AI settings
 - **WHEN** the user selects the AI Integration section
-- **THEN** the user SHALL be able to view and edit the global AI provider, API key, and model settings from within the Settings panel
+- **THEN** the user SHALL be able to choose the active provider and edit each provider's key and model from within the Settings panel
+
+#### Scenario: Keys are masked
+- **WHEN** the AI Integration section shows a stored API key
+- **THEN** the key SHALL be displayed masked rather than in plain text
 
 ### Requirement: Extensible section list
 The Settings panel's section list SHALL be able to hold more than one section without any existing section's content being redesigned to accommodate another.

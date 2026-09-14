@@ -1,38 +1,40 @@
 ## Why
 
-Elastron users have to know Elasticsearch's query DSL and API surface themselves to get anything done. An in-app AI assistant that can converse about the connected cluster, propose queries/mappings/index operations, and — with explicit confirmation — execute them, lets users get unstuck without leaving the app or hand-writing raw requests.
+Elastron users have to know Elasticsearch's query DSL and API surface themselves to get anything done. An in-app AI assistant that can converse about the connected cluster, build queries, and — with explicit confirmation — perform index and document operations, lets users get unstuck without leaving the app or hand-writing raw requests.
 
 ## What Changes
 
 - Add a persistent chat drawer, toggled from the header, scoped to the window's active connection.
-- Add a shared server-side tool layer (Vercel AI SDK `tool()` functions) wrapping existing `/api/elastic/**` operations: named tools for the common operations (list indices, run search, get mapping, create/delete index, index a document, cluster health, etc.) plus one generic `run-es-request` fallback wrapping the existing passthrough route.
-- Read-only tools execute automatically; any tool that mutates cluster state (create/delete index, index/update/delete document, wipe, mapping/settings changes) surfaces as a confirmation card in the chat and only executes on explicit user approval.
-- Tool results returned to the model (search hits, documents, mappings) are truncated/capped by default, so a broad ask doesn't stream a whole dataset to a third-party AI provider.
-- Add global AI provider settings (provider, API key, model id as free text) covering OpenAI, Anthropic, Google Gemini, and a custom OpenAI-compatible endpoint (for local/self-hosted models), plus a per-connection override.
-- Chat history is a single rolling conversation per connection, persisted via the existing encrypted local store, automatically trimmed to a bounded number of most-recent messages so storage stays bounded without a background cleanup job.
-- Add a new generic, extensible Settings modal (vertical tabs) reachable from a new header gear button; its first section is "AI Integration," holding the provider/key/model settings above. Built to hold unrelated settings sections later.
-- Replace the header's "Connection" text button + separate green/red online/offline dot with a single connection icon button whose color reflects actual Elasticsearch cluster connection status, not general internet connectivity. **BREAKING (internal only, no external API/data format affected)**.
-- Remove the internet online/offline tracking subsystem entirely (`src/lib/store/internet.js`, `src/lib/utils/onlineCheck.js`, `OnlineIndicator.svelte`, their tests, and their wiring in `+layout.svelte`), since it becomes unused once the connection icon switches to ES-connection-status.
-- Out of scope for this change: a spec-compliant external MCP server (deferred to a future, separate effort); migrating the existing Footer theme toggle into the new Settings modal.
+- Add a shared server-side tool layer: named tools for the common read and write operations, a query-proposal tool that hands structured queries to the UI, and one generic `run-es-request` fallback. The full catalog is in design.md.
+- Read-only tools run automatically. Mutating tools, and every generic request, surface as a confirmation card and run only on explicit approval.
+- Tool results sent to the AI provider are capped at a hard ceiling and marked when truncated, so a broad ask doesn't stream a whole dataset to a third party.
+- Queries the assistant builds can be opened in a new Search tab or loaded into the Playground draft.
+- The assistant is told the connected cluster's version and build flavor, so the requests it proposes are valid for that cluster.
+- Add global AI settings: an API key and free-text model id for each provider (OpenAI, Anthropic, Google Gemini, and a custom OpenAI-compatible endpoint with a base URL), plus which provider is active.
+- Chat history is one rolling conversation per cluster endpoint, persisted in the existing encrypted local store, automatically trimmed to a bounded number of recent messages, and clearable on demand.
+- Nothing from the assistant is sent to analytics.
+- Add a generic, extensible Settings modal with vertical tabs, opened from a new header gear button. Its first section is "AI Integration."
+- Replace the header's "Connection" text button and separate green/red online dot with a single connection icon whose color reflects cluster reachability: red after a connection attempt or any Elasticsearch request fails at the network level, green again after the next success. Ordinary Elasticsearch error responses don't change it.
+- Remove the internet online/offline tracking subsystem entirely (`src/lib/store/internet.js`, `src/lib/utils/onlineCheck.js`, `OnlineIndicator.svelte`, their tests, and their wiring in `+layout.svelte`), since nothing uses it once the icon tracks the cluster.
+- Out of scope for this change: a spec-compliant external MCP server; per-connection overrides of the AI settings; migrating the Footer theme toggle into the new Settings modal. The first two are deferred to separate, later changes.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `ai-assistant`: The chat drawer, the shared tool layer and its read-auto/write-confirm execution policy, AI provider/model settings (global and per-connection override) and their precedence, tool-result size capping, and chat history persistence/retention per connection.
-- `app-settings`: The generic, extensible Settings modal (vertical-tab shell) reachable from the header, and how it hosts settings sections such as AI Integration.
-- `connection-status-indicator`: The header's connection icon button — its ES-connection-status coloring, click behavior, and the removal of the general internet-connectivity indicator it replaces.
+- `ai-assistant`: The chat drawer, the tool layer and its read-auto/write-confirm policy, provider settings and credential handling, the cluster context given to the model, tool-result capping, query handoff to Search and Playground, the analytics exclusion, and chat history persistence and retention per cluster endpoint.
+- `app-settings`: The generic, extensible Settings modal with vertical tabs, reachable from the header, and how it hosts sections such as AI Integration.
+- `connection-status-indicator`: The header's connection icon button, its reachability coloring and what does and doesn't change it, its click behavior, and the removal of the internet-connectivity indicator it replaces.
 
 ### Modified Capabilities
 
-(none — the per-connection AI override adds new data associated with a connection, but does not change any existing `connection-management` requirement about how the saved-connections list is added to, deduplicated, replaced, deleted, or restored)
+(none — connection objects and the saved-connections list are unchanged. The query handoff opens search tabs and loads the Playground draft through the existing `search-tabs` and `playground` behaviors without changing their requirements, and the assistant adds nothing to what `usage-analytics` sends.)
 
 ## Impact
 
-- New dependencies: Vercel AI SDK (`ai`) core, `@ai-sdk/svelte` (chat UI bindings), and provider packages (`@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`) — the same OpenAI-compatible provider mechanism covers custom/local endpoints.
-- New SvelteKit route(s) under `src/routes/api/ai/**` (e.g. `chat/+server.js`) for streaming chat completions with tool calling; new `src/lib/server/ai/tools/**` for the shared tool layer, reusing `src/lib/server/elastic.js`'s `createClient`/`handleElasticRequest`.
-- New Storeon store module(s) for assistant/chat state and settings-modal state, registered in `src/lib/store/index.js`.
-- New UI: assistant drawer + confirmation-card components, generic Settings modal with vertical tabs, connection icon button — under `src/lib/workspace/assistant/`, `src/lib/components/modal/SettingsDialog/`, and edits to `src/lib/header/Header.svelte`.
-- Persistence: extends the existing `electron-store`-backed `setStorage`/`getStorage` bridge with new keys for AI settings, per-connection AI overrides, and per-connection chat history.
-- Removed: `src/lib/store/internet.js` (+test), `src/lib/utils/onlineCheck.js`, `src/lib/header/OnlineIndicator.svelte` (+test), and their registration/wiring in `src/lib/store/index.js` and `src/routes/+layout.svelte`.
-- Edited: `src/lib/store/server.js` (new `connected` boolean, set from the existing `connected`/`disconnected` events already dispatched by `connection.js`), `src/lib/components/modal/ConnectionDialog/*` (new AI override section).
+- New dependencies: the Vercel AI SDK core (`ai`, major version 7), `@ai-sdk/svelte` (major version 5) for the chat UI, and the provider packages `@ai-sdk/openai`, `@ai-sdk/anthropic`, `@ai-sdk/google`, and `@ai-sdk/openai-compatible` for custom endpoints.
+- Server: a new streaming route under `src/routes/api/ai/**` and a new `src/lib/server/ai/**` for the tool layer and the model's system context. `src/lib/server/elastic.js` is refactored to expose a shared, SSH-tunnel-aware client helper that both the existing routes and the tools use, and its error responses gain a flag marking network-level failures.
+- Renderer: `src/lib/api/elasticsearch.js` reports each request's reachability outcome to the store. `src/lib/store/server.js` gains a reachability flag and records the cluster's build flavor. New Storeon modules hold AI settings and assistant state, registered in `src/lib/store/index.js` and hydrated in `src/routes/+layout.svelte`.
+- UI: the assistant drawer, confirmation cards, query cards with Search and Playground actions, the generic `SettingsDialog`, and the reworked header in `src/lib/header/Header.svelte`.
+- Persistence: new `electron-store` keys for AI settings and for per-endpoint chat history, through the existing `setStorage`/`getStorage` bridge.
+- Removed: `src/lib/store/internet.js` (+test), `src/lib/utils/onlineCheck.js`, `src/lib/header/OnlineIndicator.svelte` (+test), and their registration and wiring in `src/lib/store/index.js` and `src/routes/+layout.svelte`.
