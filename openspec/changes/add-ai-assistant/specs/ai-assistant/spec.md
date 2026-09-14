@@ -99,6 +99,21 @@ The system SHALL persist one ongoing conversation per cluster endpoint, identifi
 - **WHEN** an endpoint's conversation grows beyond the retained message limit
 - **THEN** the oldest messages SHALL be dropped from storage so the stored conversation stays at or below the limit
 
+### Requirement: Bounded model context
+The system SHALL bound what each request sends to the AI provider independently of the stored conversation. Tool results older than the most recent few messages SHALL be omitted from the request, while the assistant's own replies SHALL be kept. Only a bounded number of the most recent messages SHALL be sent. Pruning SHALL NOT change the stored conversation or what the panel displays.
+
+#### Scenario: Old tool results are not resent
+- **WHEN** the user sends a message in a conversation whose earlier turns ran searches
+- **THEN** the request sent to the AI provider SHALL NOT include the results of those earlier searches, and SHALL include the assistant's earlier replies
+
+#### Scenario: Long conversation
+- **WHEN** the stored conversation holds more messages than the context bound
+- **THEN** the request sent to the AI provider SHALL include only the most recent messages up to the bound
+
+#### Scenario: Display is unaffected
+- **WHEN** a request has been sent with pruned context
+- **THEN** the panel SHALL still display every stored message, including the earlier tool results
+
 ### Requirement: Manual history clearing
 The system SHALL allow the user to clear the active endpoint's stored conversation on demand.
 

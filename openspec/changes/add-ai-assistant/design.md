@@ -23,6 +23,7 @@ See proposal.md for motivation. Relevant existing architecture (see `CLAUDE.md`)
 - Per-connection overrides of the AI settings. Deferred to a later change, which will first need a stable connection identity.
 - Reconciling assistant state across multiple windows on the same endpoint. It follows the last-write-wins behavior the app already has for Playground drafts and Search tabs.
 - Input beyond text, and migrating the Footer theme toggle into Settings.
+- Summarizing or compacting old conversation, and a user-facing "New conversation" divider. Automatic pruning (decision 12) covers the cost problem for v1; either can be added later if long conversations still drift.
 
 ## Decisions
 
@@ -68,7 +69,7 @@ Alternative considered: a real MCP server now. Rejected for v1. It needs an auth
 Excluded: connection testing (`/api/elastic/test`) and SSH tunnel open/close (`/api/elastic/tunnel/**`). They are per-window connection plumbing, not conversational actions.
 
 **2. One streaming chat route with an explicit step limit and cluster context.**
-`src/routes/api/ai/chat/+server.js` calls the `ai` package's `streamText` with the resolved provider model, the tool set, a system prompt, and an explicit `stopWhen` step limit lower than the SDK's default of 20. It returns a UI message stream consumed by the `Chat` class from `@ai-sdk/svelte`. The request body carries the messages, the connection and window ID for the tools, the active provider's settings (decision 3), and the cluster's version and flavor. The system prompt, built in `src/lib/server/ai/`, states the cluster version and flavor, describes the tools, and tells the model to check a query with `validate-query` before proposing it and to hand queries to the user through `propose-query`. It contains no credentials or hostnames. `src/lib/store/server.js` already holds the version; it also starts recording the flavor from the `connected` event payload.
+`src/routes/api/ai/chat/+server.js` calls the `ai` package's `streamText` with the resolved provider model, the tool set, a system prompt, and an explicit `stopWhen` step limit lower than the SDK's default of 20. It returns a UI message stream consumed by the `Chat` class from `@ai-sdk/svelte`. The messages it passes to `streamText` go through the context builder in decision 12 first. The request body carries the messages, the connection and window ID for the tools, the active provider's settings (decision 3), and the cluster's version and flavor. The system prompt, built in `src/lib/server/ai/`, states the cluster version and flavor, describes the tools, and tells the model to check a query with `validate-query` before proposing it and to hand queries to the user through `propose-query`. It contains no credentials or hostnames. `src/lib/store/server.js` already holds the version; it also starts recording the flavor from the `connected` event payload.
 
 **3. The API key travels from the renderer with each chat request.**
 The server has no access to `electron-store`, so the renderer loads the AI settings through the existing bridge and sends the active provider's key, model, and base URL with each chat request. This is the same loopback path ES credentials already take on every `/api/elastic/**` call. The route builds the provider client per request, never logs or persists the key, and strips it from any error text it returns. With only global settings, choosing the provider is a lookup of `activeProvider`; there is no precedence logic.
@@ -104,8 +105,17 @@ The connection icon is a plain Semantic UI icon button, not `IconButton`, colore
 **11. Analytics stays untouched.**
 No new analytics events. The drawer is not a route, so it produces no page views, and no chat, tool, provider, or model data reaches `trackPageView` or `gtag`.
 
+**12. Model context is pruned and windowed separately from storage.**
+Provider APIs are stateless, so every request carries whatever context the model should see. Without a bound, a rolling conversation resends its whole stored history every turn, getting slower and more expensive and eventually overflowing the model's context window. Tool results are most of that weight here: search hits, mappings, index lists. Before each request, the chat route builds the model context in three steps:
+- Convert the UI messages to model messages with `convertToModelMessages`.
+- Keep only the most recent M messages, cutting at a user-message boundary so the window never opens on an orphaned tool result.
+- Call the SDK's `pruneMessages` to drop tool calls and results before the last few messages, and reasoning before the last message. The assistant's text replies stay, and they already summarize what the tools found.
+Tool-approval requests and responses sit in the most recent messages, so pruning never removes an approval in flight. The stored conversation and the drawer's display are untouched. Where the provider supports it, prompt caching is enabled through provider options, marking the system prompt and tool definitions as cacheable for Anthropic; OpenAI and Gemini cache repeated prefixes on their own.
+Alternatives considered: OpenAI's server-side conversation state and Anthropic's server-side context management. Rejected as the primary mechanism because each works with only one of the four providers and neither reduces what OpenAI bills per turn. Summarization was also deferred: it adds a model call and real complexity for a gain pruning mostly already delivers.
+
 ## Risks / Trade-offs
 
+- [Risk] Pruned tool results mean the model can't quote old data exactly. → It re-runs the read tool, which is automatic and cheap, and its earlier replies still carry what it concluded.
 - [Risk] The API key sits in renderer memory and crosses loopback with each chat request. → Same exposure ES passwords already have. Mitigated by masking in the form, never logging, and stripping the key from error text.
 - [Risk] Error classification depends on the ES client's error class names, and both client versions are bundled. → Unit tests cover the v8 and v9 error classes.
 - [Risk] A dead cluster takes up to the client's timeout times its retries before the icon turns red. → Accepted. The icon reflects the last completed request.
@@ -126,4 +136,4 @@ No new analytics events. The drawer is not a route, so it produces no page views
 
 ## Open Questions
 
-- Exact values for the history message cap, the tool-result ceiling, and the step limit. They are implementation constants that don't change the specs or the task breakdown.
+- Exact values for the history message cap, the tool-result ceiling, the step limit, the context window M, and how many recent messages keep their tool results. They are implementation constants that don't change the specs or the task breakdown.

@@ -12,6 +12,7 @@ Elastron users have to know Elasticsearch's query DSL and API surface themselves
 - The assistant is told the connected cluster's version and build flavor, so the requests it proposes are valid for that cluster.
 - Add global AI settings: an API key and free-text model id for each provider (OpenAI, Anthropic, Google Gemini, and a custom OpenAI-compatible endpoint with a base URL), plus which provider is active.
 - Chat history is one rolling conversation per cluster endpoint, persisted in the existing encrypted local store, automatically trimmed to a bounded number of recent messages, and clearable on demand.
+- What each request sends to the AI provider is bounded separately from what is stored: old tool results are pruned and only recent messages are sent, so a long-running conversation doesn't grow slower and more expensive with every turn.
 - Nothing from the assistant is sent to analytics.
 - Add a generic, extensible Settings modal with vertical tabs, opened from a new header gear button. Its first section is "AI Integration."
 - Replace the header's "Connection" text button and separate green/red online dot with a single connection icon whose color reflects cluster reachability: red after a connection attempt or any Elasticsearch request fails at the network level, green again after the next success. Ordinary Elasticsearch error responses don't change it.

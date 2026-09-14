@@ -34,7 +34,8 @@
 ## 7. Chat route
 
 - [ ] 7.1 Implement the system-prompt builder in `src/lib/server/ai/` from the cluster version and flavor, with tool guidance to validate queries before proposing them and to use `propose-query` for handoff. Add a unit test asserting the version and flavor are present and no credentials or hostnames are.
-- [ ] 7.2 Implement `src/routes/api/ai/chat/+server.js`: read the messages, connection, window ID, active provider settings, and cluster info from the body, build the provider model for OpenAI, Anthropic, Google, or the custom endpoint, and call `streamText` with the tool set, the system prompt, and an explicit `stopWhen` step limit. Add tests asserting a missing provider configuration returns a clear error and that a provider error returned to the renderer never contains the API key.
+- [ ] 7.2 Implement the model-context builder from design.md decision 12: convert messages, keep the most recent M messages starting at a user message, run `pruneMessages` on older tool traffic and reasoning, and set prompt-caching provider options for Anthropic. Add unit tests asserting old tool results are dropped while assistant replies stay, the window never opens on an orphaned tool result, a pending approval survives pruning, and the input messages are not mutated.
+- [ ] 7.3 Implement `src/routes/api/ai/chat/+server.js`: read the messages, connection, window ID, active provider settings, and cluster info from the body, build the provider model for OpenAI, Anthropic, Google, or the custom endpoint, and call `streamText` with the context from 7.2, the tool set, the system prompt, and an explicit `stopWhen` step limit. Add tests asserting a missing provider configuration returns a clear error and that a provider error returned to the renderer never contains the API key.
 
 ## 8. Tool layer
 
