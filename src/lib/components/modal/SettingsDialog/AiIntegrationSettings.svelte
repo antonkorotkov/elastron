@@ -1,4 +1,5 @@
 <script>
+	import { untrack } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '../../../utils/helpers'
 	import {
@@ -7,7 +8,7 @@
 		normalizeAiSettings,
 	} from '../../../store/aiSettings.js'
 
-	const { dispatch, aiSettings, app } = useStoreon('aiSettings', 'app')
+	const { dispatch, aiSettings, aiSettingsLoaded, app } = useStoreon('aiSettings', 'aiSettingsLoaded', 'app')
 
 	const MODEL_PLACEHOLDERS = {
 		openai: 'e.g. gpt-5.1',
@@ -16,15 +17,28 @@
 		custom: 'e.g. llama3.1',
 	}
 
-	// Edits go to a draft; nothing reaches the store until the dialog saves.
-	let draft = $state(normalizeAiSettings(JSON.parse(JSON.stringify($aiSettings))))
+	const copyOfSaved = () => normalizeAiSettings(JSON.parse(JSON.stringify($aiSettings)))
 
-	/** Called by the Settings dialog's Save button. */
-	export const save = () => dispatch('aiSettings/save', $state.snapshot(draft))
+	// Edits go to a draft; nothing reaches the store until the dialog saves.
+	// The draft starts only once the stored settings have loaded: a draft of
+	// the startup placeholders would overwrite the stored keys on Save.
+	let draft = $state($aiSettingsLoaded ? copyOfSaved() : null)
+
+	$effect(() => {
+		if ($aiSettingsLoaded && !untrack(() => draft)) draft = copyOfSaved()
+	})
+
+	/** Called by the Settings dialog's Save button. Does nothing before loading. */
+	export const save = () => {
+		if (draft) dispatch('aiSettings/save', $state.snapshot(draft))
+	}
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 </script>
 
+{#if !draft}
+	<p class="hint" class:inverted>Loading settings…</p>
+{:else}
 <form class="ui form" class:inverted onsubmit={e => e.preventDefault()}>
 	<div class="field">
 		<label for="ai-active-provider">Active provider</label>
@@ -97,6 +111,7 @@
 		</div>
 	{/each}
 </form>
+{/if}
 
 <style>
 	.hint {

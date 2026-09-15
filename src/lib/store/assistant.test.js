@@ -93,6 +93,29 @@ describe('assistant store module', () => {
 		expect(state().messages).toEqual([])
 	})
 
+	it('switches history when the connection changes without a connect event', async () => {
+		await connectTo({ host: 'http://es-a', port: '9200' })
+		store.dispatch('assistant/setMessages', [user('a')])
+		// Quick Connect updates the connection first; a failed SSH tunnel then
+		// returns without dispatching connected or disconnected.
+		store.dispatch('connection/update', { host: 'http://es-b', port: '9200' })
+		await flush()
+		expect(state().endpoint).toBe('http://es-b|9200|')
+		expect(state().messages).toEqual([])
+	})
+
+	it('keeps separate conversations for the same host behind different SSH bastions', async () => {
+		const tunnel = sshHost => ({ host: 'http://localhost', port: '9200', useSshTunnel: true, ssh: { host: sshHost, port: '22', username: 'deploy' } })
+		await connectTo(tunnel('bastion-prod'))
+		store.dispatch('assistant/setMessages', [user('prod-question')])
+
+		await connectTo(tunnel('bastion-stg'))
+		expect(state().messages).toEqual([])
+
+		await connectTo(tunnel('bastion-prod'))
+		expect(state().messages.map(m => m.id)).toEqual(['prod-question'])
+	})
+
 	it('keeps the in-memory conversation when reconnecting to the same endpoint', async () => {
 		await connectTo({ host: 'http://es-a', port: '9200' })
 		store.dispatch('assistant/append', user('u1'))
@@ -134,6 +157,12 @@ describe('endpoint helpers', () => {
 		expect(endpointOf({ host: 'h', port: '1', useAuth: false, user: 'x' })).toBe('h|1|')
 		expect(endpointOf({ host: 'h', port: '1', useAuth: true, user: 'x' })).toBe('h|1|x')
 		expect(endpointOf({})).toBe(null)
+	})
+
+	it('includes the SSH tunnel only when one is used', () => {
+		const ssh = { host: 'Bastion.example.com', port: '2222', username: 'deploy' }
+		expect(endpointOf({ host: 'http://localhost', port: '9200', useSshTunnel: true, ssh })).toBe('http://localhost|9200||ssh:deploy@bastion.example.com:2222')
+		expect(endpointOf({ host: 'http://localhost', port: '9200', useSshTunnel: false, ssh })).toBe('http://localhost|9200|')
 	})
 
 	it('builds storage keys without dots', () => {

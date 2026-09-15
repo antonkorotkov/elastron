@@ -1,10 +1,11 @@
 import API, { setReachabilityListener } from '../api/elasticsearch'
 import { getMessageFromError, getVersionNumber } from '../utils/helpers'
+import { endpointOf } from '../utils/endpoint.js'
 
 export const server = store => {
 	store.on('@init', () => {
-		setReachabilityListener(reachable =>
-			store.dispatch('server/reachability', reachable)
+		setReachabilityListener((reachable, connection) =>
+			store.dispatch('server/reachability', { reachable, connection })
 		)
 
 		return {
@@ -33,9 +34,14 @@ export const server = store => {
 		},
 	}))
 
-	// Fed by every renderer request. Returning nothing when the value is
-	// unchanged keeps subscribers from re-rendering on each request.
-	store.on('server/reachability', (state, reachable) => {
+	// Fed by every renderer request. Only requests to the window's own cluster
+	// count; testing another saved connection must not repaint the icon.
+	// Returning nothing when the value is unchanged keeps subscribers from
+	// re-rendering on each request.
+	store.on('server/reachability', (state, report) => {
+		const { reachable, connection } =
+			typeof report === 'object' && report !== null ? report : { reachable: report }
+		if (connection && endpointOf(connection) !== endpointOf(state.connection)) return
 		if (state.server.reachable === Boolean(reachable)) return
 		return {
 			server: {

@@ -68,14 +68,39 @@ export const requiresApproval = (name, input) =>
 	needsConfirmation(name) || (PAGED_TOOLS.has(name) && pageOf(input) > 1)
 
 /**
+ * Whether a request destroys data it can't give back: any DELETE, and
+ * delete- or update-by-query. Judged from the request itself, so the generic
+ * request tool gets the same warning as the named destructive tools.
+ */
+export const isDestructiveRequest = request =>
+	request?.method === 'DELETE' || /\/_(delete|update)_by_query(\/|$)/.test(request?.path ?? '')
+
+/** Whether a tool call, by name or by the request it builds, is destructive. */
+export const isDestructiveCall = (name, input) =>
+	isDestructive(name) || isDestructiveRequest(buildToolRequest(name, input ?? {}))
+
+// The index target of a request path, such as `logs-*` in /logs-*/_delete_by_query.
+const targetOf = path => decodeURIComponent(String(path ?? '').split('/')[1] ?? '')
+
+/**
  * A plain-language line for the approval card, for calls the request line
  * alone doesn't explain. Returns null when the request says it all.
  */
 export const describeToolCall = (name, input) => {
-	if (!PAGED_TOOLS.has(name) || pageOf(input) === 1) return null
-	const page = pageOf(input)
-	const first = (page - 1) * LIST_PAGE_SIZE + 1
-	return `Page ${page}: entries ${first}–${first + LIST_PAGE_SIZE - 1}. Approving sends them to the AI provider.`
+	if (PAGED_TOOLS.has(name) && pageOf(input) > 1) {
+		const page = pageOf(input)
+		const first = (page - 1) * LIST_PAGE_SIZE + 1
+		return `Page ${page}: entries ${first}–${first + LIST_PAGE_SIZE - 1}. Approving sends them to the AI provider.`
+	}
+	const request = buildToolRequest(name, input ?? {})
+	if (isDestructiveRequest(request)) {
+		const target = targetOf(request.path)
+		if (target && !target.startsWith('_') && isSweepingTarget(target)) {
+			return `Affects every index matching ${target}.`
+		}
+		if (target === '_all') return 'Affects every index in the cluster.'
+	}
+	return null
 }
 
 // Encoding each segment keeps a model-supplied name from rewriting the path.

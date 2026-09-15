@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { createOpenAI } from '@ai-sdk/openai'
 import {
 	windowMessages,
 	buildModelMessages,
@@ -157,5 +158,100 @@ describe('buildCacheableInstructions', () => {
 		for (const provider of ['openai', 'google', 'custom']) {
 			expect(buildCacheableInstructions('rules', provider)).toBe('rules')
 		}
+	})
+})
+
+// A reply from an OpenAI reasoning model as the chat stores it: a reasoning
+// item and a message item, each carrying the id OpenAI stored it under.
+const reasoningReply = (id, n, text) => ({
+	id,
+	role: 'assistant',
+	parts: [
+		{ type: 'reasoning', text: '', providerMetadata: { openai: { itemId: `rs_${n}`, reasoningEncryptedContent: null } } },
+		{ type: 'text', text, providerMetadata: { openai: { itemId: `msg_${n}` } } },
+	],
+})
+
+// What the real OpenAI provider would send for these messages.
+const openaiInput = async messages => {
+	let body
+	const model = createOpenAI({
+		apiKey: 'test',
+		fetch: async (_url, init) => {
+			body = JSON.parse(init.body)
+			return new Response('data: [DONE]\n\n', { headers: { 'content-type': 'text/event-stream' } })
+		},
+	})('gpt-5.1')
+	const { stream } = await model.doStream({ prompt: await buildModelMessages(messages) })
+	const reader = stream.getReader()
+	await reader.read()
+	await reader.cancel().catch(() => {})
+	return body.input
+}
+
+describe('history sent to OpenAI reasoning models', () => {
+	it('sends an earlier reply as plain text, never as a reference missing its reasoning', async () => {
+		const input = await openaiInput([
+			user('u1', 'how many indices?'),
+			reasoningReply('a1', 1, 'There are 3.'),
+			user('u2', 'and aliases?'),
+		])
+		expect(input.some(item => item.type === 'item_reference')).toBe(false)
+		expect(JSON.stringify(input)).not.toMatch(/msg_1|rs_1/)
+		expect(input).toContainEqual({ role: 'assistant', content: [{ type: 'output_text', text: 'There are 3.' }] })
+	})
+
+	it('keeps the current turn reasoning with its tool call when continuing after an approval', async () => {
+		const input = await openaiInput([
+			user('u1', 'how many indices?'),
+			reasoningReply('a1', 1, 'There are 3.'),
+			user('u2', 'delete tmp'),
+			{
+				id: 'a2',
+				role: 'assistant',
+				parts: [
+					{ type: 'reasoning', text: '', providerMetadata: { openai: { itemId: 'rs_2', reasoningEncryptedContent: null } } },
+					{
+						type: 'tool-delete-index',
+						toolCallId: 'call_2',
+						state: 'approval-responded',
+						input: { index: 'tmp' },
+						callProviderMetadata: { openai: { itemId: 'fc_2' } },
+						approval: { id: 'ap_2', approved: true },
+					},
+				],
+			},
+		])
+		const ids = input.map(item => item.id).filter(Boolean)
+		expect(ids).toContain('rs_2')
+		const call = ids.indexOf('fc_2') === -1 ? ids.length : ids.indexOf('fc_2')
+		expect(ids.indexOf('rs_2')).toBeLessThan(call)
+	})
+})
+
+describe('reasoning across turns', () => {
+	it('drops reasoning from earlier turns and keeps it in the current one', async () => {
+		const model = await buildModelMessages([
+			user('u1', 'q1'),
+			reasoningReply('a1', 1, 'first'),
+			user('u2', 'q2'),
+			reasoningReply('a2', 2, 'second'),
+		])
+		const reasoningOf = text =>
+			model.find(m => m.role === 'assistant' && m.content.some(p => p.type === 'text' && p.text === text)).content.filter(p => p.type === 'reasoning')
+		expect(reasoningOf('first')).toEqual([])
+		expect(reasoningOf('second')).toHaveLength(1)
+	})
+
+	it('strips provider ids from earlier replies only', async () => {
+		const model = await buildModelMessages([
+			user('u1', 'q1'),
+			reasoningReply('a1', 1, 'first'),
+			user('u2', 'q2'),
+			reasoningReply('a2', 2, 'second'),
+		])
+		const textPart = text => model.flatMap(m => (typeof m.content === 'string' ? [] : m.content)).find(p => p.text === text)
+		expect(textPart('first').providerOptions).toBeUndefined()
+		expect(textPart('second').providerOptions).toEqual({ openai: { itemId: 'msg_2' } })
 	})
 })

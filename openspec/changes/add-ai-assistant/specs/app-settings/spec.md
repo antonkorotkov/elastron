@@ -29,6 +29,10 @@ Changes made in the Settings panel SHALL take effect only when the user saves th
 - **WHEN** the user changes a setting and activates Cancel
 - **THEN** the setting SHALL keep its previous value and the panel SHALL close
 
+#### Scenario: Settings opened before they finish loading
+- **WHEN** the user opens the Settings panel before the stored settings have loaded, and activates Save
+- **THEN** the panel SHALL show that settings are loading, and saving SHALL NOT replace the stored settings
+
 ### Requirement: AI Integration section
 The Settings panel SHALL include an "AI Integration" section where the user chooses the active AI provider and, for each provider, views and edits its API key and model, plus the base URL for the custom provider, as defined by the ai-assistant capability. API keys SHALL be masked when displayed.
 

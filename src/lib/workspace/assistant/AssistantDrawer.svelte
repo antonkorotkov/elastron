@@ -6,10 +6,11 @@
 	import { isThemeToggleChecked } from '../../utils/helpers'
 	import { getActiveProviderConfig, isProviderUsable } from '../../store/aiSettings.js'
 	import { findTab } from '../../store/search.js'
+	import { endpointOf } from '../../utils/endpoint.js'
 	import { formatRequestLine, pathWithQuery } from '../../ai/catalog.js'
 	import { openSettingsDialog } from '../../components/modal/SettingsDialog/openSettings.js'
 	import { createAssistantChat } from './createAssistantChat.js'
-	import { isToolPart, errorMessageOf, prettyJson } from './format.js'
+	import { isToolPart, errorMessageOf, prettyJson, replyMadeProgress } from './format.js'
 	import MessageText from './MessageText.svelte'
 	import ToolPart from './ToolPart.svelte'
 	import AiSparklesIcon from '../../components/icons/AiSparklesIcon.svelte'
@@ -17,9 +18,10 @@
 	/** Injected by tests; the app uses the global fetch. */
 	let { fetch = undefined } = $props()
 
-	const { dispatch, assistant, aiSettings, connection, server, app, search } = useStoreon(
+	const { dispatch, assistant, aiSettings, aiSettingsLoaded, connection, server, app, search } = useStoreon(
 		'assistant',
 		'aiSettings',
+		'aiSettingsLoaded',
 		'connection',
 		'server',
 		'app',
@@ -73,15 +75,18 @@
 		untrack(() => chat?.stop())
 		chatEndpoint = endpoint
 		const messages = untrack(() => $assistant.messages)
-		chat = createAssistantChat({ messages, getRequestContext, onSettled: persistFor(endpoint), onReply, fetch })
+		chat = createAssistantChat({ endpoint, messages, getRequestContext, onSettled: persistFor(endpoint), onReply, fetch })
 	})
 
 	let messages = $derived(chat?.messages ?? [])
 	let busy = $derived(chat?.status === 'submitted' || chat?.status === 'streaming')
+	// Between a connection change and its conversation loading, the chat on
+	// screen belongs to the previous cluster; sending is held until they match.
+	let loadingConversation = $derived(endpointOf($connection) !== $assistant.endpoint)
 
 	const send = async () => {
 		const text = draft.trim()
-		if (!text || busy || !usable || !chat) return
+		if (!text || busy || !usable || !chat || loadingConversation) return
 		draft = ''
 		awaitingReply = true
 		dispatch('assistant/messageSent')
@@ -96,6 +101,10 @@
 	}
 
 	const respond = (part, approved) => chat?.addToolApprovalResponse({ id: part.approval.id, approved })
+
+	// A reply that already ran a tool or had an approval answered is continued
+	// from where it stopped; one that failed before doing anything is redone.
+	const retry = () => (replyMadeProgress(chat.messages) ? chat.sendMessage() : chat.regenerate())
 
 	const clearHistory = () => {
 		chat?.stop()
@@ -220,7 +229,7 @@
 			</div>
 		{/if}
 
-		{#each messages as message (message.id)}
+		{#each messages as message, messageIndex (message.id)}
 			<div class="message {message.role}">
 				{#each message.parts as part, i (i)}
 					{#if part.type === 'text'}
@@ -230,7 +239,8 @@
 							<MessageText text={part.text} />
 						{/if}
 					{:else if isToolPart(part)}
-						<ToolPart {part} onRespond={respond} {handoff} {inverted} />
+						<!-- An approval can only run from the latest message; older ones have expired. -->
+						<ToolPart {part} onRespond={respond} {handoff} {inverted} stale={messageIndex < messages.length - 1} />
 					{/if}
 				{/each}
 			</div>
@@ -243,14 +253,16 @@
 		{#if chat?.error}
 			<div class="ui small negative message chat-error" role="alert">
 				<p>{errorMessageOf(chat.error)}</p>
-				<button type="button" class="ui mini button" onclick={() => chat.regenerate()}>Retry</button>
+				<button type="button" class="ui mini button" onclick={retry}>Retry</button>
 				<button type="button" class="ui mini basic button" onclick={() => chat.clearError()}>Dismiss</button>
 			</div>
 		{/if}
 	</div>
 
 	<div class="composer">
-		{#if !usable}
+		{#if !$aiSettingsLoaded}
+			<p class="loading-note">Loading AI settings…</p>
+		{:else if !usable}
 			<div class="configure" role="note">
 				<p>Choose an AI provider and enter its API key and model to use the assistant.</p>
 				<button type="button" class="ui small primary button" onclick={() => openSettingsDialog(open, 'ai')}>
@@ -266,13 +278,16 @@
 					bind:value={draft}
 					onkeydown={onKeydown}
 				></textarea>
+				{#if loadingConversation}
+					<p class="loading-note">Loading the conversation for this cluster…</p>
+				{/if}
 				<div class="composer-actions">
 					{#if busy}
 						<button type="button" class="ui small button" class:inverted onclick={() => chat.stop()}>
 							<i class="stop icon"></i> Stop
 						</button>
 					{:else}
-						<button type="submit" class="ui small primary button" disabled={!draft.trim()}>
+						<button type="submit" class="ui small primary button" disabled={!draft.trim() || loadingConversation}>
 							<i class="paper plane icon"></i> Send
 						</button>
 					{/if}
@@ -294,13 +309,15 @@
 		top: 4rem;
 		right: 0;
 		bottom: 0;
-		width: var(--assistant-width, 440px);
+		/* Floats over the page rather than docking beside it, so opening it
+		   never narrows the workspace. Dialogs and notifications stack above. */
+		width: 440px;
 		z-index: 90;
 		display: none;
 		flex-direction: column;
 		background: #fff;
 		border-left: 1px solid rgba(34, 36, 38, 0.15);
-		box-shadow: -2px 0 10px rgba(0, 0, 0, 0.06);
+		box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
 	}
 	.assistant-drawer.open {
 		display: flex;
@@ -314,6 +331,7 @@
 		background: #1b1c1d;
 		color: rgba(255, 255, 255, 0.9);
 		border-left-color: rgba(255, 255, 255, 0.1);
+		box-shadow: -4px 0 16px rgba(0, 0, 0, 0.6);
 	}
 	.drawer-header {
 		display: flex;
@@ -385,6 +403,11 @@
 		display: flex;
 		justify-content: flex-end;
 		margin-top: 0.5rem;
+	}
+	.loading-note {
+		margin: 0.4rem 0 0;
+		opacity: 0.7;
+		font-size: 0.9em;
 	}
 	.configure p {
 		margin-bottom: 0.5em;

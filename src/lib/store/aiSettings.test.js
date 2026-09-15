@@ -36,6 +36,12 @@ describe('aiSettings store module', () => {
 		expect(settings().providers.custom).toEqual({ apiKey: '', model: '', baseUrl: '' })
 	})
 
+	it('is not loaded until hydrated or saved', () => {
+		expect(store.get().aiSettingsLoaded).toBe(false)
+		store.dispatch('aiSettings/hydrate', null)
+		expect(store.get().aiSettingsLoaded).toBe(true)
+	})
+
 	it('hydrates from stored data without writing it back', () => {
 		store.dispatch('aiSettings/hydrate', {
 			activeProvider: 'anthropic',

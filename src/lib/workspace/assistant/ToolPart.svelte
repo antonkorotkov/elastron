@@ -4,7 +4,7 @@
 	import ApprovalCard from './ApprovalCard.svelte'
 	import QueryCard from './QueryCard.svelte'
 
-	let { part, onRespond = () => {}, handoff = {}, inverted = false } = $props()
+	let { part, onRespond = () => {}, handoff = {}, inverted = false, stale = false } = $props()
 
 	let name = $derived(toolNameOf(part))
 	let running = $derived(part.state === 'input-streaming' || part.state === 'input-available')
@@ -33,7 +33,7 @@
 		<p class="tool-line"><i class="notched circle loading icon"></i> Preparing a query…</p>
 	{/if}
 {:else if approvalFlow}
-	<ApprovalCard {part} {inverted} onRespond={approved => onRespond(part, approved)} />
+	<ApprovalCard {part} {inverted} {stale} onRespond={approved => onRespond(part, approved)} />
 {:else}
 	<details class="tool-line" class:failed={part.state === 'output-error'}>
 		<summary>

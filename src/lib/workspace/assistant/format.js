@@ -16,6 +16,24 @@ export const isInvalidInputError = part =>
 	((part.input === undefined && part.rawInput !== undefined) ||
 		/Invalid input for tool|InvalidToolInputError/.test(part.errorText ?? ''))
 
+// Tool states meaning a reply already did something: a tool ran (or failed
+// or was declined), or the user answered an approval.
+const PROGRESS_STATES = new Set(['output-available', 'output-error', 'output-denied', 'approval-responded'])
+
+/**
+ * Whether the last reply made progress before it failed. Retrying such a
+ * reply must continue it rather than regenerate it: regenerating deletes the
+ * whole reply, including writes the user approved and that already ran, and
+ * the model may then ask to make them again.
+ */
+export const replyMadeProgress = messages => {
+	const last = messages?.at(-1)
+	return (
+		last?.role === 'assistant' &&
+		last.parts.some(part => isToolPart(part) && PROGRESS_STATES.has(part.state))
+	)
+}
+
 /** 'delete-index' becomes 'Delete index'. */
 export const toolLabel = name => {
 	const words = String(name ?? '').split('-').join(' ')

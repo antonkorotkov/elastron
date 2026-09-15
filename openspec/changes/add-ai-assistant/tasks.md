@@ -110,3 +110,21 @@
 
 - [x] 19.1 Report `assistant_message_sent` when the user sends a message and `assistant_response_received` when the reply to it finishes, once per message and with no parameters, through the analytics store module. Verified by store tests and end-to-end drawer tests covering an approval continuation and a failed reply that is retried.
 - [x] 19.2 Add the events to the usage-analytics capability as a spec delta and update the ai-assistant analytics requirement and the proposal. Verified by `openspec validate add-ai-assistant --strict`.
+
+## 20. Follow-up: code review fixes
+
+- [x] 20.1 Strip earlier turns' tool calls, results, and reasoning from chat requests, and set `BODY_SIZE_LIMIT` for the forked server. Verified by a test that a heavy history exceeds 512K before and stays under a quarter of it after, still passing the route's validation, and by posting a 600KB body to the built server with and without the setting.
+- [x] 20.2 Never render images from replies. Verified by a Markdown test that an image becomes a link and no `img` is produced.
+- [x] 20.3 Refuse requests for a tunnel connection whose tunnel isn't open, across routes and tools, and drop the racing startup `server/info`. Verified by helper, route, and tool tests that no client is created.
+- [x] 20.4 Follow every connection change in the assistant store and refuse sends from a conversation whose cluster no longer matches. Verified by store and chat tests, including the failed Quick Connect case.
+- [x] 20.5 Judge destructive styling and warnings from the built request, name sweeping targets, and refuse wiping an alias. Verified by catalog, tool, and drawer tests.
+- [x] 20.6 Expire approval cards in earlier messages. Verified by a drawer test.
+- [x] 20.7 Ignore reachability reports about other clusters. Verified by server store and integration tests.
+- [x] 20.8 Continue, rather than regenerate, a failed reply that already made progress. Verified by drawer tests for both retry paths.
+- [x] 20.9 Hold the Settings draft and the drawer's provider prompt until stored settings load. Verified by section and store tests.
+- [x] 20.10 Include the SSH tunnel in the endpoint key. Verified by store tests.
+- [x] 20.11 Keep reasoning for the whole current turn and strip provider ids from earlier turns, on the server and in the renderer, fixing OpenAI's "provided without its required 'reasoning' item" error on follow-ups and after approvals. Verified by tests that run the history through the real OpenAI provider, including one confirming the old trimming dropped reasoning on an approval continuation.
+
+## 21. Follow-up: overlay drawer
+
+- [x] 21.1 Float the assistant drawer over the page instead of padding the layout by its width, so opening it never narrows the workspace. Verified in the running app: the page keeps its width with the drawer open, and notifications and dialogs appear above it.

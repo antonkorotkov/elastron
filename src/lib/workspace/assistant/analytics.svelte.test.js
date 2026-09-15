@@ -53,6 +53,7 @@ describe('assistant and analytics', () => {
 		expect(window.gtag).toHaveBeenCalledWith('event', 'cluster_connected', { es_version: '9.1.0', es_flavor: 'default' })
 		window.gtag.mockClear()
 
+		store.dispatch('aiSettings/hydrate', null)
 		const settings = render(SettingsDialog)
 		await fireEvent.change(screen.getByLabelText('Active provider'), { target: { value: 'openai' } })
 		await fireEvent.input(document.getElementById('ai-openai-api-key'), { target: { value: 'sk-openai' } })

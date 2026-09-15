@@ -16,7 +16,7 @@
 	// SvelteKit Context Provider for Storeon
 	provideStoreon(store)
 
-	const { dispatch, app, connection, assistant } = useStoreon('app', 'connection', 'assistant')
+	const { dispatch, app, connection } = useStoreon('app', 'connection')
 
 	let { children } = $props()
 
@@ -94,7 +94,6 @@
 
 			const theme = await getStorage('theme')
 			dispatch('app/hydrate', { theme: theme ?? 'light' })
-			dispatch('server/info')
 
 			// Clean up SSH tunnel on window close
 			window.addEventListener('beforeunload', () => {
@@ -136,8 +135,7 @@
 </svelte:head>
 
 <Modal>
-	<!-- While the assistant is open, the page docks beside it rather than under it. -->
-	<main class="ui fluid container" class:bg-black={inverted} class:assistant-docked={$assistant.open}>
+	<main class="ui fluid container" class:bg-black={inverted}>
 		<Header />
 		<div class="padded">
 			{@render children()}
@@ -152,10 +150,6 @@
 <style>
 	main {
 		min-height: 100%;
-		--assistant-width: 440px;
-	}
-	main.assistant-docked {
-		padding-right: var(--assistant-width);
 	}
 	.bg-black {
 		background: black;

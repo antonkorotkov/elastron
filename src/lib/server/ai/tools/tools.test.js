@@ -132,7 +132,6 @@ describe('confirm write tools', () => {
 		['clone-index', { index: 'logs', target: 'logs-copy' }, { method: 'POST', path: '/logs/_clone/logs-copy' }],
 		['close-index', { index: 'logs' }, { method: 'POST', path: '/logs/_close' }],
 		['open-index', { index: 'logs' }, { method: 'POST', path: '/logs/_open' }],
-		['wipe-index', { index: 'logs' }, { method: 'POST', path: '/logs/_delete_by_query', querystring: { conflicts: 'proceed' }, body: { query: { match_all: {} } } }],
 		['update-mapping', { index: 'logs', properties: { status: { type: 'keyword' } } }, { method: 'PUT', path: '/logs/_mapping', body: { properties: { status: { type: 'keyword' } } } }],
 		['update-index-settings', { index: 'logs', settings: { index: { number_of_replicas: 0 } } }, { method: 'PUT', path: '/logs/_settings', body: { index: { number_of_replicas: 0 } } }],
 		['create-alias', { index: 'logs', alias: 'current' }, { method: 'POST', path: '/logs/_alias/current' }],
@@ -143,8 +142,27 @@ describe('confirm write tools', () => {
 	]
 
 	it('covers all 13 named write tools, each pausing for approval', () => {
-		expect(writes).toHaveLength(13)
+		expect([...writes.map(([name]) => name), 'wipe-index']).toHaveLength(13)
 		for (const [name] of writes) expect(toolApproval[name]).toBe('user-approval')
+		expect(toolApproval['wipe-index']).toBe('user-approval')
+	})
+
+	it('wipes a concrete index after checking it is not an alias', async () => {
+		es.request = vi.fn(async request => {
+			if (request.path.startsWith('/_alias/')) throw Object.assign(new Error('alias [logs] missing'), { meta: { statusCode: 404 } })
+			return { deleted: 3 }
+		})
+		await run('wipe-index', { index: 'logs' })
+		expect(sent()).toEqual([
+			{ method: 'GET', path: '/_alias/logs' },
+			{ method: 'POST', path: '/logs/_delete_by_query', querystring: { conflicts: 'proceed' }, body: { query: { match_all: {} } } },
+		])
+	})
+
+	it('refuses to wipe an alias, which would empty every index behind it', async () => {
+		es.request = vi.fn(async () => ({ 'logs-2024.01': { aliases: { logs: {} } }, 'logs-2024.02': { aliases: { logs: {} } } }))
+		await expect(run('wipe-index', { index: 'logs' })).rejects.toThrow('logs is an alias')
+		expect(sent()).toEqual([{ method: 'GET', path: '/_alias/logs' }])
 	})
 
 	it.each(writes)('%s sends the expected request once approved', async (name, input, expected) => {

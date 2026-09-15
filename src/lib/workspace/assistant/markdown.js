@@ -9,8 +9,16 @@ import DOMPurify from 'dompurify'
  * with `html: false`, which escapes it and refuses javascript:, vbscript:,
  * file:, and data: links, and DOMPurify sanitizes the result as a second
  * layer.
+ *
+ * Images are never rendered. The page would fetch an image URL as soon as
+ * the reply appears, so a prompt injection hidden in cluster data could make
+ * the model write cluster data into an image URL and leak it with no click.
+ * With the image rule off, `![alt](url)` renders as an ordinary link, which
+ * only opens if the user clicks it.
  */
-const md = new MarkdownIt({ html: false, linkify: true, breaks: true })
+const md = new MarkdownIt({ html: false, linkify: true, breaks: true }).disable('image')
+
+const PURIFY_OPTIONS = { USE_PROFILES: { html: true }, FORBID_TAGS: ['img'], ADD_ATTR: ['target'] }
 
 // Links open outside the app: main.js hands new-window requests for http(s)
 // URLs to the system browser.
@@ -31,5 +39,5 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 export const renderMarkdown = text => {
 	const source = String(text ?? '')
 	if (!DOMPurify.isSupported) return `<p>${md.utils.escapeHtml(source)}</p>`
-	return DOMPurify.sanitize(md.render(source), { ADD_ATTR: ['target'] })
+	return DOMPurify.sanitize(md.render(source), PURIFY_OPTIONS)
 }

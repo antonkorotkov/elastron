@@ -1,20 +1,11 @@
 import { getStorage, setStorage } from '../utils/storage.js'
+import { endpointOf } from '../utils/endpoint.js'
 
 /** The most messages kept per endpoint; older ones are dropped on write. */
 export const MAX_STORED_MESSAGES = 200
 
-/**
- * Identifies the cluster a conversation belongs to: host, port, and user.
- * Saved profiles pointing at the same cluster share one conversation, and
- * renaming or recoloring a profile keeps it.
- */
-export const endpointOf = connection => {
-	if (!connection?.host) return null
-	const host = String(connection.host).trim().toLowerCase().replace(/\/+$/, '')
-	const port = String(connection.port ?? '').trim()
-	const user = connection.useAuth ? String(connection.user ?? '').trim() : ''
-	return `${host}|${port}|${user}`
-}
+// Conversations are keyed by the cluster a connection reaches.
+export { endpointOf }
 
 // electron-store reads dots in a key as a nested path, and hostnames have
 // dots, so the endpoint is base64url-encoded, which never contains one.
@@ -78,9 +69,10 @@ export const assistant = store => {
 		return { assistant: { ...state.assistant, endpoint, messages: trimMessages(messages) } }
 	})
 
-	// The conversation follows the window's connection. Both events fire when
-	// a connection attempt ends, so a failed attempt to another cluster still
-	// switches to that cluster's history.
+	// The conversation follows the window's connection on every change to it,
+	// not only when a connection attempt ends: Quick Connect updates the
+	// connection before opening a tunnel, and a failed tunnel ends without a
+	// connected or disconnected event.
 	const load = async state => {
 		const endpoint = endpointOf(state.connection)
 		if (!endpoint || endpoint === state.assistant.endpoint) return
@@ -88,10 +80,7 @@ export const assistant = store => {
 		store.dispatch('assistant/loaded', { endpoint, messages })
 	}
 
-	store.on('connected', state => {
-		load(state)
-	})
-	store.on('disconnected', state => {
-		load(state)
+	store.on('@changed', (state, changes) => {
+		if ('connection' in changes) load(state)
 	})
 }

@@ -83,16 +83,19 @@ const setup = ({ configured = true } = {}) => {
 	store.dispatch('server/update', { version: '9.1.0' })
 	store.dispatch('connected', { version: '9.1.0', flavor: 'default' })
 	store.dispatch('assistant/loaded', { endpoint: 'http://es.local|9200|', messages: [] })
+	// Startup always loads the stored settings; here there are none.
 	if (configured) configure()
+	else store.dispatch('aiSettings/hydrate', null)
 	store.dispatch('assistant/open')
 	fetchMock = vi.fn()
 	render(AssistantDrawer, { fetch: fetchMock })
 }
 
+// Waits for Send, which is replaced by Stop while a reply is streaming.
 const typeAndSend = async text => {
 	const box = screen.getByLabelText('Message')
 	await fireEvent.input(box, { target: { value: text } })
-	await fireEvent.click(screen.getByRole('button', { name: /Send/ }))
+	await fireEvent.click(await screen.findByRole('button', { name: /Send/ }))
 }
 
 const drawer = () => document.querySelector('.assistant-drawer')
@@ -156,6 +159,47 @@ describe('AssistantDrawer', () => {
 			setup()
 			holder.store.dispatch('assistant/setMessages', [])
 			expect(screen.getByText(/Ask about the connected cluster/)).toBeTruthy()
+		})
+	})
+
+	describe('retry', () => {
+		it('continues a failed reply that already ran an approved write, keeping it', async () => {
+			setup()
+			fetchMock
+				.mockResolvedValueOnce(sse(approvalReply('index-document', { index: 'orders', document: { sku: 'A1' } })))
+				.mockResolvedValueOnce(sse([
+					{ type: 'start' },
+					{ type: 'start-step' },
+					{ type: 'tool-output-available', toolCallId: 'call-1', output: { result: 'created', _id: 'x1' } },
+					{ type: 'finish-step' },
+					{ type: 'error', errorText: 'The provider is rate limiting requests.' },
+				]))
+				// Like the real chat route, a continuation carries no new message id,
+				// so it extends the reply that failed.
+				.mockResolvedValueOnce(sse(textReply('Indexed order A1.').map(c => (c.type === 'start' ? { type: 'start' } : c))))
+			await typeAndSend('add order A1')
+			await fireEvent.click(await screen.findByRole('button', { name: 'Approve' }))
+			await screen.findByRole('alert')
+
+			await fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+			await screen.findByText('Indexed order A1.')
+
+			const sentLast = bodies()[2].messages.at(-1)
+			expect(sentLast.role).toBe('assistant')
+			expect(sentLast.parts.find(p => p.type === 'tool-index-document').state).toBe('output-available')
+			expect(screen.getByRole('group', { name: 'Index document approval' }).textContent).toContain('Approved and done.')
+		})
+
+		it('regenerates a reply that failed before doing anything', async () => {
+			setup()
+			fetchMock
+				.mockResolvedValueOnce(new Response(JSON.stringify({ error: 'The provider rejected the API key.' }), { status: 400 }))
+				.mockResolvedValueOnce(sse(textReply('Hello.')))
+			await typeAndSend('hi')
+			await screen.findByRole('alert')
+			await fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+			await screen.findByText('Hello.')
+			expect(bodies()[1].messages.map(m => m.role)).toEqual(['user'])
 		})
 	})
 
@@ -281,6 +325,35 @@ describe('AssistantDrawer', () => {
 			expect(card.textContent).toContain('GET /_cat/indices?format=json')
 			expect(card.classList.contains('destructive')).toBe(false)
 			expect(screen.getByRole('button', { name: 'Approve' }).classList.contains('green')).toBe(true)
+		})
+
+		it('expires an approval card once the conversation moves on', async () => {
+			setup()
+			fetchMock
+				.mockResolvedValueOnce(sse(approvalReply('delete-index', { index: 'tmp' })))
+				.mockResolvedValueOnce(sse(textReply('There are 3 indices.')))
+			await typeAndSend('delete tmp')
+			await screen.findByRole('button', { name: 'Approve' })
+
+			await typeAndSend('actually, how many indices are there?')
+			await screen.findByText('There are 3 indices.')
+
+			const card = screen.getByRole('group', { name: 'Delete index approval' })
+			expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull()
+			expect(card.textContent).toContain('Expired without an answer. Ask again to run it.')
+			expect(card.textContent).not.toContain('This cannot be undone.')
+		})
+
+		it('warns about a destructive generic request as it would a named one', async () => {
+			setup()
+			fetchMock.mockResolvedValueOnce(sse(approvalReply('run-es-request', { method: 'POST', path: '/logs-*/_delete_by_query', body: { query: { match_all: {} } } })))
+			await typeAndSend('clear all logs')
+
+			const card = await screen.findByRole('group', { name: 'Run es request approval' })
+			expect(card.classList.contains('destructive')).toBe(true)
+			expect(card.textContent).toContain('This cannot be undone.')
+			expect(card.textContent).toContain('Affects every index matching logs-*.')
+			expect(screen.getByRole('button', { name: 'Approve' }).classList.contains('red')).toBe(true)
 		})
 
 		it('sends the approval back and continues when approved', async () => {
@@ -435,18 +508,18 @@ describe('AssistantDrawer', () => {
 				.mockResolvedValueOnce(sse(proposalReply({ kind: 'search', index: 'logs', method: 'POST', path: '/logs/_search', body: {} })))
 			await typeAndSend('delete old')
 			await screen.findByRole('button', { name: 'Decline' })
-			// The card appears mid-stream; Send returns once the reply ends.
-			await fireEvent.input(screen.getByLabelText('Message'), { target: { value: 'query' } })
-			await fireEvent.click(await screen.findByRole('button', { name: /Send/ }))
-			await screen.findByRole('button', { name: /Copy/ })
 
 			expect(drawer().classList.contains('inverted')).toBe(true)
 			for (const name of ['Decline', 'Clear history', 'Close assistant']) {
 				expect(screen.getByRole('button', { name }).classList.contains('inverted')).toBe(true)
 			}
+			expect(screen.getByRole('button', { name: 'Approve' }).classList.contains('inverted')).toBe(false)
+
+			// A later message expires that card; the query card's buttons are next.
+			await typeAndSend('query')
+			await screen.findByRole('button', { name: /Copy/ })
 			expect(screen.getByRole('button', { name: /Copy/ }).classList.contains('inverted')).toBe(true)
 			expect(screen.getByRole('button', { name: /Load in Playground/ }).classList.contains('inverted')).toBe(true)
-			expect(screen.getByRole('button', { name: 'Approve' }).classList.contains('inverted')).toBe(false)
 		})
 	})
 

@@ -53,15 +53,23 @@ export const createClient = (connection) => {
 	return new Client8(clientOptions);
 };
 
+export const TUNNEL_NOT_OPEN =
+	"This connection goes through an SSH tunnel that isn't open. Reconnect to open it.";
+
 /**
- * When an SSH tunnel is active for the window, the connection is rewritten
- * to route through localhost:tunnelPort. Otherwise it is returned unchanged.
+ * A connection that goes through an SSH tunnel is rewritten to route through
+ * localhost:tunnelPort. When the tunnel isn't open, this throws rather than
+ * falling back to the configured host: for a tunnel profile that host is
+ * only meaningful on the far side of the tunnel, and is often localhost, so
+ * a fallback could send an approved write to a different cluster.
  */
 export const resolveEffectiveConnection = (connection, windowId) => {
-	if (!connection.useSshTunnel || !windowId) return connection;
+	if (!connection.useSshTunnel) return connection;
 
-	const localPort = tunnelManager.getLocalPort(windowId);
-	if (!localPort) return connection;
+	const localPort = windowId ? tunnelManager.getLocalPort(windowId) : null;
+	if (!localPort) {
+		throw Object.assign(new Error(TUNNEL_NOT_OPEN), { name: 'TunnelNotOpenError' });
+	}
 
 	return {
 		...connection,
@@ -92,6 +100,7 @@ const UNREACHABLE_ERROR_NAMES = new Set([
 	'ConnectionError',
 	'TimeoutError',
 	'NoLivingConnectionsError',
+	'TunnelNotOpenError',
 ]);
 
 export const isUnreachableError = err => UNREACHABLE_ERROR_NAMES.has(err?.name);

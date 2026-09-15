@@ -366,16 +366,16 @@ describe('Elasticsearch API Client - Expanded', () => {
 			setReachabilityListener(listener);
 		});
 
-		it('reports reachable when a request succeeds', async () => {
+		it('reports reachable when a request succeeds, with its connection', async () => {
 			respond({ data: [] }, true);
 			await api.getIndices();
-			expect(listener).toHaveBeenCalledWith(true);
+			expect(listener).toHaveBeenCalledWith(true, mockConnection);
 		});
 
 		it('reports unreachable when the response is marked unreachable', async () => {
 			respond({ error: 'connect ECONNREFUSED', unreachable: true }, false);
 			await expect(api.getIndices()).rejects.toThrow();
-			expect(listener).toHaveBeenCalledWith(false);
+			expect(listener).toHaveBeenCalledWith(false, mockConnection);
 		});
 
 		it('does not report on an error the cluster returned', async () => {

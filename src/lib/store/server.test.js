@@ -69,6 +69,14 @@ describe('server store module', () => {
 			expect(store.get().server).toBe(before);
 		});
 
+		it('ignores reports about another cluster', () => {
+			store.dispatch('server/reachability', true);
+			store.on('@init', () => ({}));
+			const other = { host: 'http://elsewhere', port: '9200' };
+			store.dispatch('server/reachability', { reachable: false, connection: other });
+			expect(store.get().server.reachable).toBe(true);
+		});
+
 		it('keeps the version when reachability changes', () => {
 			store.dispatch('server/update', { version: '8.12.0' });
 			store.dispatch('server/reachability', false);

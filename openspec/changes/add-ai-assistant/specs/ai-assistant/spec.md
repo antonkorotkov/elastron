@@ -58,6 +58,18 @@ The system SHALL NOT execute any assistant-requested action that creates, modifi
 - **WHEN** the assistant sends an arbitrary request through the generic request action, even one using the GET method
 - **THEN** the system SHALL present it for confirmation before sending it
 
+#### Scenario: A destructive arbitrary request is marked destructive
+- **WHEN** the assistant proposes an arbitrary request that deletes data, such as a DELETE or a delete-by-query on `logs-*`
+- **THEN** the system SHALL present it with the same irreversibility warning as the named destructive actions, and SHALL state that it affects every index matching `logs-*`
+
+#### Scenario: Wiping an alias is refused
+- **WHEN** the user approves wiping the documents of a name that is an alias for several indices
+- **THEN** the system SHALL refuse without deleting anything, because the wipe would empty every index behind the alias
+
+#### Scenario: An approval from an earlier turn expires
+- **WHEN** the assistant proposes a mutating action and the user sends another message without answering it
+- **THEN** the earlier proposal SHALL show as expired, SHALL no longer offer approval, and SHALL NOT run
+
 ### Requirement: Tool result size is bounded
 The system SHALL cap the cluster data included in a single tool result returned to the AI provider at a fixed ceiling. A request for more than the ceiling SHALL be reduced to the ceiling. A truncated result SHALL state that it was truncated, so the assistant can tell the user its answer is based on partial data.
 
@@ -108,7 +120,7 @@ When the assistant proposes a search query or an Elasticsearch request, the syst
 - **THEN** the system SHALL offer load-into-playground and copy, and SHALL NOT offer open-in-search
 
 ### Requirement: Conversation persistence and retention
-The system SHALL persist one ongoing conversation per cluster endpoint, identified by host, port, and user, and SHALL restore it whenever a connection to that endpoint becomes active. Saved connections that share an endpoint SHALL share its conversation. The system SHALL automatically trim each persisted conversation to at most a bounded number of most-recent messages.
+The system SHALL persist one ongoing conversation per cluster endpoint, identified by host, port, and user, and, when the connection goes through an SSH tunnel, by the tunnel's host, port, and user as well. It SHALL restore the conversation whenever a connection to that endpoint becomes active. Saved connections that share an endpoint SHALL share its conversation; connections that reach the same host through different SSH tunnels SHALL NOT. The system SHALL automatically trim each persisted conversation to at most a bounded number of most-recent messages.
 
 #### Scenario: Reconnecting restores the conversation
 - **WHEN** the user connects to an endpoint previously used with the assistant
@@ -117,6 +129,46 @@ The system SHALL persist one ongoing conversation per cluster endpoint, identifi
 #### Scenario: History exceeds the retention limit
 - **WHEN** an endpoint's conversation grows beyond the retained message limit
 - **THEN** the oldest messages SHALL be dropped from storage so the stored conversation stays at or below the limit
+
+#### Scenario: Same host behind different SSH tunnels
+- **WHEN** two saved connections use the same host and port through SSH tunnels on different bastion hosts
+- **THEN** each SHALL have its own conversation
+
+### Requirement: Requests act on the conversation's cluster
+The system SHALL send the assistant's requests, including a reply continuing after an approval, only to the cluster whose conversation is on screen. When the window's connection changes to another cluster, the system SHALL switch to that cluster's conversation and SHALL refuse to send anything from the previous one. When a connection goes through an SSH tunnel that is not open, the system SHALL refuse the request rather than send it to the connection's configured host.
+
+#### Scenario: The connection changes while an approval is pending
+- **WHEN** a mutating action awaits approval and the user switches the connection to another cluster before approving
+- **THEN** the system SHALL NOT run the action against the new cluster
+
+#### Scenario: The SSH tunnel has closed
+- **WHEN** the connection goes through an SSH tunnel that has closed and the user approves an action
+- **THEN** the system SHALL refuse the request with a message to reconnect, and SHALL NOT send it to the configured host
+
+### Requirement: Long conversations keep working
+Sending a message SHALL keep working however long the stored conversation grows, up to the retention limit. The messages the application sends for each reply SHALL stay small enough for its own server to accept them.
+
+#### Scenario: Many tool-heavy turns
+- **WHEN** a conversation holds dozens of turns whose tools returned results at the size ceiling
+- **THEN** the next message SHALL still be accepted and answered
+
+#### Scenario: Follow-ups with a reasoning model
+- **WHEN** the active provider is a reasoning model, and the user sends a second message or approves an action after the first reply
+- **THEN** the request SHALL be accepted by the provider and answered
+
+### Requirement: Retrying keeps completed actions
+When a reply fails after running a tool or after the user answered an approval, retrying it SHALL continue the reply from where it stopped. Retrying SHALL NOT discard actions that already ran. A reply that failed before doing anything SHALL be retried from the user's message.
+
+#### Scenario: A reply fails after an approved write
+- **WHEN** the user approves a write, the write runs, and the reply then fails
+- **THEN** retrying SHALL keep the completed write in the conversation and continue the reply without proposing the write again
+
+### Requirement: Replies load nothing on their own
+The system SHALL NOT fetch images or any other remote content referenced in a reply. A link in a reply SHALL open only when the user activates it.
+
+#### Scenario: A reply contains a Markdown image
+- **WHEN** a reply contains `![chart](https://example.com/p.png)`
+- **THEN** no request SHALL be made to that URL, and it SHALL appear as a link the user can choose to open
 
 ### Requirement: Bounded model context
 The system SHALL bound what each request sends to the AI provider independently of the stored conversation. Tool results older than the most recent few messages SHALL be omitted from the request, while the assistant's own replies SHALL be kept. Only a bounded number of the most recent messages SHALL be sent. Pruning SHALL NOT change the stored conversation or what the panel displays.

@@ -10,6 +10,16 @@ const singleIndex = index.refine(value => !isSweepingTarget(value), {
 	message: 'Name one index. _all, wildcards, and comma-separated lists are refused.',
 })
 
+const isAlias = async (send, name) => {
+	try {
+		const result = await send({ method: 'GET', path: `/_alias/${encodeURIComponent(name)}` })
+		return Boolean(result && typeof result === 'object' && Object.keys(result).length)
+	} catch (err) {
+		if (err?.meta?.statusCode === 404) return false
+		throw err
+	}
+}
+
 export const writeTools = {
 	'create-index': {
 		description: 'Create an index, optionally with settings, mappings, and aliases.',
@@ -37,8 +47,16 @@ export const writeTools = {
 		inputSchema: z.object({ index }),
 	},
 	'wipe-index': {
-		description: 'Delete every document in one index while keeping the index and its mappings. This cannot be undone.',
+		description: 'Delete every document in one concrete index while keeping the index and its mappings. Refuses an alias. This cannot be undone.',
 		inputSchema: z.object({ index: singleIndex }),
+		// _delete_by_query on an alias empties every index behind it, so the
+		// name is checked first and refused if it's an alias.
+		run: async (input, send, request) => {
+			if (await isAlias(send, input.index)) {
+				throw new Error(`${input.index} is an alias. Wipe the indices behind it one at a time, by their own names.`)
+			}
+			return send(request)
+		},
 	},
 	'update-mapping': {
 		description: 'Add fields to an index mapping. Existing field types cannot be changed.',

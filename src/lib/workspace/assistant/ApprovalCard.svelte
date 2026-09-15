@@ -1,22 +1,29 @@
 <script>
-	import { buildToolRequest, describeToolCall, formatRequestLine, isDestructive } from '../../ai/catalog.js'
+	import { buildToolRequest, describeToolCall, formatRequestLine, isDestructiveCall } from '../../ai/catalog.js'
 	import { toolLabel, toolNameOf, prettyJson } from './format.js'
 
 	/**
 	 * A write the assistant wants to make. Shows the exact request, built from
 	 * the same catalog the server executes, and the user's approve/decline.
+	 *
+	 * `stale` means a later message followed this one. Approving from an older
+	 * message can't run anything: the conversation has moved on, and the
+	 * server drops unanswered approvals from earlier turns.
 	 */
-	let { part, onRespond = () => {}, inverted = false } = $props()
+	let { part, onRespond = () => {}, inverted = false, stale = false } = $props()
 
 	let name = $derived(toolNameOf(part))
 	let request = $derived(buildToolRequest(name, part.input ?? {}))
-	let destructive = $derived(isDestructive(name))
+	let destructive = $derived(isDestructiveCall(name, part.input ?? {}))
 	let summary = $derived(describeToolCall(name, part.input ?? {}))
-	let pending = $derived(part.state === 'approval-requested')
+	let pending = $derived(part.state === 'approval-requested' && !stale)
 
 	let outcome = $derived.by(() => {
 		switch (part.state) {
+			case 'approval-requested':
+				return stale ? 'Expired without an answer. Ask again to run it.' : ''
 			case 'approval-responded':
+				if (stale) return part.approval?.approved ? 'Not run: the conversation moved on before it could.' : 'Declined.'
 				return part.approval?.approved ? 'Approved. Running…' : 'Declined.'
 			case 'output-available':
 				return 'Approved and done.'

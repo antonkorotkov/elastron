@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { splitPathQuery, formatQuery, pathWithQuery, formatRequestLine, buildToolRequest, requiresApproval, describeToolCall } from './catalog.js'
+import { splitPathQuery, formatQuery, pathWithQuery, formatRequestLine, buildToolRequest, requiresApproval, describeToolCall, isDestructiveRequest, isDestructiveCall } from './catalog.js'
 
 describe('query string helpers', () => {
 	it('leaves a plain path alone', () => {
@@ -70,5 +70,27 @@ describe('approval for paged listings', () => {
 		expect(describeToolCall('list-indices', { page: 3 })).toBe('Page 3: entries 101–150. Approving sends them to the AI provider.')
 		expect(describeToolCall('list-indices', { page: 1 })).toBe(null)
 		expect(describeToolCall('delete-index', { index: 'x' })).toBe(null)
+	})
+})
+
+describe('destructive requests', () => {
+	it('recognizes deletes and by-query rewrites from the request itself', () => {
+		expect(isDestructiveRequest({ method: 'DELETE', path: '/logs' })).toBe(true)
+		expect(isDestructiveRequest({ method: 'POST', path: '/logs-*/_delete_by_query' })).toBe(true)
+		expect(isDestructiveRequest({ method: 'POST', path: '/logs/_update_by_query' })).toBe(true)
+		expect(isDestructiveRequest({ method: 'GET', path: '/logs/_search' })).toBe(false)
+		expect(isDestructiveRequest({ method: 'POST', path: '/logs/_doc' })).toBe(false)
+	})
+
+	it('treats a generic request by what it does, not by its tool name', () => {
+		expect(isDestructiveCall('run-es-request', { method: 'POST', path: '/logs-*/_delete_by_query', body: { query: { match_all: {} } } })).toBe(true)
+		expect(isDestructiveCall('run-es-request', { method: 'GET', path: '/_cat/nodes' })).toBe(false)
+		expect(isDestructiveCall('delete-index', { index: 'logs' })).toBe(true)
+	})
+
+	it('names what a sweeping destructive request will hit', () => {
+		expect(describeToolCall('run-es-request', { method: 'POST', path: '/logs-*/_delete_by_query' })).toBe('Affects every index matching logs-*.')
+		expect(describeToolCall('run-es-request', { method: 'DELETE', path: '/_all' })).toBe('Affects every index in the cluster.')
+		expect(describeToolCall('run-es-request', { method: 'DELETE', path: '/logs' })).toBe(null)
 	})
 })

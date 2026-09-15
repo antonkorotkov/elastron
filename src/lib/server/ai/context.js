@@ -29,12 +29,38 @@ export const windowMessages = (messages, max = CONTEXT_WINDOW_MESSAGES) => {
 	return messages.slice(Math.min(start, lastUser))
 }
 
+// Drops a part's provider-specific metadata, such as the ids OpenAI uses to
+// refer back to items it stored.
+const withoutProviderOptions = part => {
+	const copy = { ...part }
+	delete copy.providerOptions
+	return copy
+}
+
 /**
- * Converts the windowed UI messages to model messages and drops tool calls,
- * tool results, and approvals from every turn before the current one, plus
- * reasoning before the last message. The assistant's text replies stay; they
- * already summarize what the tools found. The current turn is never pruned,
- * so an approval in flight survives.
+ * An earlier turn's assistant message as the model sees it: its reasoning
+ * removed, and its remaining parts stripped of provider ids. Keeping an id
+ * would make OpenAI refer back to the stored reply by reference, and OpenAI
+ * rejects a reply referenced without its reasoning ("Item 'msg_…' of type
+ * 'message' was provided without its required 'reasoning' item"). It also
+ * stops working once OpenAI drops stored items. Without the ids, the reply
+ * is sent as plain text.
+ */
+const asEarlierTurn = message => {
+	if (message.role !== 'assistant' || typeof message.content === 'string') return message
+	return {
+		...message,
+		content: message.content.filter(part => part.type !== 'reasoning').map(withoutProviderOptions),
+	}
+}
+
+/**
+ * Converts the windowed UI messages to model messages. Every turn before the
+ * current one loses its tool calls, tool results, approvals, and reasoning,
+ * keeping the assistant's text, which already summarizes what the tools
+ * found. The current turn is kept whole, reasoning included: a reply that
+ * continues after an approval must send the model's reasoning with the tool
+ * call it belongs to, and an approval in flight must survive.
  */
 export const buildModelMessages = async (messages, { tools } = {}) => {
 	const modelMessages = await convertToModelMessages(windowMessages(messages), {
@@ -45,14 +71,18 @@ export const buildModelMessages = async (messages, { tools } = {}) => {
 	})
 
 	const lastUser = findLastIndex(modelMessages, message => message.role === 'user')
-	const currentTurnLength = lastUser === -1 ? modelMessages.length : modelMessages.length - lastUser
+	const currentTurnStart = lastUser === -1 ? 0 : lastUser
+	const currentTurnLength = modelMessages.length - currentTurnStart
+
+	const earlierTurnsTrimmed = modelMessages.map((message, index) =>
+		index < currentTurnStart ? asEarlierTurn(message) : message
+	)
 
 	return pruneMessages({
-		messages: modelMessages,
-		reasoning: 'before-last-message',
+		messages: earlierTurnsTrimmed,
 		toolCalls: `before-last-${currentTurnLength}-messages`,
 		emptyMessages: 'remove',
-	})
+	}).filter(message => typeof message.content === 'string' || message.content.length > 0)
 }
 
 /**

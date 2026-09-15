@@ -59,11 +59,15 @@ export const hydrateAiSettings = async store => {
 }
 
 export const aiSettings = store => {
-	store.on('@init', () => ({ aiSettings: defaultAiSettings() }))
+	// aiSettingsLoaded turns true once the stored settings are in. Until then
+	// the defaults are placeholders, not the user's settings, and nothing may
+	// be saved over the stored ones.
+	store.on('@init', () => ({ aiSettings: defaultAiSettings(), aiSettingsLoaded: false }))
 
 	// Hydration restores what is already on disk, so it doesn't write back.
 	store.on('aiSettings/hydrate', (_state, data) => ({
 		aiSettings: normalizeAiSettings(data),
+		aiSettingsLoaded: true,
 	}))
 
 	// The Settings dialog edits a draft and commits it here when the user
@@ -72,6 +76,6 @@ export const aiSettings = store => {
 	store.on('aiSettings/save', (_state, draft) => {
 		const settings = normalizeAiSettings(draft)
 		setStorage('aiSettings', settings)
-		return { aiSettings: settings }
+		return { aiSettings: settings, aiSettingsLoaded: true }
 	})
 }

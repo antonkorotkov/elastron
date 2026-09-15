@@ -4,6 +4,7 @@ import {
 	handleElasticRequest,
 	withElasticClient,
 	resolveEffectiveConnection,
+	TUNNEL_NOT_OPEN,
 } from './elastic';
 
 // Mock the Client constructor
@@ -296,7 +297,7 @@ describe('handleElasticRequest', () => {
 			expect(client._opts.node).toBe('http://es.example.com:9200');
 		});
 
-		it('falls back to original host when tunnel is not active', async () => {
+		it('refuses the request when the tunnel is not active, marking it unreachable', async () => {
 			mockGetLocalPort.mockReturnValue(null);
 			const request = makeRequest({
 				connection: {
@@ -308,10 +309,12 @@ describe('handleElasticRequest', () => {
 				windowId: 'win-1',
 			});
 			const action = vi.fn().mockResolvedValue('ok');
-			await handleElasticRequest(request, action);
+			const response = await handleElasticRequest(request, action);
+			const data = await response.json();
 
-			const client = action.mock.calls[0][0];
-			expect(client._opts.node).toBe('http://es.example.com:9200');
+			expect(action).not.toHaveBeenCalled();
+			expect(response.status).toBe(500);
+			expect(data).toEqual({ error: TUNNEL_NOT_OPEN, unreachable: true });
 		});
 	});
 });
@@ -334,10 +337,18 @@ describe('withElasticClient', () => {
 		expect(mockGetLocalPort).toHaveBeenCalledWith('win-7');
 	});
 
-	it('uses the original host without a window id', async () => {
-		mockGetLocalPort.mockReturnValue(40001);
-		const node = await withElasticClient(tunneled, null, client => client._opts.node);
-		expect(node).toBe('http://es-internal.example.com:9200');
+	it('refuses a tunnel connection without a window id, creating no client', async () => {
+		const fn = vi.fn();
+		await expect(withElasticClient(tunneled, null, fn)).rejects.toThrow(TUNNEL_NOT_OPEN);
+		expect(fn).not.toHaveBeenCalled();
+	});
+
+	it('refuses a tunnel connection whose tunnel is not open, never reaching the configured host', async () => {
+		mockGetLocalPort.mockReturnValue(null);
+		const localTunnel = { host: 'http://localhost', port: '9200', useSshTunnel: true };
+		const fn = vi.fn();
+		await expect(withElasticClient(localTunnel, 'win-7', fn)).rejects.toThrow(TUNNEL_NOT_OPEN);
+		expect(fn).not.toHaveBeenCalled();
 	});
 
 	it('returns the function result and closes the client', async () => {
