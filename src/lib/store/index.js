@@ -3,7 +3,6 @@ import { storeonDevtools } from 'storeon/devtools'
 
 import { app } from './app'
 import { server } from './server'
-import { internet } from './internet'
 import { connection } from './connection'
 import { notifications } from './notifications'
 import { search } from './search'
@@ -18,12 +17,13 @@ import { monitoring } from './elasticsearch/monitoring'
 import { playground } from './playground'
 import { updater } from './updater'
 import { analytics } from './analytics'
+import { aiSettings } from './aiSettings'
+import { assistant } from './assistant'
 
 
 export const store = createStoreon([
 	app,
 	server,
-	internet,
 	connections,
 	connection,
 	notifications,
@@ -38,6 +38,8 @@ export const store = createStoreon([
 	playground,
 	updater,
 	analytics,
+	aiSettings,
+	assistant,
 	storeonDevtools
 ])
 

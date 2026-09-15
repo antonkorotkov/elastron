@@ -18,6 +18,17 @@ The Settings panel SHALL organize its content into named sections, presented as 
 - **WHEN** the user selects a different settings section from the vertical list
 - **THEN** the panel SHALL display that section's content in place of the previous section's, without closing the panel
 
+### Requirement: Explicit save
+Changes made in the Settings panel SHALL take effect only when the user saves them, as in the application's other dialogs. The panel SHALL offer Cancel and Save actions styled like those dialogs. Saving SHALL commit the changes of every section; canceling, pressing Escape, or clicking outside the panel SHALL discard them.
+
+#### Scenario: Saving settings
+- **WHEN** the user changes a setting and activates Save
+- **THEN** the change SHALL take effect, SHALL be persisted, and the panel SHALL close
+
+#### Scenario: Canceling settings
+- **WHEN** the user changes a setting and activates Cancel
+- **THEN** the setting SHALL keep its previous value and the panel SHALL close
+
 ### Requirement: AI Integration section
 The Settings panel SHALL include an "AI Integration" section where the user chooses the active AI provider and, for each provider, views and edits its API key and model, plus the base URL for the custom provider, as defined by the ai-assistant capability. API keys SHALL be masked when displayed.
 

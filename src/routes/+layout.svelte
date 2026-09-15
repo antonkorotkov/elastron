@@ -9,14 +9,14 @@
 	import Footer from '$lib/footer/Footer.svelte'
 	import Modal from '$lib/components/modal/Modal.svelte'
 	import Notifications from '$lib/components/notifications/Notifications.svelte'
-	import InternetConnection from '$lib/utils/onlineCheck.js'
+	import AssistantDrawer from '$lib/workspace/assistant/AssistantDrawer.svelte'
 	import { store } from '$lib/store'
 	import { isThemeToggleChecked } from '$lib/utils/helpers'
 
 	// SvelteKit Context Provider for Storeon
 	provideStoreon(store)
 
-	const { dispatch, app, connection } = useStoreon('app', 'connection')
+	const { dispatch, app, connection, assistant } = useStoreon('app', 'connection', 'assistant')
 
 	let { children } = $props()
 
@@ -28,13 +28,13 @@
 				: 'Elastron')
 	)
 
-	// Client-side only logic for internet check
 	import { onMount } from 'svelte'
 	import { browser } from '$app/environment'
 	import { getStorage } from '$lib/utils/storage.js'
 	import { initialConnection } from '$lib/store/connection.js'
 	import { flushPlaygroundDraft } from '$lib/store/playground.js'
 	import { flushSearchTabs, migrateLastSearch } from '$lib/store/search.js'
+	import { hydrateAiSettings } from '$lib/store/aiSettings.js'
 
 	onMount(async () => {
 		if (browser) {
@@ -44,16 +44,6 @@
 			const windowId = crypto.randomUUID();
 			window.__elastronWindowId = windowId;
 			dispatch('app/hydrate', { windowId });
-
-			InternetConnection.onOnline(() => {
-				dispatch('internet/online')
-			})
-
-			InternetConnection.onOffline(() => {
-				dispatch('internet/offline')
-			})
-
-			if (InternetConnection.isOnline) dispatch('internet/online')
 
 			const connections = await getStorage('connection', [])
 
@@ -96,6 +86,8 @@
 					dispatch('search/hydrate', migrateLastSearch(lastSearch))
 				}
 			}
+
+			await hydrateAiSettings(store)
 
 			const tableConfigs = await getStorage('tableConfigs', {})
 			dispatch('tableConfigs/hydrate', tableConfigs)
@@ -144,13 +136,15 @@
 </svelte:head>
 
 <Modal>
-	<main class="ui fluid container" class:bg-black={inverted}>
+	<!-- While the assistant is open, the page docks beside it rather than under it. -->
+	<main class="ui fluid container" class:bg-black={inverted} class:assistant-docked={$assistant.open}>
 		<Header />
 		<div class="padded">
 			{@render children()}
 		</div>
 		<Footer />
 	</main>
+	<AssistantDrawer />
 </Modal>
 
 <Notifications />
@@ -158,6 +152,10 @@
 <style>
 	main {
 		min-height: 100%;
+		--assistant-width: 440px;
+	}
+	main.assistant-docked {
+		padding-right: var(--assistant-width);
 	}
 	.bg-black {
 		background: black;

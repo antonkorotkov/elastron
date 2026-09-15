@@ -37,7 +37,7 @@ The system SHALL give the assistant the connected cluster's version and, when th
 - **THEN** the request sent to the active provider SHALL include that version as context
 
 ### Requirement: Read-only actions run automatically
-The system SHALL execute assistant-requested actions that only read cluster state, such as listing indices, running a search, counting documents, validating a query, or reading a mapping, without requiring explicit user confirmation.
+The system SHALL execute assistant-requested actions that only read cluster state, such as listing indices, running a search, counting documents, validating a query, or reading a mapping, without requiring explicit user confirmation. The one exception is fetching a page after the first of a paged listing, as defined by the Paged listings requirement.
 
 #### Scenario: Assistant answers a question using a read action
 - **WHEN** the user asks a question the assistant can answer by reading cluster state
@@ -69,12 +69,31 @@ The system SHALL cap the cluster data included in a single tool result returned 
 - **WHEN** the assistant lists indices on a cluster with more indices than the ceiling
 - **THEN** the result sent to the AI provider SHALL contain at most the ceiling and SHALL be marked as truncated
 
+### Requirement: Paged listings
+When the index listing holds more entries than the result ceiling, the system SHALL return it one page at a time, each page stating the total number of entries and pages. The first page SHALL be fetched without confirmation. Every later page SHALL require the user's explicit approval, because each one sends another batch of cluster data to the AI provider, and the approval SHALL state which entries the page contains. Pages SHALL follow the same order, so walking them covers every entry once.
+
+#### Scenario: First page runs at once
+- **WHEN** the assistant lists indices on a cluster with more indices than the ceiling
+- **THEN** the system SHALL return the first page without asking, with the total and the number of pages
+
+#### Scenario: A later page needs approval
+- **WHEN** the assistant requests the second page of the index listing
+- **THEN** the system SHALL ask the user first, stating that the page holds the next batch of entries and sends them to the AI provider, and SHALL NOT fetch it until the user approves
+
+#### Scenario: Declining a later page
+- **WHEN** the user declines a request for a later page
+- **THEN** the system SHALL NOT fetch it, and the assistant SHALL be told the page was declined
+
 ### Requirement: Query handoff
 When the assistant proposes a search query or an Elasticsearch request, the system SHALL present it with actions to load it into the Playground and to copy it. A proposed search query SHALL additionally offer an action to open it in the Search view.
 
 #### Scenario: Opening a proposed search in the Search view
 - **WHEN** the user activates open-in-search on a proposed search query targeting the index `products`
 - **THEN** the system SHALL open a new search tab, as defined by the search-tabs capability, holding that index and query, SHALL move the user to the Search view with that tab active, and SHALL NOT run the query until the user runs it
+
+#### Scenario: Opening a proposed URI search
+- **WHEN** the user activates open-in-search on a proposed search given as a URI query, with a query string and optionally a size, offset, and sort
+- **THEN** the system SHALL open a new search tab in URI search mode holding that index, query string, size, offset, and sort, and SHALL NOT run it until the user runs it
 
 #### Scenario: Search tab limit reached
 - **WHEN** the user activates open-in-search while the maximum number of search tabs is open
@@ -114,6 +133,17 @@ The system SHALL bound what each request sends to the AI provider independently 
 - **WHEN** a request has been sent with pruned context
 - **THEN** the panel SHALL still display every stored message, including the earlier tool results
 
+### Requirement: Rejected tool input is not shown as a failure
+When the assistant sends a tool input that the tool refuses, the refusal SHALL be returned to the assistant so it can correct the input, and the conversation SHALL show it as a muted note rather than as a failed action. Failures reported by the cluster SHALL still be shown as failures.
+
+#### Scenario: The assistant corrects an invalid proposal
+- **WHEN** the assistant proposes a query in a form the handoff refuses, then retries in an accepted form
+- **THEN** the conversation SHALL show a muted note for the refused attempt, with its details available on request, and the accepted proposal as a normal query card
+
+#### Scenario: The cluster rejects a request
+- **WHEN** a tool's request reaches the cluster and the cluster returns an error
+- **THEN** the conversation SHALL show the failure as a failure
+
 ### Requirement: Manual history clearing
 The system SHALL allow the user to clear the active endpoint's stored conversation on demand.
 
@@ -122,8 +152,8 @@ The system SHALL allow the user to clear the active endpoint's stored conversati
 - **THEN** the system SHALL remove the stored conversation for the active endpoint, and the panel SHALL show an empty conversation
 
 ### Requirement: No assistant data in analytics
-The system SHALL NOT send conversation content, tool calls or their results, provider names, model identifiers, or API keys to analytics. Using the assistant SHALL NOT produce any analytics event beyond those the usage-analytics capability defines.
+The system SHALL NOT send conversation content, tool calls or their results, cluster data, provider names, model identifiers, or API keys to analytics. The only analytics the assistant produces SHALL be the parameter-free chat interaction events the usage-analytics capability defines.
 
 #### Scenario: A full assistant session
 - **WHEN** the user configures a provider, chats, approves an action, and hands a query to Search
-- **THEN** no analytics event SHALL be sent for any of it
+- **THEN** the only analytics sent for it SHALL be one message-sent and one response-received event per message, with no parameters

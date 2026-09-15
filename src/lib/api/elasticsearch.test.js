@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import API from './elasticsearch';
+import API, { setReachabilityListener } from './elasticsearch';
 
 describe('Elasticsearch API Client - Expanded', () => {
 	let api;
@@ -352,6 +352,42 @@ describe('Elasticsearch API Client - Expanded', () => {
 		it('throws on non-ok response', async () => {
 			mockFetch('Forbidden', false);
 			await expect(api._request('test')).rejects.toThrow('Forbidden');
+		});
+	});
+
+	describe('reachability reporting', () => {
+		const respond = (body, ok) => {
+			global.fetch = vi.fn(() => Promise.resolve({ ok, json: () => Promise.resolve(body) }));
+		};
+		let listener;
+
+		beforeEach(() => {
+			listener = vi.fn();
+			setReachabilityListener(listener);
+		});
+
+		it('reports reachable when a request succeeds', async () => {
+			respond({ data: [] }, true);
+			await api.getIndices();
+			expect(listener).toHaveBeenCalledWith(true);
+		});
+
+		it('reports unreachable when the response is marked unreachable', async () => {
+			respond({ error: 'connect ECONNREFUSED', unreachable: true }, false);
+			await expect(api.getIndices()).rejects.toThrow();
+			expect(listener).toHaveBeenCalledWith(false);
+		});
+
+		it('does not report on an error the cluster returned', async () => {
+			respond({ error: 'index_not_found_exception' }, false);
+			await expect(api.genericRequest({ path: '/missing' })).rejects.toThrow();
+			expect(listener).not.toHaveBeenCalled();
+		});
+
+		it('does nothing without a registered listener', async () => {
+			setReachabilityListener(null);
+			respond({ data: [] }, true);
+			await expect(api.getIndices()).resolves.toBeTruthy();
 		});
 	});
 });

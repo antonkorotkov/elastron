@@ -13,7 +13,7 @@ Elastron users have to know Elasticsearch's query DSL and API surface themselves
 - Add global AI settings: an API key and free-text model id for each provider (OpenAI, Anthropic, Google Gemini, and a custom OpenAI-compatible endpoint with a base URL), plus which provider is active.
 - Chat history is one rolling conversation per cluster endpoint, persisted in the existing encrypted local store, automatically trimmed to a bounded number of recent messages, and clearable on demand.
 - What each request sends to the AI provider is bounded separately from what is stored: old tool results are pruned and only recent messages are sent, so a long-running conversation doesn't grow slower and more expensive with every turn.
-- Nothing from the assistant is sent to analytics.
+- The assistant reports only two parameter-free usage events to analytics, one when a message is sent and one when its reply arrives. No content, tool, cluster, provider, or model details are sent.
 - Add a generic, extensible Settings modal with vertical tabs, opened from a new header gear button. Its first section is "AI Integration."
 - Replace the header's "Connection" text button and separate green/red online dot with a single connection icon whose color reflects cluster reachability: red after a connection attempt or any Elasticsearch request fails at the network level, green again after the next success. Ordinary Elasticsearch error responses don't change it.
 - Remove the internet online/offline tracking subsystem entirely (`src/lib/store/internet.js`, `src/lib/utils/onlineCheck.js`, `OnlineIndicator.svelte`, their tests, and their wiring in `+layout.svelte`), since nothing uses it once the icon tracks the cluster.
@@ -23,13 +23,15 @@ Elastron users have to know Elasticsearch's query DSL and API surface themselves
 
 ### New Capabilities
 
-- `ai-assistant`: The chat drawer, the tool layer and its read-auto/write-confirm policy, provider settings and credential handling, the cluster context given to the model, tool-result capping, query handoff to Search and Playground, the analytics exclusion, and chat history persistence and retention per cluster endpoint.
+- `ai-assistant`: The chat drawer, the tool layer and its read-auto/write-confirm policy, provider settings and credential handling, the cluster context given to the model, tool-result capping, query handoff to Search and Playground, the limits on what reaches analytics, and chat history persistence and retention per cluster endpoint.
 - `app-settings`: The generic, extensible Settings modal with vertical tabs, reachable from the header, and how it hosts sections such as AI Integration.
 - `connection-status-indicator`: The header's connection icon button, its reachability coloring and what does and doesn't change it, its click behavior, and the removal of the internet-connectivity indicator it replaces.
 
 ### Modified Capabilities
 
-(none — connection objects and the saved-connections list are unchanged. The query handoff opens search tabs and loads the Playground draft through the existing `search-tabs` and `playground` behaviors without changing their requirements, and the assistant adds nothing to what `usage-analytics` sends.)
+- `usage-analytics`: Adds the `assistant_message_sent` and `assistant_response_received` events, which carry no parameters.
+
+Connection objects and the saved-connections list are unchanged, and the query handoff opens search tabs and loads the Playground draft through the existing `search-tabs` and `playground` behaviors without changing their requirements.
 
 ## Impact
 

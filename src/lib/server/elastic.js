@@ -54,11 +54,62 @@ export const createClient = (connection) => {
 };
 
 /**
+ * When an SSH tunnel is active for the window, the connection is rewritten
+ * to route through localhost:tunnelPort. Otherwise it is returned unchanged.
+ */
+export const resolveEffectiveConnection = (connection, windowId) => {
+	if (!connection.useSshTunnel || !windowId) return connection;
+
+	const localPort = tunnelManager.getLocalPort(windowId);
+	if (!localPort) return connection;
+
+	return {
+		...connection,
+		host: 'http://127.0.0.1',
+		port: String(localPort),
+	};
+};
+
+/**
+ * Runs `fn` with a client for the connection, routed through the window's
+ * SSH tunnel when one is active, and always closes the client afterwards.
+ * Shared by the HTTP routes and the in-process AI tools so both honor the
+ * tunnel the same way.
+ */
+export const withElasticClient = async (connection, windowId, fn) => {
+	const client = createClient(resolveEffectiveConnection(connection, windowId));
+	try {
+		return await fn(client);
+	} finally {
+		await client.close();
+	}
+};
+
+// Errors meaning the cluster could not be reached at all, as opposed to a
+// ResponseError, which the cluster itself returned. Both bundled client
+// versions use these names.
+const UNREACHABLE_ERROR_NAMES = new Set([
+	'ConnectionError',
+	'TimeoutError',
+	'NoLivingConnectionsError',
+]);
+
+export const isUnreachableError = err => UNREACHABLE_ERROR_NAMES.has(err?.name);
+
+// The client's connection errors can carry an empty message, which used to
+// reach the user as "Unknown server error"; name the cause instead.
+export const getErrorReason = err =>
+	err?.meta?.body?.error?.root_cause?.[0]?.reason ||
+	err?.meta?.body?.error?.reason ||
+	err?.message ||
+	(isUnreachableError(err) ? `The cluster could not be reached (${err.name}).` : undefined);
+
+/**
  * Helper to process the incoming SvelteKit request, extract connection info,
  * create a client, perform an action, and handle any errors.
  *
- * When an SSH tunnel is active for the requesting window, the connection
- * is transparently rewritten to route through localhost:tunnelPort.
+ * Error responses carry `unreachable: true` when the cluster could not be
+ * reached, so the renderer can tell a dead cluster from an error response.
  */
 export async function handleElasticRequest(request, action) {
 	let body;
@@ -74,32 +125,19 @@ export async function handleElasticRequest(request, action) {
 		return json({ error: 'Connection details required' }, { status: 400 });
 	}
 
-	// Rewrite connection to route through SSH tunnel if active
-	let effectiveConnection = connection;
-	if (connection.useSshTunnel && windowId) {
-		const localPort = tunnelManager.getLocalPort(windowId);
-		if (localPort) {
-			effectiveConnection = {
-				...connection,
-				host: 'http://127.0.0.1',
-				port: String(localPort),
-			};
-		}
-	}
-
-	const client = createClient(effectiveConnection);
-
 	try {
-		const result = await action(client, params);
+		const result = await withElasticClient(connection, windowId, client =>
+			action(client, params)
+		);
 		return json({ data: result });
 	} catch (err) {
 		console.error("Elasticsearch Error", err);
-		const reason =
-			err.meta?.body?.error?.root_cause?.[0]?.reason ||
-			err.meta?.body?.error?.reason ||
-			err.message;
-		return json({ error: reason }, { status: 500 });
-	} finally {
-		await client.close();
+		return json(
+			{
+				error: getErrorReason(err),
+				...(isUnreachableError(err) ? { unreachable: true } : {}),
+			},
+			{ status: 500 }
+		);
 	}
 }

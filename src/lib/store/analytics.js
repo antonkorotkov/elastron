@@ -16,6 +16,16 @@ export const createAnalytics = (track = trackEvent) => store => {
 			...(flavor ? { es_flavor: flavor } : {}),
 		})
 	})
+
+	// Assistant usage: only that a message was sent and its reply arrived.
+	// No content, tool, provider, or model details are ever attached.
+	store.on('assistant/messageSent', () => {
+		track('assistant_message_sent')
+	})
+
+	store.on('assistant/responseReceived', () => {
+		track('assistant_response_received')
+	})
 }
 
 export const analytics = createAnalytics()

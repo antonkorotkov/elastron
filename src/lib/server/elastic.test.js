@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createClient, handleElasticRequest } from './elastic';
+import {
+	createClient,
+	handleElasticRequest,
+	withElasticClient,
+	resolveEffectiveConnection,
+} from './elastic';
 
 // Mock the Client constructor
 vi.mock('elasticsearch8', () => {
@@ -308,5 +313,94 @@ describe('handleElasticRequest', () => {
 			const client = action.mock.calls[0][0];
 			expect(client._opts.node).toBe('http://es.example.com:9200');
 		});
+	});
+});
+
+describe('withElasticClient', () => {
+	beforeEach(() => {
+		mockGetLocalPort.mockReturnValue(null);
+	});
+
+	const tunneled = {
+		host: 'http://es-internal.example.com',
+		port: '9200',
+		useSshTunnel: true,
+	};
+
+	it('routes through the window tunnel when one is active', async () => {
+		mockGetLocalPort.mockReturnValue(40001);
+		const node = await withElasticClient(tunneled, 'win-7', client => client._opts.node);
+		expect(node).toBe('http://127.0.0.1:40001');
+		expect(mockGetLocalPort).toHaveBeenCalledWith('win-7');
+	});
+
+	it('uses the original host without a window id', async () => {
+		mockGetLocalPort.mockReturnValue(40001);
+		const node = await withElasticClient(tunneled, null, client => client._opts.node);
+		expect(node).toBe('http://es-internal.example.com:9200');
+	});
+
+	it('returns the function result and closes the client', async () => {
+		let seen;
+		const result = await withElasticClient({ host: 'localhost', port: '9200' }, null, client => {
+			seen = client;
+			return 'done';
+		});
+		expect(result).toBe('done');
+		expect(seen.close).toHaveBeenCalledTimes(1);
+	});
+
+	it('closes the client and rethrows when the function fails', async () => {
+		let seen;
+		const failure = withElasticClient({ host: 'localhost', port: '9200' }, null, client => {
+			seen = client;
+			throw new Error('boom');
+		});
+		await expect(failure).rejects.toThrow('boom');
+		expect(seen.close).toHaveBeenCalledTimes(1);
+	});
+
+	it('does not mutate the connection it rewrites', () => {
+		mockGetLocalPort.mockReturnValue(40001);
+		const connection = { ...tunneled };
+		resolveEffectiveConnection(connection, 'win-7');
+		expect(connection).toEqual(tunneled);
+	});
+});
+
+describe('handleElasticRequest reachability marking', () => {
+	const request = () => ({
+		json: () => Promise.resolve({ connection: { host: 'localhost', port: '9200' } }),
+	});
+	const namedError = name => Object.assign(new Error(`${name} happened`), { name });
+
+	it.each(['ConnectionError', 'TimeoutError', 'NoLivingConnectionsError'])(
+		'marks %s as unreachable',
+		async name => {
+			const response = await handleElasticRequest(request(), () => {
+				throw namedError(name);
+			});
+			const data = await response.json();
+			expect(response.status).toBe(500);
+			expect(data.unreachable).toBe(true);
+			expect(data.error).toBe(`${name} happened`);
+		}
+	);
+
+	it('names the cause when a connection error has no message', async () => {
+		const response = await handleElasticRequest(request(), () => {
+			throw Object.assign(new Error(''), { name: 'ConnectionError' });
+		});
+		const data = await response.json();
+		expect(data.error).toBe('The cluster could not be reached (ConnectionError).');
+		expect(data.unreachable).toBe(true);
+	});
+
+	it('does not mark an error response from the cluster', async () => {
+		const response = await handleElasticRequest(request(), () => {
+			throw namedError('ResponseError');
+		});
+		const data = await response.json();
+		expect(data.unreachable).toBeUndefined();
 	});
 });
