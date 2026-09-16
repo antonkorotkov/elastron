@@ -5,6 +5,7 @@ import {
 	trackPageView,
 	trackEvent,
 	setUserProperties,
+	pageViewPath,
 } from './analytics';
 
 vi.mock('$env/static/public', () => ({ PUBLIC_GA_ID: 'G-TEST' }));
@@ -102,6 +103,23 @@ describe('analytics wrapper', () => {
 			globalThis.window = undefined;
 			expect(isAnalyticsEnabled()).toBe(false);
 			expect(() => trackEvent('x')).not.toThrow();
+		});
+	});
+
+	describe('pageViewPath', () => {
+		it('reports the route pattern, keeping the index name out of analytics', () => {
+			expect(
+				pageViewPath({ route: { id: '/index/[index]' }, url: new URL('http://localhost/index/orders-2026.08') })
+			).toBe('/index/[index]');
+		});
+
+		it('reports plain routes as they are', () => {
+			expect(pageViewPath({ route: { id: '/search' }, url: new URL('http://localhost/search') })).toBe('/search');
+		});
+
+		it('falls back to the root when a navigation matched no route', () => {
+			expect(pageViewPath({ route: { id: null }, url: new URL('http://localhost/nope') })).toBe('/');
+			expect(pageViewPath(undefined)).toBe('/');
 		});
 	});
 });

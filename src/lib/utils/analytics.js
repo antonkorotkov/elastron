@@ -34,3 +34,9 @@ export const createAnalytics = ({
 
 export const { isAnalyticsEnabled, trackPageView, trackEvent, setUserProperties } =
     createAnalytics()
+
+/**
+ * The path to report for a navigation: the route pattern, never the URL.
+ * `/index/[index]` keeps the index name out of analytics.
+ */
+export const pageViewPath = to => to?.route?.id ?? '/'

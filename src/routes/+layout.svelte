@@ -3,7 +3,7 @@
 	import { afterNavigate } from '$app/navigation'
 	import { PUBLIC_GA_ID } from '$env/static/public'
 	import pkg from '../../package.json'
-	import { trackPageView, setUserProperties } from '$lib/utils/analytics'
+	import { trackPageView, setUserProperties, pageViewPath } from '$lib/utils/analytics'
 
 	import Header from '$lib/header/Header.svelte'
 	import Footer from '$lib/footer/Footer.svelte'
@@ -114,7 +114,7 @@
 	})
 
 	afterNavigate(({ to }) => {
-		if (to) trackPageView(to.url.pathname)
+		if (to) trackPageView(pageViewPath(to))
 	})
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
