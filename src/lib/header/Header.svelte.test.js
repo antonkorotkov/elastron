@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/svelte';
+import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import Header from './Header.svelte';
 
-const stores = vi.hoisted(() => ({ connection: null }));
+const stores = vi.hoisted(() => ({ connection: null, server: null, assistant: null, open: null, dispatch: null }));
 
 // Mock SvelteKit modules
 vi.mock('$app/stores', () => {
@@ -24,12 +24,14 @@ vi.mock('$app/navigation', () => ({
 vi.mock('@storeon/svelte', () => {
 	const { writable } = require('svelte/store');
 	stores.connection = writable({ name: 'Local Server' });
+	stores.server = writable({ version: '8.12.0', reachable: true });
+	stores.assistant = writable({ open: false });
 	return {
 		useStoreon: () => ({
-			dispatch: vi.fn(),
+			dispatch: (...args) => stores.dispatch(...args),
 			connection: stores.connection,
-			server: writable({ version: '8.12.0' }),
-			internet: writable({ online: true }),
+			assistant: stores.assistant,
+			server: stores.server,
 			search: writable({ tabs: [], activeId: 'tab-1' }),
 		}),
 	};
@@ -40,13 +42,17 @@ vi.mock('svelte', async (importOriginal) => {
 	const actual = await importOriginal();
 	return {
 		...actual,
-		getContext: () => ({ open: vi.fn() }),
+		getContext: () => ({ open: (...args) => stores.open(...args) }),
 	};
 });
 
 describe('Header', () => {
 	beforeEach(() => {
 		stores.connection.set({ name: 'Local Server' });
+		stores.server.set({ version: '8.12.0', reachable: true });
+		stores.open = vi.fn();
+		stores.dispatch = vi.fn();
+		stores.assistant.set({ open: false });
 		render(Header);
 	});
 
@@ -64,8 +70,47 @@ describe('Header', () => {
 		expect(link.closest('a').getAttribute('href')).toBe('/search');
 	});
 
-	it('renders Connection button', () => {
-		expect(screen.getByText('Connection')).toBeTruthy();
+	describe('connection icon', () => {
+		const icon = () =>
+			screen.getByRole('button', { name: 'Connection' }).querySelector('i.plug.icon');
+
+		it('replaces the Connection text button', () => {
+			expect(screen.queryByText('Connection')).toBeNull();
+			expect(icon()).toBeTruthy();
+		});
+
+		it('is green while the cluster is reachable', () => {
+			expect(icon().classList.contains('green')).toBe(true);
+			expect(icon().classList.contains('red')).toBe(false);
+		});
+
+		it('is red while the cluster is unreachable', async () => {
+			stores.server.set({ version: '8.12.0', reachable: false });
+			await tick();
+			expect(icon().classList.contains('red')).toBe(true);
+			expect(icon().classList.contains('green')).toBe(false);
+		});
+
+		it('keeps its color on hover', async () => {
+			await fireEvent.mouseOver(icon());
+			await fireEvent.mouseOut(icon());
+			await fireEvent.mouseOver(icon());
+			expect(icon().classList.contains('green')).toBe(true);
+		});
+
+		it('is not a window drag region', () => {
+			const button = screen.getByRole('button', { name: 'Connection' });
+			expect(button.getAttribute('style')).toContain('no-drag');
+		});
+
+		it('opens the connection dialog on click', async () => {
+			const { default: ConnectDialog } = await import(
+				'../components/modal/ConnectionDialog/ConnectDialog.svelte'
+			);
+			await fireEvent.click(screen.getByRole('button', { name: 'Connection' }));
+			await waitFor(() => expect(stores.open).toHaveBeenCalled());
+			expect(stores.open.mock.calls[0][0]).toBe(ConnectDialog);
+		});
 	});
 
 	it('displays connection name', () => {
@@ -74,6 +119,48 @@ describe('Header', () => {
 
 	it('displays Elasticsearch version', () => {
 		expect(screen.getByText('v8.12.0')).toBeTruthy();
+	});
+
+	describe('assistant button', () => {
+		it('toggles the assistant drawer', async () => {
+			await fireEvent.click(screen.getByRole('button', { name: 'Assistant' }));
+			expect(stores.dispatch).toHaveBeenCalledWith('assistant/toggle');
+		});
+
+		it('shows whether the drawer is open', async () => {
+			const button = screen.getByRole('button', { name: 'Assistant' });
+			expect(button.getAttribute('aria-pressed')).toBe('false');
+			stores.assistant.set({ open: true });
+			await tick();
+			expect(button.getAttribute('aria-pressed')).toBe('true');
+			expect(button.classList.contains('active')).toBe(true);
+		});
+
+		it('is not a window drag region', () => {
+			expect(screen.getByRole('button', { name: 'Assistant' }).getAttribute('style')).toContain('no-drag');
+		});
+
+		it('shows the AI sparkles icon rather than a chat icon', () => {
+			const button = screen.getByRole('button', { name: 'Assistant' });
+			expect(button.querySelector('svg.ai-sparkles')).toBeTruthy();
+			expect(button.querySelector('i.comments')).toBeNull();
+		});
+	});
+
+	describe('settings button', () => {
+		it('is not a window drag region', () => {
+			const button = screen.getByRole('button', { name: 'Settings' });
+			expect(button.getAttribute('style')).toContain('no-drag');
+		});
+
+		it('opens the settings dialog on click', async () => {
+			const { default: SettingsDialog } = await import(
+				'../components/modal/SettingsDialog/SettingsDialog.svelte'
+			);
+			await fireEvent.click(screen.getByRole('button', { name: 'Settings' }));
+			await waitFor(() => expect(stores.open).toHaveBeenCalled());
+			expect(stores.open.mock.calls[0][0]).toBe(SettingsDialog);
+		});
 	});
 
 	describe('connection color', () => {

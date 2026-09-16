@@ -3,13 +3,13 @@
 	import { afterNavigate } from '$app/navigation'
 	import { PUBLIC_GA_ID } from '$env/static/public'
 	import pkg from '../../package.json'
-	import { trackPageView, setUserProperties } from '$lib/utils/analytics'
+	import { trackPageView, setUserProperties, pageViewPath } from '$lib/utils/analytics'
 
 	import Header from '$lib/header/Header.svelte'
 	import Footer from '$lib/footer/Footer.svelte'
 	import Modal from '$lib/components/modal/Modal.svelte'
 	import Notifications from '$lib/components/notifications/Notifications.svelte'
-	import InternetConnection from '$lib/utils/onlineCheck.js'
+	import AssistantDrawer from '$lib/workspace/assistant/AssistantDrawer.svelte'
 	import { store } from '$lib/store'
 	import { isThemeToggleChecked } from '$lib/utils/helpers'
 
@@ -28,13 +28,13 @@
 				: 'Elastron')
 	)
 
-	// Client-side only logic for internet check
 	import { onMount } from 'svelte'
 	import { browser } from '$app/environment'
 	import { getStorage } from '$lib/utils/storage.js'
 	import { initialConnection } from '$lib/store/connection.js'
 	import { flushPlaygroundDraft } from '$lib/store/playground.js'
 	import { flushSearchTabs, migrateLastSearch } from '$lib/store/search.js'
+	import { hydrateAiSettings } from '$lib/store/aiSettings.js'
 
 	onMount(async () => {
 		if (browser) {
@@ -44,16 +44,6 @@
 			const windowId = crypto.randomUUID();
 			window.__elastronWindowId = windowId;
 			dispatch('app/hydrate', { windowId });
-
-			InternetConnection.onOnline(() => {
-				dispatch('internet/online')
-			})
-
-			InternetConnection.onOffline(() => {
-				dispatch('internet/offline')
-			})
-
-			if (InternetConnection.isOnline) dispatch('internet/online')
 
 			const connections = await getStorage('connection', [])
 
@@ -97,12 +87,13 @@
 				}
 			}
 
+			await hydrateAiSettings(store)
+
 			const tableConfigs = await getStorage('tableConfigs', {})
 			dispatch('tableConfigs/hydrate', tableConfigs)
 
 			const theme = await getStorage('theme')
 			dispatch('app/hydrate', { theme: theme ?? 'light' })
-			dispatch('server/info')
 
 			// Clean up SSH tunnel on window close
 			window.addEventListener('beforeunload', () => {
@@ -123,7 +114,7 @@
 	})
 
 	afterNavigate(({ to }) => {
-		if (to) trackPageView(to.url.pathname)
+		if (to) trackPageView(pageViewPath(to))
 	})
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
@@ -151,6 +142,7 @@
 		</div>
 		<Footer />
 	</main>
+	<AssistantDrawer />
 </Modal>
 
 <Notifications />

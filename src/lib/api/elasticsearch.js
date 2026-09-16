@@ -1,5 +1,20 @@
 import { getMessageFromError } from '../utils/helpers';
 
+// Every renderer request to the cluster goes through `_request`, so it is the
+// one place that knows whether the cluster answered. The store registers a
+// listener here at startup; the API class itself holds no store reference.
+let reachabilityListener = null;
+
+export const setReachabilityListener = listener => {
+	reachabilityListener = listener;
+};
+
+// Reports carry the connection they came from, so a request to another
+// cluster, such as testing a saved connection, can be told apart.
+const reportReachability = (reachable, connection) => {
+	if (reachabilityListener) reachabilityListener(reachable, connection);
+};
+
 export default class API {
 	constructor(connection, windowId) {
 		this.connection = connection;
@@ -25,10 +40,14 @@ export default class API {
 		const result = await response.json();
 
 		if (!response.ok || result.error) {
+			// Only a network-level failure says anything about reachability. An
+			// error the cluster itself returned leaves the indicator as it is.
+			if (result.unreachable) reportReachability(false, this.connection);
 			const errorMessage = result.error || 'Unknown server error';
 			throw new Error(errorMessage);
 		}
 
+		reportReachability(true, this.connection);
 		return { data: result.data };
 	}
 

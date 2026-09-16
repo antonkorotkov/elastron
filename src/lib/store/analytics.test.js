@@ -46,4 +46,10 @@ describe('analytics store module', () => {
 		store.dispatch('server/update', { version: '8.12.0' });
 		expect(track).not.toHaveBeenCalled();
 	});
+
+	it('reports an assistant message and its reply with no parameters', () => {
+		store.dispatch('assistant/messageSent');
+		store.dispatch('assistant/responseReceived');
+		expect(track.mock.calls).toEqual([['assistant_message_sent'], ['assistant_response_received']]);
+	});
 });

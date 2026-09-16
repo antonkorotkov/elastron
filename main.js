@@ -35,7 +35,12 @@ const startServer = async () => {
 			HOST: 'localhost',
 			ORIGIN: `http://localhost:${serverPort}`,
 			ADDRESS_HEADER: 'x-forwarded-for',
-			XFF_DEPTH: '1'
+			XFF_DEPTH: '1',
+			// adapter-node rejects request bodies over 512K by default, a guard
+			// meant for public servers. This one serves only the app's own
+			// windows on localhost, and assistant turns and bulk Playground
+			// requests can legitimately be larger.
+			BODY_SIZE_LIMIT: '50M'
 		}
 	});
 
