@@ -166,3 +166,114 @@ button:focus {
 .scrollable::-webkit-scrollbar {
 	display: none;
 }
+/*
+ * Row actions.
+ *
+ * Cell renderers put small icon buttons next to a value. They stay out of the
+ * way until the pointer is anywhere on the row, not just over the cell that
+ * holds them, so the whole row is the target. Defined here rather than in each
+ * cell component because the behaviour has to be identical across every table.
+ *
+ * Keyboard users get the same affordance through :focus-visible, since there
+ * is no hover to rely on.
+ */
+.cell-action {
+	background: none;
+	border: none;
+	border-radius: 0;
+	cursor: pointer;
+	padding: 0;
+	margin: 0;
+	color: inherit;
+	font-size: 0.9em;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+tr:hover .cell-action {
+	opacity: 0.55;
+}
+
+/* Same specificity as the rule above, so ordering decides: a hovered or
+   focused button goes to full strength. */
+tr .cell-action:hover,
+tr .cell-action:focus-visible {
+	opacity: 1;
+}
+
+/*
+ * Dark-mode gaps in this Semantic UI build.
+ *
+ * Semantic's inverted variants are incomplete, and the pieces it does ship use
+ * !important, so a component cannot paper over them locally. These fill the
+ * holes the security screens ran into; each one is a rule Semantic is missing
+ * rather than a preference.
+ */
+
+/* `.ui.grey.text` is used across the toolbars but this build defines no rule
+   for it at all, so it inherits whatever is around it: the body colour in a
+   modal, which is near-black on a near-black panel. */
+.ui.grey.text {
+	color: rgba(0, 0, 0, 0.6);
+}
+
+.ui.inverted.segment .ui.grey.text,
+.ui.modal.inverted .ui.grey.text {
+	color: rgba(255, 255, 255, 0.6);
+}
+
+/* The modal shell paints its content and actions dark but sets no text colour.
+   Form labels get one from `.ui.inverted.form`; everything else falls back to
+   the body colour and disappears. */
+.ui.modal.inverted > .content,
+.ui.modal.inverted > .actions {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+/* Semantic colours a header inside an inverted segment only when it is a direct
+   child, so a header nested any deeper stays black on dark. */
+.ui.inverted.segment .ui.header {
+	color: #fff;
+}
+
+/* Checkbox labels are black by default. `.ui.inverted.form` covers the ones in
+   a form; a checkbox in an inverted toolbar gets nothing. */
+.ui.inverted.segment .ui.checkbox label,
+.ui.modal.inverted .ui.checkbox label {
+	color: rgba(255, 255, 255, 0.9);
+}
+
+/*
+ * A modal taller than the viewport.
+ *
+ * The page dimmer centres the modal with flexbox and cannot scroll. Once a
+ * dialog grows past the window its top and bottom are cut off with no way to
+ * reach them, which is how a tall role shows only its middle.
+ *
+ * Rather than change how the dimmer aligns, which is what centres every modal
+ * in the app, the modal is simply never allowed to exceed the viewport. It
+ * becomes a column: header and actions keep their size, and the content in
+ * between takes the remaining space and scrolls. Centring is untouched because
+ * there is no longer anything to overflow.
+ */
+.ui.page.modals.dimmer > .ui.modal {
+	display: flex;
+	flex-direction: column;
+	max-height: calc(100vh - 2em);
+}
+
+.ui.page.modals.dimmer > .ui.modal > .header,
+.ui.page.modals.dimmer > .ui.modal > .actions {
+	flex: 0 0 auto;
+}
+
+.ui.page.modals.dimmer > .ui.modal > .content {
+	flex: 1 1 auto;
+	/* A flex item will not shrink below its content without this, which would
+	   put the overflow back. */
+	min-height: 0;
+	overflow-y: auto;
+}

@@ -41,6 +41,35 @@ const sizeNote = size =>
 		? `Asked for ${size} hits; results are capped at ${RESULT_ROW_LIMIT}.`
 		: undefined
 
+
+/**
+ * Fields that must never leave the cluster for the AI provider.
+ *
+ * Elasticsearch does not return password hashes from the user API, and does
+ * not return a key's secret from the API key listing, so today this filter
+ * removes nothing. It is here so the guarantee does not depend on that
+ * staying true, and so a future field cannot leak by default.
+ */
+const CREDENTIAL_FIELDS = new Set([
+	'password',
+	'password_hash',
+	'api_key',
+	'encoded',
+	'access_token',
+	'refresh_token',
+	'authentication',
+])
+
+const stripCredentials = value => {
+	if (Array.isArray(value)) return value.map(stripCredentials)
+	if (!value || typeof value !== 'object') return value
+	return Object.fromEntries(
+		Object.entries(value)
+			.filter(([key]) => !CREDENTIAL_FIELDS.has(key))
+			.map(([key, entry]) => [key, stripCredentials(entry)])
+	)
+}
+
 export const readTools = {
 	'list-indices': {
 		description: `List indices with health, status, document count, size, and shard counts, ${RESULT_ROW_LIMIT} per page. The result gives the total and the number of pages; page 1 runs at once, and each later page needs the user's approval, so prefer sort and index filters that answer the question from page 1. Sort with sort, such as store.size:desc for the largest first or docs.count:desc for the most documents; the default is by name. Sizes are human-readable (like 13.6kb) unless bytes sets a unit, which makes them plain numbers you can compare.`,
@@ -143,6 +172,62 @@ export const readTools = {
 		description: 'List shards with their state, size, and node, optionally for one index.',
 		inputSchema: z.object({ index: index.optional() }),
 		run: async (_input, send, request) => capRows(await send(request)),
+	},
+	'list-security-users': {
+		description:
+			"List the cluster's users with their roles and whether each is enabled. This covers the native and reserved realms only: users from LDAP, Active Directory, SAML, or the file realm are not visible to this API, so a cluster can have people who do not appear here. Read-only; users cannot be changed by the assistant.",
+		inputSchema: z.object({}),
+		run: async (_input, send, request) => {
+			const users = stripCredentials(await send(request))
+			const rows = Object.entries(users || {}).map(([username, user]) => ({
+				username,
+				roles: user?.roles ?? [],
+				enabled: user?.enabled,
+				full_name: user?.full_name ?? undefined,
+				email: user?.email ?? undefined,
+				reserved: Boolean(user?.metadata?._reserved),
+			}))
+			return capRows(rows)
+		},
+	},
+	'list-security-roles': {
+		description:
+			"List the cluster's roles with their cluster privileges, the index patterns they grant, and whether they restrict which documents or fields their holders can see. Read-only; roles cannot be changed by the assistant.",
+		inputSchema: z.object({}),
+		run: async (_input, send, request) => {
+			const roles = stripCredentials(await send(request))
+			const rows = Object.entries(roles || {}).map(([name, role]) => ({
+				name,
+				cluster: role?.cluster ?? [],
+				indices: (role?.indices ?? []).map(block => ({
+					names: block?.names ?? [],
+					privileges: block?.privileges ?? [],
+					restricts_documents: Boolean(block?.query),
+					restricts_fields: Boolean(block?.field_security),
+				})),
+				run_as: role?.run_as ?? [],
+				reserved: Boolean(role?.metadata?._reserved),
+			}))
+			return capRows(rows)
+		},
+	},
+	'list-security-api-keys': {
+		description:
+			'List the cluster\'s API keys with their owner and lifecycle dates. Key secrets are never returned: Elasticsearch shows a secret only when the key is created. Read-only; keys cannot be created or invalidated by the assistant.',
+		inputSchema: z.object({}),
+		run: async (_input, send, request) => {
+			const response = stripCredentials(await send(request))
+			const rows = (response?.api_keys ?? []).map(key => ({
+				id: key?.id,
+				name: key?.name,
+				username: key?.username,
+				realm: key?.realm,
+				creation: key?.creation,
+				expiration: key?.expiration,
+				invalidated: Boolean(key?.invalidated),
+			}))
+			return capRows(rows)
+		},
 	},
 	'get-nodes-stats': {
 		description: 'Get per-node operating system, JVM, and file system statistics.',

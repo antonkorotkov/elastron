@@ -91,6 +91,19 @@
 		>
 			Playground
 		</a>
+		<!--
+			Always present while connected. What the security area can actually do
+			is discovered by using it, not by probing the cluster first, so the
+			entry never appears and disappears with the account's privileges.
+		-->
+		<a
+			class="item"
+			href={resolve('/security/users')}
+			class:active={pathname.startsWith('/security')}
+			style="-webkit-app-region: no-drag;"
+		>
+			Security
+		</a>
 
 		<div class="right menu">
 			{#if $connection.name}
