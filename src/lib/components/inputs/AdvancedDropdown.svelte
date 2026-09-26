@@ -138,6 +138,10 @@
 	}
 	.advanced-selector {
 		--height: 38px;
+		/* svelte-select opens its list at z-index 2, which ace paints over:
+		   its gutter is 4 and its scroller 1000. Any dropdown above a JSON
+		   editor needs to clear both. */
+		--list-z-index: 1200;
 	}
 
 	/* With many long values the control has to grow rather than clip them, and

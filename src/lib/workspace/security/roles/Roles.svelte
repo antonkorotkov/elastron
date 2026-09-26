@@ -125,5 +125,6 @@
 		reason={$securityRoles.reason}
 		entity="roles"
 		emptyMessage="No roles found"
+			hasEntries={entries.length > 0}
 	/>
 </div>

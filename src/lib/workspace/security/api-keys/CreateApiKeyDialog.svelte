@@ -12,23 +12,15 @@
 	let expiration = $state('')
 	let restrict = $state(false)
 
-	// Role descriptors are nested JSON, so they are edited in the same editor
-	// the role dialog uses rather than a plain textarea.
 	const DEFAULT_DESCRIPTORS = { restricted: { cluster: ['monitor'] } }
 	let descriptors = $state(DEFAULT_DESCRIPTORS)
 	let descriptorsEditor = $state(null)
 	let editorError = $state('')
 
-	// Populated once the key exists. The secret is in the creation response and
-	// nowhere else: the cluster will not return it again, and it is deliberately
-	// never written to the store.
+	// The secret is in the creation response and nowhere else.
 	let created = $state(null)
 	let copied = $state(false)
 
-	/**
-	 * Reads what the editor holds. In code mode its contents are only parsed on
-	 * demand, so this is the one place that knows whether they are usable.
-	 */
 	const readDescriptors = () => {
 		if (!descriptorsEditor) return { value: descriptors }
 		try {

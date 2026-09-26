@@ -167,5 +167,6 @@
 		reason={$securityApiKeys.reason}
 		entity="API keys"
 		emptyMessage="No API keys found"
+			hasEntries={entries.length > 0}
 	/>
 </div>

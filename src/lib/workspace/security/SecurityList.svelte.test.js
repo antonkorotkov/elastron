@@ -84,3 +84,27 @@ describe('SecurityList', () => {
 		expect(document.querySelector('.message')).toBeNull();
 	});
 });
+
+describe('a search that matches nothing', () => {
+	it('shows the empty message, not the unavailable panel, after a failed refresh', () => {
+		// Entries are deliberately kept when a refresh fails. Judging the panel
+		// on the filtered rows turned a working list into "not available" as
+		// soon as the search matched nothing.
+		renderList({
+			loaded: true,
+			cause: 'privilege',
+			message: 'nope',
+			rows: [],
+			hasEntries: true,
+		});
+
+		expect(document.querySelector('[data-cause="privilege"]')).toBeNull();
+		expect(screen.getByText('No roles found')).toBeTruthy();
+	});
+
+	it('still shows the cause when the cluster really returned nothing', () => {
+		renderList({ loaded: true, cause: 'privilege', message: 'nope', rows: [], hasEntries: false });
+
+		expect(document.querySelector('[data-cause="privilege"]')).toBeTruthy();
+	});
+});

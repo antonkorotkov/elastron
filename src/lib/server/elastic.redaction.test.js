@@ -71,3 +71,22 @@ describe.each([
 		expect(() => describeErrorForLog(null)).not.toThrow();
 	});
 });
+
+describe('an error the cluster did not produce', () => {
+	it('keeps its stack, which is the only way to locate an ordinary bug', () => {
+		const bug = new TypeError('cannot read properties of undefined');
+		const logged = describeErrorForLog(bug);
+
+		expect(logged.stack).toBe(bug.stack);
+		expect(logged.reason).toBe(bug.message);
+	});
+
+	it('does not add a stack to a cluster error, whose frames are all transport', () => {
+		const err = {
+			meta: { statusCode: 403, body: { error: { reason: 'unauthorized' } }, meta: { request: { params: {} } } },
+			stack: 'at Transport.request',
+		};
+
+		expect(describeErrorForLog(err)).not.toHaveProperty('stack');
+	});
+});

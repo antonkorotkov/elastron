@@ -25,10 +25,11 @@ describe('reading a block query', () => {
 		});
 	});
 
-	it('shows a template own source, not the string it is stored in', () => {
+	it('treats a template as something it cannot show', () => {
 		expect(readQuery({ query: STORED_TEMPLATE })).toMatchObject({
-			form: QUERY_FORM.TEMPLATE,
-			source: { term: { owner: '{{_user.username}}' } },
+			unmodelled: true,
+			source: null,
+			raw: STORED_TEMPLATE,
 		});
 	});
 
@@ -44,12 +45,8 @@ describe('reading a block query', () => {
 		});
 	});
 
-	it('marks a template it cannot show, such as a stored script', () => {
-		const stored = '{"template":{"id":"my_stored_template"}}';
-		expect(readQuery({ query: stored })).toMatchObject({
-			form: QUERY_FORM.TEMPLATE,
-			unmodelled: true,
-		});
+	it('marks a query it cannot parse as unshowable rather than blank', () => {
+		expect(readQuery({ query: '{not json}' })).toMatchObject({ unmodelled: true, source: null });
 	});
 });
 
@@ -60,23 +57,18 @@ describe('writing a block query', () => {
 		expect(roundTrip({ query: STORED_QUERY })).toBe(STORED_QUERY);
 	});
 
-	it('writes an untouched template back exactly as it came', () => {
-		expect(roundTrip({ query: STORED_TEMPLATE })).toBe(STORED_TEMPLATE);
+	it('writes a template back exactly as it came, even after other edits', () => {
+		// The editor no longer offers templates, so one already on the cluster
+		// must survive untouched rather than being dropped or rewritten.
+		const held = readQuery({ query: STORED_TEMPLATE });
+		expect(writeQuery(held)).toBe(STORED_TEMPLATE);
+		expect(writeQuery({ ...held, source: { term: { anything: 'else' } } })).toBe(STORED_TEMPLATE);
 	});
 
 	it('sends an edited query as an object, which the cluster accepts', () => {
 		const held = readQuery({ query: STORED_QUERY });
 		expect(writeQuery({ ...held, source: { term: { dept: 'sales' } } })).toEqual({
 			term: { dept: 'sales' },
-		});
-	});
-
-	it('sends an edited template as a template', () => {
-		const held = readQuery({ query: STORED_TEMPLATE });
-		const written = writeQuery({ ...held, source: { term: { owner: '{{_user.username}}', extra: 1 } } });
-
-		expect(written).toEqual({
-			template: { source: '{"term":{"owner":"{{_user.username}}","extra":1}}' },
 		});
 	});
 

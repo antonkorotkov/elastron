@@ -12,7 +12,7 @@ import { handleSecurityRequest, unwrap } from '$lib/server/security/request.js';
 export async function POST({ request }) {
 	return handleSecurityRequest(request, async (client, { names, query }) => {
 		const patterns = (Array.isArray(names) ? names : []).filter(Boolean)
-		if (patterns.length === 0) return { unavailable: true, reason: 'no-patterns' };
+		if (patterns.length === 0) return { noPatterns: true };
 
 		const total = unwrap(
 			await client.transport.request({

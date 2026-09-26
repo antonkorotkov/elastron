@@ -12,7 +12,6 @@ import { POST as listKeys } from './api-keys/+server.js';
 import { POST as createKey } from './api-key/create/+server.js';
 import { POST as invalidateKey } from './api-key/invalidate/+server.js';
 import { POST as builtinPrivileges } from './privileges/+server.js';
-import { POST as renderTemplate } from './query/render/+server.js';
 import { POST as previewQuery } from './query/preview/+server.js';
 import { POST as authenticate } from './authenticate/+server.js';
 
@@ -55,9 +54,38 @@ const call = async (handler, params = {}) => {
 	return { status: response.status, ...(await response.json()) };
 };
 
+const asElastic = (path, method = 'GET', body) =>
+	fetch(`${NODE}${path}`, {
+		method,
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: 'Basic ' + Buffer.from(`${connection.user}:${connection.password}`).toString('base64'),
+		},
+		body: body === undefined ? undefined : JSON.stringify(body),
+	});
+
 let live = false;
 beforeAll(async () => {
 	live = await reachable();
+	if (!live) return;
+
+	// These fixtures belong to the tests, not to whatever happens to be on the
+	// cluster: the preview cases need documents to count, and the refusal case
+	// needs an account that may manage security but not read them.
+	await asElastic('/itest-logs/_bulk?refresh=true', 'POST');
+	await fetch(`${NODE}/itest-logs/_bulk?refresh=true`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/x-ndjson',
+			Authorization: 'Basic ' + Buffer.from(`${connection.user}:${connection.password}`).toString('base64'),
+		},
+		body: '{"index":{}}\n{"dept":"eng"}\n{"index":{}}\n{"dept":"eng"}\n{"index":{}}\n{"dept":"sales"}\n',
+	});
+	await asElastic('/_security/role/itest_sec_only', 'PUT', { cluster: ['manage_security'] });
+	await asElastic('/_security/user/itest_secadmin', 'POST', {
+		password: 'itestsecadminpassword',
+		roles: ['itest_sec_only'],
+	});
 });
 
 const USER = 'itest_user';
@@ -68,6 +96,9 @@ afterAll(async () => {
 	if (!live) return;
 	await call(deleteUser, { username: USER }).catch(() => {});
 	await call(deleteRole, { name: ROLE }).catch(() => {});
+	await asElastic('/_security/user/itest_secadmin', 'DELETE').catch(() => {});
+	await asElastic('/_security/role/itest_sec_only', 'DELETE').catch(() => {});
+	await asElastic('/itest-logs', 'DELETE').catch(() => {});
 });
 
 describe('security routes', () => {
@@ -174,43 +205,11 @@ describe('security routes', () => {
 		}
 	});
 
-	it('rejects a template the role API would have accepted', async () => {
-		if (!live) return;
-
-		const broken = '{"term":{"o":"{{_user.username"}}';
-		// The role API takes this and only fails later, when a user's request is
-		// evaluated, which is the gap the render check exists to close.
-		const accepted = await call(putRole, {
-			name: 'itest_tmpl',
-			body: { indices: [{ names: ['logs-*'], privileges: ['read'], query: { template: { source: broken } } }] },
-		});
-		expect(accepted.status).toBe(200);
-		await call(deleteRole, { name: 'itest_tmpl' });
-
-		const rendered = await call(renderTemplate, { source: broken, username: 'alice' });
-		expect(rendered.status).toBe(500);
-		expect(rendered.reason).toMatch(/Unexpected end of file|unexpected/i);
-	});
-
-	it('renders a template that is sound', async () => {
-		if (!live) return;
-
-		// A document query template is a bare query, the way it is stored on the
-		// role, not a search body.
-		const { data, status } = await call(renderTemplate, {
-			source: '{"term":{"owner":"{{_user.username}}"}}',
-			username: 'alice',
-		});
-
-		expect(status).toBe(200);
-		expect(data.query).toEqual({ term: { owner: 'alice' } });
-	});
-
 	it('counts what a block query would expose', async () => {
 		if (!live) return;
 
 		const { data, status } = await call(previewQuery, {
-			names: ['logs-*'],
+			names: ['itest-logs'],
 			query: { term: { dept: 'eng' } },
 		});
 
@@ -223,7 +222,7 @@ describe('security routes', () => {
 		if (!live) return;
 
 		const { data } = await call(previewQuery, {
-			names: ['logs-*'],
+			names: ['itest-logs'],
 			query: { term: { never_seen: 'x' } },
 		});
 
@@ -238,8 +237,8 @@ describe('security routes', () => {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				connection: { ...connection, user: 'secadmin', password: 'secadminpassword' },
-				names: ['logs-*'],
+				connection: { ...connection, user: 'itest_secadmin', password: 'itestsecadminpassword' },
+				names: ['itest-logs'],
 				query: { match_all: {} },
 			}),
 		});

@@ -82,6 +82,27 @@ describe('security read tools', () => {
 		expect(result.rows[0]).toMatchObject({ id: 'k1', name: 'ingest', username: 'elastic' });
 	});
 
+	it('keeps a role whose name collides with a credential field', async () => {
+		// The listings are keyed by name, so filtering the top level deleted a
+		// role actually called `password` and left the assistant reporting the
+		// cluster does not have it.
+		const result = await run('list-security-roles', {
+			password: { cluster: ['monitor'], indices: [], metadata: {} },
+			api_key: { cluster: [], indices: [], metadata: {} },
+			ordinary: { cluster: [], indices: [], metadata: {} },
+		});
+
+		expect(result.rows.map(r => r.name).sort()).toEqual(['api_key', 'ordinary', 'password']);
+	});
+
+	it('keeps a user whose name collides with a credential field', async () => {
+		const result = await run('list-security-users', {
+			encoded: { roles: ['viewer'], enabled: true, metadata: {} },
+		});
+
+		expect(result.rows[0].username).toBe('encoded');
+	});
+
 	it('strips credential fields wherever they appear', async () => {
 		const result = await run('list-security-users', {
 			alice: { roles: ['viewer'], enabled: true, password_hash: '$2a$hash', metadata: { password: 'nested' } },
@@ -127,8 +148,20 @@ describe('isSecurityWriteRequest', () => {
 		expect(isSecurityWriteRequest({ method, path })).toBe(expected);
 	});
 
-	it('errs toward refusing a security POST it cannot prove is a read', () => {
-		expect(isSecurityWriteRequest({ method: 'POST', path: '/_security/_query/role' })).toBe(true);
+	it.each([
+		'/_security/user/_has_privileges',
+		'/_security/_query/role',
+		'/_security/_query/user',
+		'/_security/_query/api_key',
+		'/_security/_authenticate',
+	])('treats the read-only POST %s as a read', path => {
+		// Refusing these told the user the assistant may not change security,
+		// which is not what it was being asked to do.
+		expect(isSecurityWriteRequest({ method: 'POST', path })).toBe(false);
+	});
+
+	it('still refuses a POST under _security it does not recognise as a read', () => {
+		expect(isSecurityWriteRequest({ method: 'POST', path: '/_security/oidc/authenticate' })).toBe(true);
 	});
 });
 

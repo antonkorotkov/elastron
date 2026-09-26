@@ -122,13 +122,23 @@ export const getErrorReason = err =>
  * moment a security write fails. Only the status, the path, and the cluster's
  * own reason are ever logged, and no value taken from the request body is.
  */
-export const describeErrorForLog = err => ({
-	name: err?.name || 'Error',
-	status: err?.meta?.statusCode ?? err?.statusCode,
-	method: err?.meta?.meta?.request?.params?.method,
-	path: err?.meta?.meta?.request?.params?.path,
-	reason: getErrorReason(err),
-});
+export const describeErrorForLog = err => {
+	const params = err?.meta?.meta?.request?.params;
+	const record = {
+		name: err?.name || 'Error',
+		status: err?.meta?.statusCode ?? err?.statusCode,
+		method: params?.method,
+		path: params?.path,
+		reason: getErrorReason(err),
+	};
+
+	// An error the cluster did not produce is an ordinary bug in a route, and
+	// without a stack there is nothing to locate it by. Cluster errors carry
+	// the request that caused them, and their stack is all transport frames.
+	if (!err?.meta && err?.stack) record.stack = err.stack;
+
+	return record;
+};
 
 /**
  * Helper to process the incoming SvelteKit request, extract connection info,

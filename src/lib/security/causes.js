@@ -1,19 +1,6 @@
-/**
- * Elastron does not probe the cluster for whether security is enabled, what
- * the licence covers, or what the account may do. It attempts the operation
- * and, when the cluster refuses, names the likely cause. This module is that
- * mapping: a cluster error in, one cause out.
- *
- * See openspec/changes/add-security-management/design.md for why this replaces
- * a capability probe, and for the observed error strings each row matches.
- *
- * This lives outside `$lib/server` on purpose. Both sides need it: a route
- * classifies the failure, and the renderer switches on the result to choose
- * what to show. It has no dependencies, so importing it into the browser
- * bundle pulls in no server code.
- */
+// Maps a cluster refusal to a cause the user can act on. Outside $lib/server
+// because a route classifies and the renderer switches on the result.
 
-/** Stable identifiers the renderer switches on. */
 export const CAUSE = {
 	SECURITY_DISABLED: 'security-disabled',
 	LICENSE: 'license',
@@ -26,7 +13,7 @@ export const CAUSE = {
 
 const KNOWN_CAUSES = new Set(Object.values(CAUSE));
 
-/** What the user is told for each cause. */
+
 const MESSAGES = {
 	[CAUSE.SECURITY_DISABLED]:
 		'Security is not enabled on this cluster, so users, roles, and API keys cannot be managed.',
@@ -56,13 +43,9 @@ const reasonOf = err =>
 const typeOf = err =>
 	err?.meta?.body?.error?.root_cause?.[0]?.type || err?.meta?.body?.error?.type || '';
 
-/**
- * A cluster running with `xpack.security.enabled: false` does not register the
- * security REST handlers. It does not say so: a GET of the user list comes
- * back as `Incorrect HTTP method ... allowed: [POST]`, which is actively
- * misleading, and `_has_privileges` comes back as `no handler found`. Both are
- * recognised here so neither string ever reaches the user.
- */
+// A cluster with security disabled does not say so: the user list answers
+// "Incorrect HTTP method ... allowed: [POST]" and _has_privileges answers
+// "no handler found".
 const isSecurityDisabled = reason =>
 	/no handler found for uri \[\/?_security/i.test(reason) ||
 	/incorrect http method for uri \[\/?_security/i.test(reason);
@@ -71,19 +54,13 @@ const isLicense = reason => /non-compliant|license|licence/i.test(reason);
 
 const isReserved = reason => /\breserved\b/i.test(reason);
 
-/**
- * Classifies a cluster failure. `err` is an Elasticsearch client error; a
- * plain object carrying `status` and `reason` also works, which is what the
- * renderer passes back from a route response.
- */
+
 export const classifySecurityError = err => {
 	if (!err) return CAUSE.UNKNOWN;
 
-	// A route classifies the failure and the API client carries that verdict
-	// back on the thrown error. The renderer has neither the status nor the
-	// cluster's reason to work from, so an already-classified cause is trusted
-	// rather than re-derived. Only known values are honoured: `cause` is also a
-	// standard Error property and may hold anything.
+	// The renderer has no status or reason to work from, so a cause a route
+	// already attached is trusted. `cause` is a standard Error property, so
+	// only known values count.
 	if (KNOWN_CAUSES.has(err.cause)) return err.cause;
 
 	if (err.unreachable || err.name === 'TunnelNotOpenError') return CAUSE.UNREACHABLE;
@@ -99,8 +76,6 @@ export const classifySecurityError = err => {
 		return isLicense(reason) ? CAUSE.LICENSE : CAUSE.PRIVILEGE;
 	}
 
-	// A licence refusal is always 403 today, but the check does not depend on
-	// the status so a future status change still lands on the right cause.
 	if (isLicense(reason)) return CAUSE.LICENSE;
 	if (status === 400 && isReserved(reason)) return CAUSE.RESERVED;
 	if (status === 403) return CAUSE.PRIVILEGE;
@@ -108,14 +83,9 @@ export const classifySecurityError = err => {
 	return CAUSE.UNKNOWN;
 };
 
-/** The sentence shown for a cause. */
 export const messageForCause = cause => MESSAGES[cause] || MESSAGES[CAUSE.UNKNOWN];
 
-/**
- * The shape a route attaches to a failed security response. `reason` carries
- * the cluster's own wording so it can be shown as supporting detail, never as
- * the primary message.
- */
+// `reason` is the cluster's wording, shown as detail, never as the message.
 export const describeSecurityFailure = err => {
 	const cause = classifySecurityError(err);
 	return { cause, message: messageForCause(cause), reason: reasonOf(err) || undefined };

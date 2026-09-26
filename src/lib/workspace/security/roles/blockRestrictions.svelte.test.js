@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 
 const state = vi.hoisted(() => ({ roles: null, privileges: null, dispatch: null, close: null }));
-const api = vi.hoisted(() => ({ render: null, preview: null }));
+const api = vi.hoisted(() => ({ preview: null }));
 
 vi.mock('@storeon/svelte', () => {
 	const { writable } = require('svelte/store');
@@ -29,7 +29,6 @@ vi.mock('svelte', async importOriginal => {
 vi.mock('$lib/api/elasticsearch', () => ({
 	default: vi.fn(function () {
 		return {
-			renderSecurityQueryTemplate: (...a) => api.render(...a),
 			previewSecurityQuery: (...a) => api.preview(...a),
 		};
 	}),
@@ -85,7 +84,6 @@ beforeEach(() => {
 	state.dispatch = vi.fn();
 	state.close = vi.fn();
 	jsonHeld.value = null;
-	api.render = vi.fn().mockResolvedValue({ query: { term: { owner: 'preview_user' } } });
 	api.preview = vi.fn().mockResolvedValue({ matching: 2, total: 5 });
 	state.roles.set({ entries: [TWO_BLOCKS, TEMPLATED] });
 });
@@ -133,29 +131,88 @@ describe('editing a block query in the block', () => {
 		}
 	});
 
-	it('shows a template own source, and sends it back as a template', async () => {
+	it('preserves a template it does not offer to edit', async () => {
 		render(RoleDialog, { props: { name: TEMPLATED.name } });
 
-		expect(screen.getByText(/interpolates the requesting user/)).toBeTruthy();
+		expect(screen.getByText(/cannot show, such as a template/)).toBeTruthy();
+		expect(screen.queryByText('Template')).toBeNull();
 		await save();
 
 		expect(savedBody().indices[0].query).toBe(TEMPLATED.indices[0].query);
 	});
+
+	it('offers no editor or preview for a query it cannot show', () => {
+		render(RoleDialog, { props: { name: TEMPLATED.name } });
+
+		expect(screen.queryByTestId('json-editor-stub')).toBeNull();
+		expect(screen.queryByText(/What does this match\?/)).toBeNull();
+	});
+});
+
+describe('after the JSON view has changed the blocks', () => {
+	const jsonMode = async () => {
+		await fireEvent.click(screen.getByText('JSON'));
+		await tick();
+	};
+	const formMode = async () => {
+		await fireEvent.click(screen.getByText('Form'));
+		await tick();
+	};
+
+	it('does not write one block query onto another when a block is deleted there', async () => {
+		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+
+		await jsonMode();
+		// The whole-role editor drops the first block.
+		jsonHeld.value = {
+			cluster: [],
+			indices: [TWO_BLOCKS.indices[1]],
+			run_as: [],
+		};
+		await formMode();
+		jsonHeld.value = null;
+		await save();
+
+		const saved = savedBody().indices;
+		expect(saved).toHaveLength(1);
+		expect(saved[0].names).toEqual(['logs-*']);
+		// The surviving block keeps its own query, not the deleted block's.
+		expect(saved[0].query).toBe(TWO_BLOCKS.indices[1].query);
+	});
+
+	it('does not restore a query removed in the JSON view', async () => {
+		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+
+		await jsonMode();
+		jsonHeld.value = {
+			cluster: [],
+			indices: [{ names: ['assets'], privileges: ['read'] }, TWO_BLOCKS.indices[1]],
+			run_as: [],
+		};
+		await formMode();
+		jsonHeld.value = null;
+		await save();
+
+		expect(savedBody().indices[0]).not.toHaveProperty('query');
+	});
+});
+
+describe('removing one block', () => {
+	it('keeps the queries of the blocks that remain', async () => {
+		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+
+		const second = blocks()[1];
+		await fireEvent.click([...second.querySelectorAll('button')].find(b => b.textContent.trim() === 'Remove'));
+		await tick();
+		await save();
+
+        const saved = savedBody().indices;
+		expect(saved).toHaveLength(1);
+		expect(saved[0].query).toBe(TWO_BLOCKS.indices[0].query);
+	});
 });
 
 describe('checking a restriction before it can silently deny access', () => {
-	it('refuses to save a template the cluster would accept but cannot render', async () => {
-		api.render = vi.fn().mockRejectedValue(new Error('[1:25] Unexpected end of file'));
-		render(RoleDialog, { props: { name: TEMPLATED.name } });
-
-		jsonHeld.value = { term: { owner: '{{_user.username' } };
-		await save();
-
-		expect(state.dispatch).not.toHaveBeenCalledWith('security/roles/put', expect.anything());
-		expect(screen.getByText(/does not render/)).toBeTruthy();
-		expect(screen.getByText(/Index block 1/)).toBeTruthy();
-	});
-
 	it('names the block a bad query came from, since the cluster only gives a position', async () => {
 		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
 
@@ -177,6 +234,28 @@ describe('checking a restriction before it can silently deny access', () => {
 		expect(screen.getByText(/of 5 documents/)).toBeTruthy();
 	});
 
+	it('groups thousands so a large count stays readable', async () => {
+		api.preview = vi.fn().mockResolvedValue({ matching: 1234, total: 3512 });
+		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+
+		await fireEvent.click(screen.getAllByText(/What does this match\?/)[0]);
+		await new Promise(r => setTimeout(r, 0));
+		await tick();
+
+		expect(screen.getByText('1,234')).toBeTruthy();
+		expect(screen.getByText(/of 3,512 documents/)).toBeTruthy();
+	});
+
+	it('does not repeat the index patterns, which the field above already shows', async () => {
+		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+
+		await fireEvent.click(screen.getAllByText(/What does this match\?/)[0]);
+		await new Promise(r => setTimeout(r, 0));
+		await tick();
+
+		expect(document.querySelector('.result').textContent).not.toContain('assets');
+	});
+
 	it('warns when a query matches nothing, which is valid and usually wrong', async () => {
 		api.preview = vi.fn().mockResolvedValue({ matching: 0, total: 5 });
 		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
@@ -185,7 +264,8 @@ describe('checking a restriction before it can silently deny access', () => {
 		await new Promise(r => setTimeout(r, 0));
 		await tick();
 
-		expect(screen.getByText(/would see no documents/)).toBeTruthy();
+		expect(screen.getByText(/would see nothing here/)).toBeTruthy();
+		expect(document.querySelector('.result.none i.yellow.icon')).toBeTruthy();
 	});
 
 	it('omits the preview without complaint when the account cannot read the data', async () => {
@@ -196,7 +276,7 @@ describe('checking a restriction before it can silently deny access', () => {
 		await new Promise(r => setTimeout(r, 0));
 		await tick();
 
-		expect(screen.getByText(/cannot read those indices/)).toBeTruthy();
+		expect(screen.getByText(/cannot read these indices/)).toBeTruthy();
 		expect(screen.getByText(/can still be saved/)).toBeTruthy();
 		expect(screen.getByText('Save').disabled).toBe(false);
 	});

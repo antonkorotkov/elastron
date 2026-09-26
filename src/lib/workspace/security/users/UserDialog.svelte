@@ -20,7 +20,6 @@
 
 	const existing = $securityUsers.entries.find(u => u.username === username)
 
-	// Captured once on open by design; the field is the user's from here on.
 	// svelte-ignore state_referenced_locally
 	let name = $state(username || '')
 	let password = $state('')
@@ -35,21 +34,38 @@
 	const catalogue = $derived(Object.fromEntries($securityRoles.entries.map(r => [r.name, r])))
 	let lockout = $derived(refuseUserRoleChange(name, roles, $securityIdentity, catalogue))
 
+	// Elasticsearch stores this as free text and never reads it, so a typo
+	// would go unnoticed forever. Deliberately loose: it rejects the obvious
+	// mistakes without judging unusual addresses.
+	const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+	let emailOk = $derived(!email.trim() || LOOKS_LIKE_EMAIL.test(email.trim()))
+
 	let nameOk = $derived(!isNew || Boolean(name.trim()))
 	let passwordOk = $derived(!isNew || password.length >= 6)
-	let canSave = $derived(nameOk && passwordOk && !lockout)
+	let canSave = $derived(nameOk && passwordOk && emailOk && !lockout)
 
 	const save = e => {
 		e?.preventDefault()
 		if (!canSave) return
 
+		// The user API replaces the whole document, so leaving a field out
+		// loses it: an edit used to re-enable a disabled account and wipe its
+		// metadata.
 		const body = {
 			roles,
-			full_name: fullName || null,
-			email: email || null,
+			full_name: fullName.trim() || null,
+			email: email.trim() || null,
 		}
-		// A password is only sent when creating, or when one was typed. Updating
-		// a user without it leaves the existing password alone.
+
+		if (!isNew && existing) {
+			body.enabled = existing.enabled
+			// Elasticsearch rejects its own underscore-prefixed keys on write.
+			const metadata = Object.fromEntries(
+				Object.entries(existing.metadata || {}).filter(([key]) => !key.startsWith('_'))
+			)
+			if (Object.keys(metadata).length) body.metadata = metadata
+		}
+
 		if (password) body.password = password
 
 		dispatch('security/users/put', { username: name.trim(), body, isNew })
@@ -89,15 +105,16 @@
 				<label for="user-fullname">Full Name</label>
 				<input type="text" id="user-fullname" bind:value={fullName} />
 			</div>
-			<div class="field">
+			<div class="field" class:error={!emailOk}>
 				<label for="user-email">Email</label>
-				<input type="text" id="user-email" bind:value={email} />
+				<input type="email" id="user-email" bind:value={email} />
+				{#if !emailOk}
+					<span class="ui grey text">This does not look like an email address.</span>
+				{/if}
 			</div>
 		</div>
 
 		<div class="field">
-			<!-- A cluster can hold hundreds of roles with generated names, so this
-			     is a searchable multi-select rather than a list of checkboxes. -->
 			<label for="user-roles">Roles</label>
 			<AdvancedDropdown
 				items={availableRoles}

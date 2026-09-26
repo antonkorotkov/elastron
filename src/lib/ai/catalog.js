@@ -304,14 +304,25 @@ export const buildToolRequest = (name, input = {}) => REQUESTS[name]?.(input) ??
  * under `_security`, and the read-shaped paths that still mutate.
  */
 const SECURITY_PATH = /^\/_security(\/|$)/
-const MUTATING_SECURITY_PATHS = /^\/_security\/(user\/[^/]+\/(_enable|_disable|_password)|_authenticate\/)/
+
+/**
+ * Endpoints under `_security` that read despite needing a POST. Refusing these
+ * told the user the assistant may not change security, which is not what it
+ * was doing.
+ */
+const READ_ONLY_SECURITY_POSTS = [
+	/^\/_security\/user\/_has_privileges$/,
+	/^\/_security\/_query\/(user|role|api_key)$/,
+	/^\/_security\/privilege\/_builtin$/,
+	/^\/_security\/_authenticate$/,
+]
 
 export const isSecurityWriteRequest = request => {
 	const path = String(request?.path ?? '')
 	if (!SECURITY_PATH.test(path)) return false
 	const method = String(request?.method ?? 'GET').toUpperCase()
-	if (method !== 'GET' && method !== 'HEAD') return true
-	return MUTATING_SECURITY_PATHS.test(path)
+	if (method === 'GET' || method === 'HEAD') return false
+	return !READ_ONLY_SECURITY_POSTS.some(pattern => pattern.test(path))
 }
 
 /** Formats a request the way the confirmation and query cards show it. */

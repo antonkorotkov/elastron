@@ -70,6 +70,17 @@ const stripCredentials = value => {
 	)
 }
 
+/**
+ * The user and role listings are keyed by name, so filtering their top level
+ * would delete a role actually called `password` or `api_key` and leave the
+ * assistant reporting that the cluster does not have it. Only the records
+ * themselves are filtered.
+ */
+const stripCredentialsFromRecords = payload =>
+	Object.fromEntries(
+		Object.entries(payload || {}).map(([name, record]) => [name, stripCredentials(record)])
+	)
+
 export const readTools = {
 	'list-indices': {
 		description: `List indices with health, status, document count, size, and shard counts, ${RESULT_ROW_LIMIT} per page. The result gives the total and the number of pages; page 1 runs at once, and each later page needs the user's approval, so prefer sort and index filters that answer the question from page 1. Sort with sort, such as store.size:desc for the largest first or docs.count:desc for the most documents; the default is by name. Sizes are human-readable (like 13.6kb) unless bytes sets a unit, which makes them plain numbers you can compare.`,
@@ -178,7 +189,7 @@ export const readTools = {
 			"List the cluster's users with their roles and whether each is enabled. This covers the native and reserved realms only: users from LDAP, Active Directory, SAML, or the file realm are not visible to this API, so a cluster can have people who do not appear here. Read-only; users cannot be changed by the assistant.",
 		inputSchema: z.object({}),
 		run: async (_input, send, request) => {
-			const users = stripCredentials(await send(request))
+			const users = stripCredentialsFromRecords(await send(request))
 			const rows = Object.entries(users || {}).map(([username, user]) => ({
 				username,
 				roles: user?.roles ?? [],
@@ -195,7 +206,7 @@ export const readTools = {
 			"List the cluster's roles with their cluster privileges, the index patterns they grant, and whether they restrict which documents or fields their holders can see. Read-only; roles cannot be changed by the assistant.",
 		inputSchema: z.object({}),
 		run: async (_input, send, request) => {
-			const roles = stripCredentials(await send(request))
+			const roles = stripCredentialsFromRecords(await send(request))
 			const rows = Object.entries(roles || {}).map(([name, role]) => ({
 				name,
 				cluster: role?.cluster ?? [],

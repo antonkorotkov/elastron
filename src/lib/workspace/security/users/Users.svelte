@@ -59,8 +59,9 @@
 	onMount(() => {
 		onRefresh()
 		// The role catalogue backs the editor's role picker and the self-lockout
-		// guard, which has to know which roles manage security.
-		if (!$securityRoles.loaded) dispatch('security/roles/fetch')
+		// guard, which has to know which roles manage security. A failed read
+		// still marks the list loaded, so this is not conditional on that.
+		dispatch('security/roles/fetch')
 	})
 </script>
 
@@ -125,5 +126,6 @@
 		reason={$securityUsers.reason}
 		entity="users"
 		emptyMessage="No users found"
+			hasEntries={entries.length > 0}
 	/>
 </div>

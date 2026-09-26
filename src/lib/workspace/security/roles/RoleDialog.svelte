@@ -7,10 +7,10 @@
 	import AdvancedDropdown from '$lib/components/inputs/AdvancedDropdown.svelte'
 	import IndexBlockRestrictions from './IndexBlockRestrictions.svelte'
 	import {
+		QUERY_FORM,
 		readFieldSecurity,
 		readQuery,
 		refuseFieldSecurity,
-		writeFieldSecurity,
 		writeQuery,
 	} from './blockQuery.js'
 	import {
@@ -38,87 +38,42 @@
 	const existing = $securityRoles.entries.find(r => r.name === name)
 	let readOnly = $derived(Boolean(existing?.reserved))
 
-	// The dialog is constructed per open, so capturing the name once is the
-	// intent: the field is the user's to edit from here on.
 	// svelte-ignore state_referenced_locally
 	let roleName = $state(name || '')
 
-	/**
-	 * The full definition, held as the source of truth. Structured edits are
-	 * applied onto it so fields the form does not model survive a round trip.
-	 */
+	// The full definition is the source of truth; structured edits apply onto
+	// it so fields the form does not model survive a round trip.
 	let role = $state(existing ? toWritableRole(existing) : emptyRole())
 
-	/*
-	 * Each block's restrictions are held alongside the block, read from the
-	 * form the cluster reported. Untouched entries write back byte for byte,
-	 * including a query this editor cannot model.
-	 */
-	let restrictions = $state(
-		(role.indices || []).map(block => ({
-			query: readQuery(block),
-			fieldSecurity: readFieldSecurity(block),
-		}))
-	)
-	// Keyed by block position. A plain object rather than a Map: it is a lookup,
-	// not reactive state.
 	let blockEditors = {}
-
-	const setRestriction = (i, patch) => {
-		const next = [...restrictions]
-		next[i] = { ...next[i], ...patch }
-		restrictions = next
-	}
 
 	const rememberEditor = (i, editor) => {
 		if (editor) blockEditors[i] = editor
 		else delete blockEditors[i]
 	}
 
-	/**
-	 * Folds each block's restrictions back into the definition. Reads the live
-	 * editor where there is one, so an edit that has not been committed on blur
-	 * is not lost, and reports a template that does not render.
-	 */
-	const applyRestrictions = async () => {
+	const applyRestrictions = () => {
 		const blocks = [...(role.indices || [])]
 
 		for (let i = 0; i < blocks.length; i += 1) {
-			const held = restrictions[i]
-			if (!held) continue
+			const block = { ...blocks[i] }
 
-			const fieldRefusal = refuseFieldSecurity(held.fieldSecurity)
+			const fieldRefusal = refuseFieldSecurity(readFieldSecurity(block))
 			if (fieldRefusal) return { error: `Index block ${i + 1}: ${fieldRefusal}` }
 
-			let query = held.query
+			let held = readQuery(block)
 			const editor = blockEditors[i]
-			if (editor && query.form !== 'none' && !query.unmodelled) {
+			if (editor && held.form !== QUERY_FORM.NONE && !held.unmodelled) {
 				try {
-					query = { ...query, source: editor.get() }
+					held = { ...held, source: editor.get() }
 				} catch (err) {
 					return { error: `Index block ${i + 1}: ${err?.message || 'the query is not valid JSON.'}` }
 				}
 			}
 
-			// The cluster accepts a template whose syntax is broken and only
-			// fails later, when a user's request is evaluated.
-			if (query.form === 'template' && !query.unmodelled && query.source) {
-				try {
-					const api = new API($connection)
-					await api.renderSecurityQueryTemplate(JSON.stringify(query.source))
-				} catch (err) {
-					return { error: `Index block ${i + 1}: the template does not render. ${err?.message || ''}`.trim() }
-				}
-			}
-
-			const block = { ...blocks[i] }
-			const nextQuery = writeQuery(query)
-			if (nextQuery === undefined) delete block.query
-			else block.query = nextQuery
-
-			const nextFields = writeFieldSecurity(held.fieldSecurity)
-			if (nextFields === undefined) delete block.field_security
-			else block.field_security = nextFields
+			const query = writeQuery(held)
+			if (query === undefined) delete block.query
+			else block.query = query
 
 			blocks[i] = block
 		}
@@ -141,26 +96,27 @@
 
 	const updateBlock = (i, changes) => {
 		const blocks = [...(role.indices || [])]
-		blocks[i] = { ...blocks[i], ...changes }
+		const block = { ...blocks[i] }
+		for (const [key, value] of Object.entries(changes)) {
+			if (value === undefined) delete block[key]
+			else block[key] = value
+		}
+		blocks[i] = block
 		patch({ indices: blocks })
 	}
 
 
-	const addBlock = () => {
-		patch({ indices: [...(role.indices || []), emptyIndexBlock()] })
-		restrictions = [...restrictions, { query: readQuery({}), fieldSecurity: readFieldSecurity({}) }]
-	}
+	const addBlock = () => patch({ indices: [...(role.indices || []), emptyIndexBlock()] })
 
 	const removeBlock = i => {
-		patch({ indices: (role.indices || []).filter((_, idx) => idx !== i) })
-		restrictions = restrictions.filter((_, idx) => idx !== i)
-		// Editors are keyed by position, so the map is rebuilt rather than
-		// left pointing at the wrong block.
-		blockEditors = {}
+		const remaining = (role.indices || []).filter((_, idx) => idx !== i)
+		patch({ indices: remaining })
+		blockEditors = Object.fromEntries(
+			Object.entries(blockEditors).filter(([key]) => Number(key) < remaining.length)
+		)
 	}
 
-	// Switching to the form pulls whatever the JSON editor holds, so an edit
-	// made in one mode is never silently dropped by the other.
+	// Pulls whatever the JSON editor holds, so an edit is not dropped.
 	const switchMode = next => {
 		if (next === mode) return
 		if (mode === 'json' && jsonEditor) {
@@ -171,9 +127,9 @@
 				jsonError = err?.message || 'The definition is not valid JSON.'
 				return
 			}
+			blockEditors = {}
 		}
-		// A fresh editor starts clean. Without this an error from the previous
-		// one would survive the remount and keep Save disabled.
+		// A stale error would survive the remount and keep Save disabled.
 		if (next === 'json') jsonError = ''
 		mode = next
 	}
@@ -181,11 +137,9 @@
 	let nameError = $derived(isNew && !roleName.trim() ? 'A role name is required.' : null)
 	let canSave = $derived(!readOnly && !nameError && !jsonError)
 
-	let saving = $state(false)
-
-	const save = async e => {
+	const save = e => {
 		e?.preventDefault()
-		if (readOnly || saving) return
+		if (readOnly) return
 		if (!roleName.trim()) return
 
 		let body = role
@@ -198,12 +152,7 @@
 				return
 			}
 		} else {
-			// The form owns each block's restrictions, so they are folded back
-			// in here. This also renders any template, which the cluster does
-			// not check when it saves the role.
-			saving = true
-			const applied = await applyRestrictions()
-			saving = false
+			const applied = applyRestrictions()
 
 			if (applied.error) {
 				jsonError = applied.error
@@ -340,13 +289,10 @@
 								{/if}
 							</div>
 							<IndexBlockRestrictions
-								names={block.names || []}
-								query={restrictions[i]?.query}
-								fieldSecurity={restrictions[i]?.fieldSecurity}
+								{block}
 								{readOnly}
 								index={i}
-								onQueryChange={next => setRestriction(i, { query: next })}
-								onFieldSecurityChange={next => setRestriction(i, { fieldSecurity: next })}
+								onChange={changes => updateBlock(i, changes)}
 								onEditorChange={rememberEditor}
 							/>
 						</div>
@@ -415,9 +361,8 @@
 			type="submit"
 			class="ui green right button"
 			class:inverted
-			class:loading={saving}
 			form="role-form"
-			disabled={!canSave || saving}
+			disabled={!canSave}
 		>
 			{isNew ? 'Create' : 'Save'}
 		</button>

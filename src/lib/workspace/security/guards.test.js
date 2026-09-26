@@ -28,8 +28,11 @@ describe('roleManagesSecurity', () => {
 		expect(roleManagesSecurity(name, catalogue[name])).toBe(expected);
 	});
 
-	it('treats an unknown role as not managing, which errs toward refusing', () => {
-		expect(roleManagesSecurity('mystery', undefined)).toBe(false);
+	it('assumes an unknown role manages security, rather than waving the edit through', () => {
+		// Concluding "not managing" makes the guard decide the account never
+		// held a managing role, and it then allows the very change it exists to
+		// stop. Reading the catalogue can fail, so this case is reachable.
+		expect(roleManagesSecurity('mystery', undefined)).toBe(true);
 	});
 
 	it('recognises superuser even when the catalogue has not loaded', () => {
@@ -48,6 +51,20 @@ describe('refuseUserDelete', () => {
 
 	it('allows a delete when the identity is unknown, rather than blocking everything', () => {
 		expect(refuseUserDelete('alice', { username: null })).toBeNull();
+	});
+});
+
+describe('refuseUserRoleChange when the role catalogue could not be read', () => {
+	it('still refuses an account stripping its own roles', () => {
+		// A failed catalogue read marks the list loaded, so an empty catalogue
+		// can persist for a whole session.
+		expect(refuseUserRoleChange('admin', [], me('admin', ['custom_admin']), {})).toBe(
+			SELF_DEMOTE_REFUSAL
+		);
+	});
+
+	it('allows the change when a role is kept, since it may be the managing one', () => {
+		expect(refuseUserRoleChange('admin', ['custom_admin'], me('admin', ['custom_admin']), {})).toBeNull();
 	});
 });
 

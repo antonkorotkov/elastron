@@ -46,12 +46,11 @@
 
 - [x] 11.1 Model a block's query in both forms it can take, a query object and a template, reading the string the cluster returns and writing back the form the block holds. Verify with unit tests that each round-trips, including a role opened and saved untouched.
 - [x] 11.2 Edit a block's query inline in the block, presented as structured JSON, with a control to add or clear it. Verify editing one block among several leaves the others alone, and that clearing omits the field rather than sending it empty.
-- [x] 11.3 Edit a templated query's own source rather than the escaped string, marking which form the block holds. Verify a template round-trips and is sent back as a template.
+- [x] 11.3 Present a query the editor does not model, such as a template, as unchangeable in the block, and preserve it verbatim. Verify a template round-trips untouched and is offered no editor.
 - [x] 11.4 Edit a block's field restrictions as granted and excepted fields. Verify they round-trip, and that the cluster's refusal of `except` without `grant` is reported.
 - [x] 11.5 Report a query the cluster rejects against the block it came from, since the cluster names the entry only by position. Verify with the literal messages the cluster returns for malformed JSON and for an unknown query type.
-- [x] 11.6 Render a template before saving and refuse a role whose template does not render, which the cluster would otherwise accept. Verify against a cluster that the same source is accepted by the role API and rejected by the render API.
 - [x] 11.7 Offer a count of the documents a block's query matches across its patterns. Verify it reports the count for an account that may read the indices, and is absent without error for one holding only manage_security.
-- [ ] 11.8 Exercise the block editor manually against a trial-licence cluster: a plain query, a template, field restrictions, and a role with several blocks restricted differently.
+- [ ] 11.8 Exercise the block editor manually against a trial-licence cluster: a plain query, field restrictions, a role with several blocks restricted differently, and a role carrying a template, which must survive untouched.
 
 ## 7. API keys surface
 

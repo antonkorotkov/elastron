@@ -319,11 +319,6 @@ export default class API {
 		return response.data
 	}
 
-	async renderSecurityQueryTemplate(source, username) {
-		const response = await this._request('security/query/render', { source, username })
-		return response.data
-	}
-
 	async previewSecurityQuery(names, query) {
 		const response = await this._request('security/query/preview', { names, query })
 		return response.data

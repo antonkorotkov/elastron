@@ -18,10 +18,10 @@ to do that work in the app they already have open.
   cluster privileges, index privilege blocks, and run-as, plus a raw-JSON
   escape hatch for the long tail of role fields.
 - Edit an index block's document query and field restrictions **in the block
-  itself**, including templated queries, rather than sending the user to the
-  whole-role JSON to find the right one. Where the account is permitted to read
-  the data, show how many documents the query would expose, and check a
-  template renders, which the cluster does not check when the role is saved.
+  itself**, rather than sending the user to the whole-role JSON to find the
+  right one. Where the account is permitted to read the data, show how many
+  documents the query would expose. A query the editor does not model, such as
+  a template, is preserved and changed through the full definition.
 - Add an **API keys** surface: list keys, create a key with an optional
   expiry and role descriptors, and invalidate keys.
 - Render all three lists through the app's existing virtualised table, so a

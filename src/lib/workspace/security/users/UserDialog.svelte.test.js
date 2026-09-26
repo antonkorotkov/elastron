@@ -144,3 +144,107 @@ describe('the roles selector', () => {
 		expect(document.querySelector('.svelte-select input').getAttribute('placeholder')).toMatch(/No roles/);
 	});
 });
+
+describe('editing a user does not lose what the form does not show', () => {
+	// The user API replaces the whole document. Verified against a cluster:
+	// editing only the email of a disabled account re-enabled it and wiped its
+	// metadata.
+	const disabled = {
+		username: 'bob',
+		roles: ['viewer'],
+		enabled: false,
+		metadata: { team: 'platform', _reserved: false },
+		reserved: false,
+	};
+
+	const sentBody = () => state.dispatch.mock.calls.find(c => c[0] === 'security/users/put')[1].body;
+
+	it('leaves a disabled account disabled', async () => {
+		state.users.set({ entries: [disabled] });
+		render(UserDialog, { props: { username: 'bob' } });
+
+		await fireEvent.input(screen.getByLabelText('Email'), { target: { value: 'bob@example.com' } });
+		await fireEvent.click(screen.getByText('Save'));
+
+		expect(sentBody().enabled).toBe(false);
+	});
+
+	it('carries the metadata through', async () => {
+		state.users.set({ entries: [disabled] });
+		render(UserDialog, { props: { username: 'bob' } });
+
+		await fireEvent.click(screen.getByText('Save'));
+
+		expect(sentBody().metadata).toEqual({ team: 'platform' });
+	});
+
+	it('drops the keys Elasticsearch reserves, which it refuses on write', async () => {
+		state.users.set({ entries: [disabled] });
+		render(UserDialog, { props: { username: 'bob' } });
+
+		await fireEvent.click(screen.getByText('Save'));
+
+		expect(sentBody().metadata).not.toHaveProperty('_reserved');
+	});
+
+	it('sends neither for a new user, which the cluster defaults', async () => {
+		render(UserDialog, { props: { username: null } });
+
+		await fireEvent.input(screen.getByLabelText('Username'), { target: { value: 'newbie' } });
+		await fireEvent.input(screen.getByLabelText(/Password/), { target: { value: 'longenough' } });
+		await fireEvent.click(screen.getByText('Create'));
+
+		expect(sentBody()).not.toHaveProperty('enabled');
+		expect(sentBody()).not.toHaveProperty('metadata');
+	});
+});
+
+describe('the email field', () => {
+	const sentBody = () => state.dispatch.mock.calls.find(c => c[0] === 'security/users/put')[1].body;
+
+	const fillRequired = async () => {
+		await fireEvent.input(screen.getByLabelText('Username'), { target: { value: 'alice' } });
+		await fireEvent.input(screen.getByLabelText(/Password/), { target: { value: 'longenough' } });
+	};
+
+	it.each(['not an email', '@@@', 'has space@example.com', 'missing@domain'])(
+		'refuses %j, which the cluster would store without complaint',
+		async value => {
+			render(UserDialog, { props: { username: null } });
+			await fillRequired();
+			await fireEvent.input(screen.getByLabelText('Email'), { target: { value } });
+
+			expect(screen.getByText(/does not look like an email/)).toBeTruthy();
+			expect(screen.getByText('Create').disabled).toBe(true);
+		}
+	);
+
+	it.each(['a@b.co', 'first.last+tag@sub.example.com'])('accepts %j', async value => {
+		render(UserDialog, { props: { username: null } });
+		await fillRequired();
+		await fireEvent.input(screen.getByLabelText('Email'), { target: { value } });
+
+		expect(screen.queryByText(/does not look like an email/)).toBeNull();
+		await fireEvent.click(screen.getByText('Create'));
+		expect(sentBody().email).toBe(value);
+	});
+
+	it('treats an empty field as no email rather than an invalid one', async () => {
+		render(UserDialog, { props: { username: null } });
+		await fillRequired();
+		await fireEvent.click(screen.getByText('Create'));
+
+		expect(sentBody().email).toBeNull();
+	});
+
+	it('does not store whitespace as a name or an email', async () => {
+		render(UserDialog, { props: { username: null } });
+		await fillRequired();
+		await fireEvent.input(screen.getByLabelText('Full Name'), { target: { value: '   ' } });
+		await fireEvent.input(screen.getByLabelText('Email'), { target: { value: '  ' } });
+		await fireEvent.click(screen.getByText('Create'));
+
+		expect(sentBody().full_name).toBeNull();
+		expect(sentBody().email).toBeNull();
+	});
+})

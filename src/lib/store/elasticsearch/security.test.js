@@ -202,3 +202,32 @@ describe('api key listing defaults', () => {
 		expect(store.get().securityUsers.showInvalidated).toBeUndefined();
 	});
 })
+
+describe('the cluster own wording', () => {
+	it('reaches the surface so it can be offered as supporting detail', async () => {
+		const refusal = Object.assign(new Error('not available'), {
+			cause: 'security-disabled',
+			reason: 'Incorrect HTTP method for uri [/_security/role] and method [GET], allowed: [POST]',
+		});
+		getSecurityRoles.mockRejectedValueOnce(refusal);
+
+		store.dispatch('security/roles/fetch');
+		await flush();
+
+		expect(store.get().securityRoles.reason).toBe(refusal.reason);
+	});
+
+	it('starts absent and is cleared by a load that succeeds', async () => {
+		expect(store.get().securityRoles.reason).toBeNull();
+
+		getSecurityRoles.mockRejectedValueOnce(Object.assign(new Error('x'), { cause: 'privilege', reason: 'why' }));
+		store.dispatch('security/roles/fetch');
+		await flush();
+		expect(store.get().securityRoles.reason).toBe('why');
+
+		getSecurityRoles.mockResolvedValueOnce({ r: { cluster: [], indices: [] } });
+		store.dispatch('security/roles/fetch');
+		await flush();
+		expect(store.get().securityRoles.reason).toBeNull();
+	});
+});

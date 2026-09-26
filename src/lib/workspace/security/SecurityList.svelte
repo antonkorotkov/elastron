@@ -4,20 +4,10 @@
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '$lib/utils/helpers'
 
-	/**
-	 * The table for a security surface, and the one place that decides between
-	 * "loading", "nothing here" and "could not load".
-	 *
-	 * A list that has not resolved yet must not claim the cluster is empty. The
-	 * dashboard tables get this wrong today: they hand `VirtualTable` an empty
-	 * row array during the initial fetch, so the table shows "No indices found"
-	 * while the answer is still in flight. This exists so the security surfaces
-	 * do not repeat that.
-	 *
-	 * Its root elements sit directly inside the caller's `.ui.segments`, the way
-	 * `VirtualTable` does on the dashboard, so the table stays flush with the
-	 * toolbar above it rather than gaining a segment's padding.
-	 */
+	// Decides between loading, empty and unavailable. A list that has not
+	// resolved must not claim the cluster is empty, which is what the dashboard
+	// tables do. Its roots sit directly in the caller's .ui.segments so the
+	// table stays flush with the toolbar.
 	let {
 		columns,
 		rows,
@@ -31,20 +21,21 @@
 		reason = '',
 		entity = 'these entries',
 		emptyMessage = 'Nothing here',
-		/** How long a load may run before the indicator appears, in ms. */
+		hasEntries = undefined,
 		indicatorDelay = 200,
 	} = $props()
 
 	const { app } = useStoreon('app')
 	let inverted = $derived(isThemeToggleChecked($app.theme))
 
-	let hasRows = $derived(rows.length > 0)
-	// A first load is one with nothing to show yet. A refresh keeps its rows.
+	// Judging this on the filtered rows made a search matching nothing look
+	// like an unavailable surface.
+	let anyEntries = $derived(hasEntries ?? rows.length > 0)
+	let hasRows = $derived(anyEntries)
 	let firstLoad = $derived(loading && !hasRows)
 
-	// An indicator that flashes for a few tens of milliseconds reads worse than
-	// none, and a local cluster answers well inside that. It only appears once a
-	// load has been outstanding past the delay.
+	// A local cluster answers faster than the eye, so an immediate indicator
+	// would only flash.
 	let showIndicator = $state(false)
 	$effect(() => {
 		if (!firstLoad) {
@@ -55,10 +46,7 @@
 		return () => clearTimeout(timer)
 	})
 
-	// The failure replaces the table only when there is nothing to show. A
-	// failed refresh leaves the rows alone; the store reports that one through
-	// the notification tray rather than pushing a banner into the table.
-	let blocked = $derived(Boolean(cause) && !hasRows)
+	let blocked = $derived(Boolean(cause) && !anyEntries)
 </script>
 
 {#if blocked}

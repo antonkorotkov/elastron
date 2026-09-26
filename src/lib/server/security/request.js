@@ -7,14 +7,8 @@ import {
 } from '../elastic.js';
 import { describeSecurityFailure } from '../../security/causes.js';
 
-/**
- * The security counterpart to `handleElasticRequest`.
- *
- * It behaves identically on the happy path, and on failure additionally
- * attaches the classified cause so a surface can name it instead of echoing
- * the cluster. Logging goes through the same redacted record, which matters
- * more here than anywhere else: these request bodies carry passwords.
- */
+// As handleElasticRequest, but attaches the classified cause so a surface can
+// name it instead of echoing the cluster.
 export const handleSecurityRequest = async (request, action) => {
 	let body;
 	try {
@@ -42,8 +36,6 @@ export const handleSecurityRequest = async (request, action) => {
 
 		return json(
 			{
-				// `error` stays the user-facing sentence; `reason` carries the
-				// cluster's own wording as supporting detail only.
 				error: message || getErrorReason(err),
 				cause,
 				reason,
@@ -54,5 +46,4 @@ export const handleSecurityRequest = async (request, action) => {
 	}
 };
 
-/** Unwraps the two response shapes the transport can return. */
 export const unwrap = response => (response?.body !== undefined ? response.body : response);

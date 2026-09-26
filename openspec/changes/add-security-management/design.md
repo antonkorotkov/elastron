@@ -238,8 +238,8 @@ Four findings from testing the API against a trial-licence cluster shape this.
 **Every query shape is stored as a string.** An object, a JSON string and a
 template all come back from the cluster as a string. The editor parses that
 string to show structured JSON and sends an object back, which the cluster
-accepts. A block's restrictions are held on the block exactly as the cluster
-reported them until edited, so a role opened and saved untouched round-trips.
+accepts. The block itself is the only state, so a role opened and saved
+untouched round-trips, and a query the editor cannot show goes back verbatim.
 
 **The cluster checks a query's structure when the role is saved**, and says
 something useful about it:
@@ -254,12 +254,13 @@ So there is no client-side query validation to write. The reason is surfaced as
 it is, with the block it came from named, because the cluster's own message
 identifies the entry only by position.
 
-**The cluster does not check a template.** A Mustache source with unbalanced
-delimiters is accepted, and fails later when a user's request is evaluated, so
-the role appears saved while quietly denying access. `POST /_render/template`
-rejects the same source with `[1:25] Unexpected end of file`, so a template is
-rendered before the role is saved and a failure stops the save. This is the one
-place the app checks something the cluster would not.
+**Templates are preserved, not edited.** A query can be a Mustache template
+that interpolates the requesting user. The editor does not offer them: the
+inner source is JSON nested inside JSON, and the cluster accepts a template
+whose syntax is broken, failing only later when a request is evaluated, so an
+editor for them would need a render check to be safe. A block holding one says
+so and is changed through the full definition instead, and the value goes back
+exactly as it came.
 
 **A preview is genuinely useful and not always available.** Running a block's
 query as a count over its patterns answers what syntax checking cannot: a query

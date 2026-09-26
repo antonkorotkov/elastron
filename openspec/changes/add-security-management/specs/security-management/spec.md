@@ -141,14 +141,13 @@ to the role's full definition. A role may restrict several index patterns
 differently, and the full definition makes it the user's job to find the right
 entry among them.
 
-The system SHALL accept a query written as a query object and a query written
-as a template, and SHALL present a templated query's own source for editing
-rather than the escaped string the cluster stores it in. Field restrictions
-SHALL be editable as the fields granted and the fields excepted.
+Field restrictions SHALL be editable as the fields granted and the fields
+excepted.
 
-The system SHALL preserve a query it cannot model. Opening a role and saving it
-without touching a block's restrictions SHALL leave them exactly as the cluster
-reported them.
+The system SHALL preserve a query it does not model, such as a templated query,
+presenting it as unchangeable here rather than offering an edit that would
+rewrite it. Opening a role and saving it without touching a block's
+restrictions SHALL leave them exactly as the cluster reported them.
 
 #### Scenario: Editing the query of one block among several
 - **WHEN** a role restricts two index patterns with different queries and the user edits the second block's query
@@ -158,9 +157,9 @@ reported them.
 - **WHEN** the user opens a block whose query the cluster reported as a JSON string
 - **THEN** the query SHALL be presented as structured JSON rather than as a quoted string
 
-#### Scenario: Editing a templated query
+#### Scenario: A query the editor does not model
 - **WHEN** the user opens a block whose query is a template
-- **THEN** the template's source SHALL be presented as structured JSON, and saving SHALL send it back as a template
+- **THEN** the block SHALL say the query cannot be changed there and SHALL point at the full definition, and saving SHALL send the query back exactly as it came
 
 #### Scenario: Removing a restriction
 - **WHEN** the user clears a block's query or its field restrictions
@@ -174,10 +173,6 @@ reported them.
 When the cluster refuses a role because of its query, the system SHALL report
 what the cluster said about that query, identifying the block it came from.
 
-The cluster accepts a template whose syntax is broken and only fails when a
-user's request is evaluated, so the system SHALL check that a template renders
-before the role is saved and SHALL refuse to save one that does not.
-
 Where the connected account is permitted to, the system SHALL offer to report
 how many documents a block's query matches across that block's index patterns.
 This SHALL be offered as help, not as a condition of saving: when the account
@@ -187,10 +182,6 @@ refusal as an error, and saving SHALL remain available.
 #### Scenario: A query the cluster rejects
 - **WHEN** the user saves a role whose second block carries a malformed query
 - **THEN** the system SHALL report the cluster's reason and SHALL identify which block it concerns
-
-#### Scenario: A template that does not render
-- **WHEN** the user saves a block whose template source has unbalanced delimiters
-- **THEN** the system SHALL refuse to save and SHALL report where the template failed, rather than letting the cluster accept a role that denies access later
 
 #### Scenario: Previewing what a query exposes
 - **WHEN** the user asks what a block's query matches and the account may read those indices
