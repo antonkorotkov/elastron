@@ -1,0 +1,12 @@
+import { handleSecurityRequest, unwrap } from '$lib/server/security/request.js';
+
+export async function POST({ request }) {
+	return handleSecurityRequest(request, async (client, { username }) =>
+		unwrap(
+			await client.transport.request({
+				method: 'DELETE',
+				path: `/_security/user/${encodeURIComponent(username)}`,
+			})
+		)
+	);
+}

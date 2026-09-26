@@ -44,7 +44,13 @@ export default class API {
 			// error the cluster itself returned leaves the indicator as it is.
 			if (result.unreachable) reportReachability(false, this.connection);
 			const errorMessage = result.error || 'Unknown server error';
-			throw new Error(errorMessage);
+			// Security routes classify their failures so the renderer can name a
+			// cause instead of echoing the cluster. Other routes leave these unset.
+			throw Object.assign(new Error(errorMessage), {
+				cause: result.cause,
+				reason: result.reason,
+				unreachable: result.unreachable,
+			});
 		}
 
 		reportReachability(true, this.connection);
@@ -261,6 +267,81 @@ export default class API {
 		} catch (err) {
 			throw new ConnectionError(err)
 		}
+	}
+
+	// --- Security -------------------------------------------------------
+	// These deliberately do not wrap failures in ConnectionError: the cause a
+	// security route attaches is what the surfaces render, and wrapping would
+	// discard it.
+
+	async whoAmI() {
+		const response = await this._request('security/authenticate')
+		return response.data
+	}
+
+	async getBuiltinPrivileges() {
+		const response = await this._request('security/privileges')
+		return response.data
+	}
+
+	async getSecurityUsers() {
+		const response = await this._request('security/users')
+		return response.data
+	}
+
+	async putSecurityUser(username, body) {
+		const response = await this._request('security/user/put', { username, body })
+		return response.data
+	}
+
+	async deleteSecurityUser(username) {
+		const response = await this._request('security/user/delete', { username })
+		return response.data
+	}
+
+	async setSecurityUserEnabled(username, enabled) {
+		const response = await this._request('security/user/enabled', { username, enabled })
+		return response.data
+	}
+
+	async changeSecurityUserPassword(username, password) {
+		const response = await this._request('security/user/password', { username, password })
+		return response.data
+	}
+
+	async getSecurityRoles() {
+		const response = await this._request('security/roles')
+		return response.data
+	}
+
+	async putSecurityRole(name, body) {
+		const response = await this._request('security/role/put', { name, body })
+		return response.data
+	}
+
+	async previewSecurityQuery(names, query) {
+		const response = await this._request('security/query/preview', { names, query })
+		return response.data
+	}
+
+	async deleteSecurityRole(name) {
+		const response = await this._request('security/role/delete', { name })
+		return response.data
+	}
+
+	async getSecurityApiKeys(owner = false) {
+		const response = await this._request('security/api-keys', { owner })
+		return response.data
+	}
+
+	async createSecurityApiKey(body) {
+		const response = await this._request('security/api-key/create', { body })
+		return response.data
+	}
+
+	async invalidateSecurityApiKey(id) {
+		const response = await this._request('security/api-key/invalidate', { id })
+		return response.data
 	}
 }
 

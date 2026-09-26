@@ -17,6 +17,9 @@
 	 * @property {any} [onClear]
 	 * @property {string} [placeholder]
 	 * @property {string} [labelIdentifier]
+	 * @property {boolean} [multiple] Select many items; selectedValue is then an array
+	 * @property {(values: string[]) => void} [onChange] Multi-select only: the whole selection after every add, remove or clear
+	 * @property {object} [floatingConfig] Positioning for the open list. Pass `{ strategy: 'fixed' }` inside a scrolling container so the list is not clipped by it.
 	 */
 
 	/** @type {Props} */
@@ -31,6 +34,9 @@
 		onClear = () => {},
 		placeholder = 'Select...',
 		labelIdentifier = 'label',
+		multiple = false,
+		onChange = () => {},
+		floatingConfig = {},
 	} = $props()
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
@@ -47,27 +53,76 @@
 	})
 
 	let selectItems = $derived(createdItem ? [...normalizedItems, createdItem] : normalizedItems)
+
+	const valuesOf = list =>
+		(Array.isArray(list) ? list : list ? [list] : []).map(item =>
+			typeof item === 'string' ? item : item?.value
+		)
+
+	/*
+	 * Multi-select reports itself through two events and neither alone is the
+	 * whole story. `change` carries the full selection after an item is added.
+	 * `clear` carries the removed chip when one is dismissed, or the entire
+	 * selection when the control's clear button is used. Both are folded back
+	 * into one callback that always hands over the complete selection, so the
+	 * caller stays the source of truth.
+	 */
+	const handleMultiChange = event => onChange(valuesOf(event?.detail))
+
+	const handleMultiClear = event => {
+		if (Array.isArray(event?.detail)) return onChange([])
+		const removed = valuesOf(event?.detail)
+		onChange(valuesOf(selectedValue).filter(value => !removed.includes(value)))
+	}
 </script>
 
-<div class="advanced-selector" class:inverted>
-	{#key selectedValue}
+<div class="advanced-selector" class:inverted class:multiple>
+	<!--
+		The single-select case remounts on every value change so the control
+		reflects a value set from outside. Doing that with `multiple` would tear
+		the list down after each pick and drop focus, so the key is only used
+		when selecting one.
+	-->
+	{#if multiple}
 		<Select
 			label={labelIdentifier}
 			clearable={isClearable}
 			items={selectItems}
 			value={selectedValue}
 			disabled={isDisabled}
+			multiple
 			{placeholder}
 			{inputStyles}
+			{floatingConfig}
 			bind:filterText
-			on:select={onSelect}
-			on:clear={onClear}
+			on:change={handleMultiChange}
+			on:clear={handleMultiClear}
 		>
 			<div slot="item" let:item>
 				{item.created ? '🔧 ' : ''}{item[labelIdentifier]}
 			</div>
 		</Select>
-	{/key}
+	{:else}
+		{#key selectedValue}
+			<Select
+				label={labelIdentifier}
+				clearable={isClearable}
+				items={selectItems}
+				value={selectedValue}
+				disabled={isDisabled}
+				{placeholder}
+				{inputStyles}
+				{floatingConfig}
+				bind:filterText
+				on:select={onSelect}
+				on:clear={onClear}
+			>
+				<div slot="item" let:item>
+					{item.created ? '🔧 ' : ''}{item[labelIdentifier]}
+				</div>
+			</Select>
+		{/key}
+	{/if}
 
 	<style>
 		.inverted.advanced-selector .svelte-select {
@@ -83,5 +138,24 @@
 	}
 	.advanced-selector {
 		--height: 38px;
+		/* svelte-select opens its list at z-index 2, which ace paints over:
+		   its gutter is 4 and its scroller 1000. Any dropdown above a JSON
+		   editor needs to clear both. */
+		--list-z-index: 1200;
+	}
+
+	/* With many long values the control has to grow rather than clip them, and
+	   each chip keeps its whole name on one line. */
+	.advanced-selector.multiple {
+		--height: auto;
+		--multiSelectInputPadding: 0 0 0 0.5rem;
+	}
+	.advanced-selector.multiple :global(.multi-item) {
+		max-width: 100%;
+	}
+	.advanced-selector.multiple :global(.multi-item span) {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 </style>

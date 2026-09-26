@@ -157,7 +157,10 @@
 					<tr data-index={rowIndex} use:measureNode>
 						{#each row as cell, i (i)}
 							<td colspan={getColspan(row.length, i, columns.length)}>
-								<CellRenderer {cell} {i} {columns} />
+								<!-- `row` lets a cell identify its record when the visible
+								     columns alone are not enough to. Cells that don't need
+								     it simply ignore the prop. -->
+								<CellRenderer {cell} {i} {columns} {row} />
 							</td>
 						{/each}
 					</tr>

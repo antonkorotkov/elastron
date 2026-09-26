@@ -26,6 +26,9 @@ export const TOOL_POLICY = {
 	'get-allocation': AUTO,
 	'get-shards': AUTO,
 	'get-nodes-stats': AUTO,
+	'list-security-users': AUTO,
+	'list-security-roles': AUTO,
+	'list-security-api-keys': AUTO,
 	'create-index': CONFIRM,
 	'delete-index': CONFIRM,
 	'clone-index': CONFIRM,
@@ -162,6 +165,12 @@ export const pathWithQuery = ({ path, querystring } = {}) => {
 }
 
 const REQUESTS = {
+	// Security state is readable but never writable by the assistant. There is
+	// no corresponding write tool, so there is nothing for an approval flow to
+	// expose; see the security-management change for why.
+	'list-security-users': () => ({ method: 'GET', path: '/_security/user' }),
+	'list-security-roles': () => ({ method: 'GET', path: '/_security/role' }),
+	'list-security-api-keys': () => ({ method: 'GET', path: '/_security/api_key' }),
 	'list-indices': ({ index, sort, bytes } = {}) => ({
 		method: 'GET',
 		path: index ? `/_cat/indices/${seg(index)}` : '/_cat/indices',
@@ -285,6 +294,36 @@ const REQUESTS = {
 
 /** The exact request a tool sends for this input, or null for non-ES tools. */
 export const buildToolRequest = (name, input = {}) => REQUESTS[name]?.(input) ?? null
+
+/**
+ * Whether a request would change the cluster's security state.
+ *
+ * The assistant may read users, roles and API keys and may not change them,
+ * with or without approval. The generic request tool would otherwise be a way
+ * around that, so it is judged from the request itself: any non-read method
+ * under `_security`, and the read-shaped paths that still mutate.
+ */
+const SECURITY_PATH = /^\/_security(\/|$)/
+
+/**
+ * Endpoints under `_security` that read despite needing a POST. Refusing these
+ * told the user the assistant may not change security, which is not what it
+ * was doing.
+ */
+const READ_ONLY_SECURITY_POSTS = [
+	/^\/_security\/user\/_has_privileges$/,
+	/^\/_security\/_query\/(user|role|api_key)$/,
+	/^\/_security\/privilege\/_builtin$/,
+	/^\/_security\/_authenticate$/,
+]
+
+export const isSecurityWriteRequest = request => {
+	const path = String(request?.path ?? '')
+	if (!SECURITY_PATH.test(path)) return false
+	const method = String(request?.method ?? 'GET').toUpperCase()
+	if (method === 'GET' || method === 'HEAD') return false
+	return !READ_ONLY_SECURITY_POSTS.some(pattern => pattern.test(path))
+}
 
 /** Formats a request the way the confirmation and query cards show it. */
 export const formatRequestLine = ({ method, path, querystring } = {}) =>

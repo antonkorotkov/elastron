@@ -73,31 +73,11 @@
 		gap: 0.4em;
 	}
 
-	.cell-action {
-		background: none;
-		border: none;
-		cursor: pointer;
-		padding: 0;
-		margin: 0;
-		opacity: 0;
-		transition: opacity 0.15s ease;
-		color: inherit;
-		font-size: 0.9em;
-		line-height: 1;
-		display: inline-flex;
-		align-items: center;
-	}
-
+	/* The shared .cell-action treatment lives in global.css so every table
+	   reveals its row actions the same way. Only the copied state, which is
+	   specific to this cell, is kept here. */
 	.cell-action.copied {
 		opacity: 1;
 		color: #21ba45;
-	}
-
-	.index-cell:hover .cell-action {
-		opacity: 0.5;
-	}
-
-	.cell-action:hover {
-		opacity: 1 !important;
 	}
 </style>
