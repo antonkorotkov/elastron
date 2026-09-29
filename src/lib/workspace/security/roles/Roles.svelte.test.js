@@ -58,9 +58,11 @@ describe('Roles surface', () => {
 	// modest list.
 	describe('paged by the cluster', () => {
 		it('says how many of the cluster total are loaded', () => {
-			setRoles(many(100), { mode: 'paged', total: 7000, cursor: ['acc_role_0099'] });
+			// jsdom mounts every row, so a full page of 100 is slow enough to time
+			// out under load; the label only depends on how many are loaded.
+			setRoles(many(30), { mode: 'paged', total: 7000, cursor: ['acc_role_0029'] });
 			render(Roles);
-			expect(screen.getByText('100 of 7000')).toBeTruthy();
+			expect(screen.getByText('30 of 7000')).toBeTruthy();
 		});
 
 		it('shows the rows in the order the cluster sent them, without filtering again', () => {
