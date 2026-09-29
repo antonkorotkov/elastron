@@ -35,8 +35,9 @@ Relevant existing constraints:
   mode is the designed answer for the long tail, not a fallback.
 - Pre-flight discovery of what the account or licence permits. This is an
   explicit design boundary, covered under Decisions.
-- Server-side pagination of the users and roles lists. Investigated and
-  rejected under Decisions; the lists are virtualised instead.
+- Server-side pagination of the users and API key lists. Investigated and
+  rejected for users under Decisions; both are fetched whole and virtualised.
+  Roles are paged.
 - Any offline or cached view of security state. Every surface reads live.
 
 ## Decisions
@@ -103,21 +104,18 @@ than from a list compiled into the app. That removes the only observed
 difference, so the feature needs no version switch anywhere, and it keeps
 working against cluster versions released after the app.
 
-### Fetch the full list, filter in the renderer, and virtualise the table
+Roles are retrieved one of two ways, but the choice is made by the cluster's
+answer, never by comparing version numbers. See the roles decision below.
 
-All three surfaces load the cluster's complete list and render it through the
-existing `VirtualTable` component, with sorting and search derived in the
-renderer. This is the same pattern the indices, shards, and allocation tables
-already use, and it gives one code path for every supported cluster version.
+### Users and API keys are fetched whole; roles are paged
 
-Server-side pagination was investigated and rejected. Elasticsearch does offer
-query endpoints for all three entity types, and `_security/_query/role` in
-particular paginates properly: it honours `from` and `size`, sorts by name in
-either direction, accepts a `query` filter, supports `search_after`, and returns
-both a `total` and a `_sort` cursor on every row. Two findings ruled it out.
+The users and API key surfaces load the cluster's complete list and render it
+through the existing `VirtualTable` component, with sorting and search derived
+in the renderer. This is the same pattern the indices, shards, and allocation
+tables already use.
 
-**The query endpoints do not exist across the supported version range.**
-Verified against a clean 8.0.0 cluster:
+Roles were first built the same way and are now paged by the cluster. The
+query endpoints were investigated for all three entity types:
 
 | Endpoint | 8.0.0 | 8.19.9 | 9.3.4 |
 | --- | --- | --- | --- |
@@ -128,9 +126,7 @@ Verified against a clean 8.0.0 cluster:
 | `POST /_security/_query/role` | **no** | yes | yes |
 | `POST /_security/_query/api_key` | yes | yes | yes |
 
-On 8.0.0 the user and role query endpoints answer `no handler found`. Adopting
-them would mean a paged path and a fetch-all path, chosen by cluster version,
-for the same two screens.
+On 8.0.0 the user and role query endpoints answer `no handler found`.
 
 **`_query/user` silently omits reserved users, which makes it wrong regardless
 of version.** On a seeded cluster holding 60 native and 7 reserved accounts,
@@ -138,25 +134,81 @@ of version.** On a seeded cluster holding 60 native and 7 reserved accounts,
 reserved account present in the result. The Enterprise cluster observed during
 exploration has seven users and every one is reserved, so a Users screen built
 on `_query/user` would show an empty list there while the cluster plainly has
-accounts. `_query/role` does not share this flaw and returned all 29 reserved
-roles among its 279, but it is the only one of the three that would work, so
-using it buys a version-branched special case for a single surface.
+accounts. The users list is therefore always fetched whole. User counts are
+also small: 67 users came back in 9 KB.
 
-Fetch-all is comfortable at observed scale. The real Enterprise cluster returned
-its 148 roles, the largest payload of the three entity types because every one
-carries a document query, in 297 KB and 76 ms over the local server. At roughly
-2 KB per role that stays under 2 MB to a thousand roles. `VirtualTable` renders
-only the visible window, so row count is not the constraint; payload size is,
-and it becomes worth revisiting somewhere past a few thousand roles.
+**`_query/role` is sound.** It honours `from` and `size`, sorts by name in
+either direction, accepts a `query` filter, supports `search_after`, returns a
+`total` and a `_sort` cursor on every row, and includes reserved roles: it
+returned all 29 reserved roles among its 279.
 
-`_security/_query/role` is therefore the documented escape hatch if that day
-comes, and the capability notes above record exactly what it supports so the
-work does not need re-investigating.
+Fetching every role was first judged comfortable at observed scale, 148 roles
+in 297 KB and 76 ms, about 2 KB per role. A cluster holding about 7 000 roles
+then took about 20 s to open the Roles screen, roughly 14 MB of payload, which
+the transfer table under the loading decision predicts on a slow or tunnelled
+link. That is past the point where the whole list can be the only way in.
+
+**How roles are paged:**
+
+- The renderer calls one route, `security/roles/query`, with a search string,
+  a sort direction, a cursor, and a page size of 100. The route sends
+  `POST /_security/_query/role` sorted by name and returns the page, the
+  `total`, and the cursor for the next page.
+- Pages are fetched with `search_after`, not `from`. The cluster caps `from`
+  plus `size` at the security index's result window of 10 000, and loading
+  more as the table scrolls always wants the page after the last one anyway.
+- The table asks for the next page as it nears the end of the rows it holds,
+  and shows how many of the total are loaded.
+- Search matches any part of the role's name, ignoring case, or every word of
+  its description. The query endpoint can search a role's name, description,
+  metadata, and applications, but not its privileges or index patterns, so a
+  search for an index pattern no longer finds the roles granting it.
+- Sort is by role name only, in either direction. The other columns are not
+  sortable, since the cluster cannot order by them.
+- Saving or deleting a role reloads the list from the first page.
+
+What the endpoint answered, checked on 8.19.9 and 9.3.4:
+
+| Sent | Answer |
+| --- | --- |
+| `sort: [{"name": "asc"}]` | 400, `[field_sort] Expected START_OBJECT but was: VALUE_STRING`; the object form `{"name": {"order": "asc"}}` is required |
+| Name sort | By code point, so `Team_0000` sorts before `team_0001`; the fallback sorts the same way |
+| `wildcard` on `name` with `case_insensitive` | Substring match regardless of case |
+| `wildcard` on `description` | No match for a phrase: the field is analysed text |
+| `match` on `description` with `operator: and` | Every word must appear, in any order; a partial word does not match |
+| `match_phrase_prefix` | 400, not supported in this context |
+| `from` + `size` past 10 000 | 400, `Result window is too large` |
+| 8.0.0, or security disabled | `no handler found for uri [/_security/_query/role]` |
+| `GET /_security/role/a,b` with one missing | The existing one only; 404 when none exist |
+
+**Clusters without `_query/role` get the whole list.** When the query endpoint
+answers `no handler found`, the route loads `GET /_security/role` instead and
+says it did. The store remembers that for the rest of the connection, so later
+pages and searches go straight to the full list, and the renderer then searches
+and sorts it on the same fields as the paged path, so the results do not
+depend on which path served them. On a cluster with security disabled the
+query endpoint also has no handler; the fallback's `GET` then fails with the
+405 recorded in the mapping table, which reports security as disabled exactly
+as before, so the no-handler answer from the query endpoint never reaches the
+user as a cause.
+
+**The role list is no longer held whole in the renderer**, so what used it
+changes:
+
+- The role editor and the row actions load the role by name from a second
+  route, `security/roles/get`, backed by `GET /_security/role/<names>`, rather
+  than looking it up among loaded rows.
+- The user dialog's role picker searches the cluster as the user types, through
+  the same query route, and keeps roles already assigned to the user even when
+  a search does not return them.
+- The self-lockout guard fetches the definitions it needs by name. See the
+  self-lockout decision.
 
 ### Loading is shown in the table body, not only on the refresh control
 
-Because each surface loads its cluster's whole list, a slow load must not read
-as an empty or frozen screen. Two states are distinguished:
+Because the users and API key surfaces load the whole list, and roles do too on
+a cluster that cannot page them, a slow load must not read as an empty or
+frozen screen. Two states are distinguished:
 
 - **First load, with nothing to show.** The table body shows a loading state.
   It SHALL NOT show the empty message, which would assert the cluster has no
@@ -205,7 +257,10 @@ because the app supports remote clusters and SSH tunnels:
 
 So the indicator earns its place on exactly the case that motivated it, a large
 role set on a remote cluster, and a spinner is the right and sufficient tool
-because the wait is I/O, not a blocked main thread.
+because the wait is I/O, not a blocked main thread. Paging roles removes that
+wait wherever the cluster supports it; the indicator still covers the first
+page, a cluster that falls back to the whole list, and the next page loading at
+the end of the table.
 
 ### Role editor: structured form with a direct editing mode
 
@@ -299,6 +354,17 @@ account the active connection authenticates as, obtained from
 the current user, and it is not the rejected capability probe: it establishes
 identity, not permissions.
 
+To decide whether an edit removes the account's last role that manages
+security, the guard needs the definitions of the roles the account holds now
+and the roles it would hold after the edit. With roles paged, those may not be
+loaded, so the guard fetches them by name through `security/roles/get` just
+before deciding. That answer can still omit a role: roles defined in a node's
+`roles.yml` are not returned by the role API, and a role may have been deleted.
+A role the cluster does not describe is judged cautiously in both directions:
+one being removed is assumed to manage security, and one being kept is not
+counted on to. If the lookup fails outright, every role is unknown and the same
+rule applies.
+
 ### API keys are a separate surface with their own outcome
 
 Keys are not gated by the same privileges as users and roles. An account
@@ -346,11 +412,16 @@ rather than relying on that remaining true.
   truth and applies structured edits onto it, so unmodelled fields survive. A
   round-trip test over a role carrying a document query and application
   privileges covers this.
-- **Fetch-all does not scale to a cluster with thousands of roles.** → Row count
-  is handled by virtualisation; the constraint is payload size. Observed scale is
-  148 roles in 297 KB and 76 ms, and roughly 2 KB per role thereafter.
-  `_query/role` is the documented escape hatch, and the decision above records
-  what it supports so adopting it later needs no re-investigation.
+- **Role search narrows to names and descriptions.** A search for an index
+  pattern or a privilege no longer finds the roles granting it. → Accepted; the
+  cluster cannot search those fields. The fallback path searches the same fields
+  so behaviour does not depend on the cluster's version.
+- **Roles have two retrieval paths.** → Both sit behind one route and one store
+  shape, chosen by the cluster's answer rather than by version. The 8.0.0
+  cluster exercises the fallback in verification.
+- **The self-lockout guard now makes a request before deciding.** → The lookup
+  is a single call for a handful of names. When it fails, the guard treats every
+  role as unknown and errs towards refusing.
 - **Rejecting `_query/user` means the Users list is always fetched whole.** →
   Accepted. That endpoint omits reserved accounts entirely, so paging with it
   would hide the very accounts that are the only ones present on some clusters.

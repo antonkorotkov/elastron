@@ -5,7 +5,8 @@ import { POST as putUser } from './user/put/+server.js';
 import { POST as deleteUser } from './user/delete/+server.js';
 import { POST as setEnabled } from './user/enabled/+server.js';
 import { POST as setPassword } from './user/password/+server.js';
-import { POST as listRoles } from './roles/+server.js';
+import { POST as queryRoles } from './roles/query/+server.js';
+import { POST as getRoles } from './roles/get/+server.js';
 import { POST as putRole } from './role/put/+server.js';
 import { POST as deleteRole } from './role/delete/+server.js';
 import { POST as listKeys } from './api-keys/+server.js';
@@ -142,7 +143,7 @@ describe('security routes', () => {
 		};
 		expect((await call(putRole, { name: ROLE, body })).status).toBe(200);
 
-		const { data } = await call(listRoles);
+		const { data } = await call(getRoles, { names: [ROLE] });
 		expect(data[ROLE]).toMatchObject({
 			cluster: body.cluster,
 			indices: body.indices,
@@ -151,7 +152,7 @@ describe('security routes', () => {
 		});
 
 		expect((await call(deleteRole, { name: ROLE })).status).toBe(200);
-		expect((await call(listRoles)).data[ROLE]).toBeUndefined();
+		expect((await call(getRoles, { names: [ROLE] })).data[ROLE]).toBeUndefined();
 	});
 
 	it('creates an API key returning the secret once, then invalidates it', async () => {
@@ -284,5 +285,56 @@ describe('security routes', () => {
 		expect(res.cause).toBe('license');
 		expect(res.error).not.toContain('non-compliant');
 		expect(res.reason).toContain('non-compliant');
+	});
+});
+
+describe('role paging routes', () => {
+	const byCodePoint = names => [...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
+	it('pages roles by name where the cluster can, and falls back to the whole list where it cannot', async () => {
+		if (!live) return;
+		const { status, data } = await call(queryRoles, {});
+		expect(status).toBe(200);
+
+		if (data.mode === 'full') {
+			expect(data.roles.superuser).toBeTruthy();
+			return;
+		}
+		const names = data.roles.map(r => r.name);
+		expect(data.mode).toBe('paged');
+		expect(names).toEqual(byCodePoint(names));
+		expect(data.total).toBeGreaterThanOrEqual(names.length);
+		expect(data.roles.every(r => !('_sort' in r))).toBe(true);
+	});
+
+	it('follows the cursor to the next page in either direction', async () => {
+		if (!live) return;
+		for (const direction of ['asc', 'desc']) {
+			const first = (await call(queryRoles, { direction })).data;
+			if (first.mode !== 'paged' || !first.cursor) return;
+			const next = (await call(queryRoles, { direction, after: first.cursor })).data;
+			const last = first.roles[first.roles.length - 1].name;
+			const head = next.roles[0].name;
+			expect(direction === 'asc' ? head > last : head < last).toBe(true);
+		}
+	});
+
+	it('searches names case-insensitively and descriptions by word', async () => {
+		if (!live) return;
+		const upper = (await call(queryRoles, { search: 'SUPERUS' })).data;
+		if (upper.mode !== 'paged') return;
+		expect(upper.roles.map(r => r.name)).toContain('superuser');
+
+		const described = (await call(queryRoles, { search: 'superuser' })).data;
+		expect(described.total).toBeGreaterThanOrEqual(1);
+	});
+
+	it('fetches named roles and leaves out the ones that do not exist', async () => {
+		if (!live) return;
+		const some = await call(getRoles, { names: ['superuser', 'itest_no_such_role'] });
+		expect(Object.keys(some.data)).toEqual(['superuser']);
+
+		const none = await call(getRoles, { names: ['itest_no_such_role'] });
+		expect(none).toMatchObject({ status: 200, data: {} });
 	});
 });

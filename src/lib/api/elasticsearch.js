@@ -309,8 +309,13 @@ export default class API {
 		return response.data
 	}
 
-	async getSecurityRoles() {
-		const response = await this._request('security/roles')
+	async querySecurityRoles({ search = '', direction = 'asc', after = null, full = false } = {}) {
+		const response = await this._request('security/roles/query', { search, direction, after, full })
+		return response.data
+	}
+
+	async getSecurityRolesByName(names) {
+		const response = await this._request('security/roles/get', { names })
 		return response.data
 	}
 

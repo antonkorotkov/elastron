@@ -85,8 +85,15 @@ export const classifySecurityError = err => {
 
 export const messageForCause = cause => MESSAGES[cause] || MESSAGES[CAUSE.UNKNOWN];
 
-// `reason` is the cluster's wording, shown as detail, never as the message.
+// A recognised cause gets our sentence, since the cluster's wording can mislead
+// (see isSecurityDisabled). An unrecognised one is usually a validation error
+// whose reason is the only useful thing to say.
 export const describeSecurityFailure = err => {
 	const cause = classifySecurityError(err);
-	return { cause, message: messageForCause(cause), reason: reasonOf(err) || undefined };
+	const reason = reasonOf(err) || undefined;
+	const message =
+		cause === CAUSE.UNKNOWN && reason
+			? `The cluster refused the request: ${reason}`
+			: messageForCause(cause);
+	return { cause, message, reason };
 };

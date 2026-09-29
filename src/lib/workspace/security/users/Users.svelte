@@ -9,11 +9,7 @@
 	import UserCell from './UserCell.svelte'
 	import ButtonTinyBasic from '$lib/components/buttons/ButtonTinyBasic.svelte'
 
-	const { dispatch, app, securityUsers, securityRoles } = useStoreon(
-		'app',
-		'securityUsers',
-		'securityRoles'
-	)
+	const { dispatch, app, securityUsers } = useStoreon('app', 'securityUsers')
 	const { open } = getContext('modal-window')
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
@@ -56,13 +52,7 @@
 		open(Dialog, { username: null }, { closeOnOuterClick: false })
 	}
 
-	onMount(() => {
-		onRefresh()
-		// The role catalogue backs the editor's role picker and the self-lockout
-		// guard, which has to know which roles manage security. A failed read
-		// still marks the list loaded, so this is not conditional on that.
-		dispatch('security/roles/fetch')
-	})
+	onMount(onRefresh)
 </script>
 
 <div class="ui segments">

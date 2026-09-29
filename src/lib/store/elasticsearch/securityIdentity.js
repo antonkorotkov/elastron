@@ -22,23 +22,36 @@ const initial = () => ({
 })
 
 export const securityIdentity = store => {
+	let session = 0
+
 	store.on('@init', initial)
 
+	// Cleared first so the guards never judge the new cluster by the previous
+	// cluster's account.
 	store.on('connected', () => {
+		session++
+		store.dispatch('security/identity/reset')
 		store.dispatch('security/identity/fetch')
 	})
 
-	store.on('disconnected', initial)
+	store.on('disconnected', () => {
+		session++
+		return initial()
+	})
+
+	store.on('security/identity/reset', initial)
 
 	store.on('security/identity/update', (state, data) => ({
 		securityIdentity: { ...state.securityIdentity, ...data },
 	}))
 
 	store.on('security/identity/fetch', async state => {
+		const started = session
 		store.dispatch('security/identity/update', { loading: true })
 		try {
 			const api = new API(state.connection, state.app?.windowId)
 			const me = await api.whoAmI()
+			if (started !== session) return
 			store.dispatch('security/identity/update', {
 				username: me?.username ?? null,
 				roles: Array.isArray(me?.roles) ? me.roles : [],
@@ -47,6 +60,7 @@ export const securityIdentity = store => {
 				cause: null,
 			})
 		} catch (err) {
+			if (started !== session) return
 			// A cluster with security disabled cannot say who we are, and that is
 			// not an error worth surfacing on its own; the surfaces report it.
 			store.dispatch('security/identity/update', {

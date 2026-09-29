@@ -24,9 +24,11 @@ to do that work in the app they already have open.
   a template, is preserved and changed through the full definition.
 - Add an **API keys** surface: list keys, create a key with an optional
   expiry and role descriptors, and invalidate keys.
-- Render all three lists through the app's existing virtualised table, so a
-  cluster with hundreds or thousands of roles stays responsive, with search and
-  sorting applied in the app rather than by the cluster.
+- Render all three lists through the app's existing virtualised table. Users
+  and API keys are fetched whole and searched and sorted in the app. Roles are
+  fetched a page at a time, searched and sorted by the cluster, so a cluster
+  with thousands of roles opens without waiting for all of them; a cluster too
+  old to page roles gets the whole list instead.
 - Show a loading indication in the list itself while a list is being retrieved,
   so a slow fetch over a remote or tunnelled connection does not read as an
   empty result or a frozen window.
@@ -68,6 +70,11 @@ allows through.
 - **New SvelteKit API routes** under `src/routes/api/elastic/security/**`,
   all going through the existing `handleElasticRequest` helper. No new IPC and
   no changes to `main.js`.
+- **Role routes that page and look up by name**: a query route that pages
+  roles through `_security/_query/role` and falls back to the full list when
+  the cluster has no such endpoint, and a route that fetches named roles. The
+  role editor, the user dialog's role picker, and the self-lockout guard use
+  these rather than a role list held in the renderer.
 - **New routes and components**: `src/routes/security/**` and
   `src/lib/workspace/security/**`, following the Monitoring layout and tab
   pattern.

@@ -317,8 +317,32 @@ const READ_ONLY_SECURITY_POSTS = [
 	/^\/_security\/_authenticate$/,
 ]
 
+const decodeFully = value => {
+	let current = value
+	for (let i = 0; i < 5; i++) {
+		let next
+		try {
+			next = decodeURIComponent(current)
+		} catch {
+			return current
+		}
+		if (next === current) return current
+		current = next
+	}
+	return current
+}
+
+/**
+ * The path as Elasticsearch routes it. It percent-decodes each segment, so
+ * `/%5Fsecurity/user` reaches the same handler as `/_security/user`.
+ */
+const routedPath = raw => {
+	const path = decodeFully(String(raw ?? '').split('?')[0])
+	return `/${path}`.replace(/\/+/g, '/').replace(/(.)\/$/, '$1')
+}
+
 export const isSecurityWriteRequest = request => {
-	const path = String(request?.path ?? '')
+	const path = routedPath(request?.path)
 	if (!SECURITY_PATH.test(path)) return false
 	const method = String(request?.method ?? 'GET').toUpperCase()
 	if (method === 'GET' || method === 'HEAD') return false

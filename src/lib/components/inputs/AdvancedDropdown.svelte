@@ -20,6 +20,7 @@
 	 * @property {boolean} [multiple] Select many items; selectedValue is then an array
 	 * @property {(values: string[]) => void} [onChange] Multi-select only: the whole selection after every add, remove or clear
 	 * @property {object} [floatingConfig] Positioning for the open list. Pass `{ strategy: 'fixed' }` inside a scrolling container so the list is not clipped by it.
+	 * @property {(filterText: string) => Promise<string[]>} [loadOptions] Multi-select only: fetch the options for what was typed instead of filtering `items`
 	 */
 
 	/** @type {Props} */
@@ -37,6 +38,7 @@
 		multiple = false,
 		onChange = () => {},
 		floatingConfig = {},
+		loadOptions = undefined,
 	} = $props()
 
 	let inverted = $derived(isThemeToggleChecked($app.theme))
@@ -87,7 +89,8 @@
 		<Select
 			label={labelIdentifier}
 			clearable={isClearable}
-			items={selectItems}
+			items={loadOptions ? undefined : selectItems}
+			{loadOptions}
 			value={selectedValue}
 			disabled={isDisabled}
 			multiple

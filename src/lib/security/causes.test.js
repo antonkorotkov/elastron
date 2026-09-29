@@ -72,6 +72,14 @@ describe('describeSecurityFailure', () => {
 		expect(described.reason).toBe(raw);
 	});
 
+	it('passes an unrecognised refusal through, since it is usually a validation error', () => {
+		const raw = 'passwords must be at least [6] characters long';
+		const described = describeSecurityFailure(structured(400, 'action_request_validation_exception', raw));
+
+		expect(described.cause).toBe(CAUSE.UNKNOWN);
+		expect(described.message).toContain(raw);
+	});
+
 	it('gives every cause a distinct sentence', () => {
 		const seen = Object.values(CAUSE).map(messageForCause);
 		expect(new Set(seen).size).toBe(seen.length);

@@ -160,6 +160,18 @@ describe('isSecurityWriteRequest', () => {
 		expect(isSecurityWriteRequest({ method: 'POST', path })).toBe(false);
 	});
 
+	it.each([
+		'/%5Fsecurity/user/bob',
+		'/%5fsecurity/user/bob',
+		'/%255Fsecurity/user/bob',
+		'//_security/user/bob',
+		'_security/user/bob',
+		'/_security/user/bob?refresh=true',
+		'/_security%2Fuser%2Fbob',
+	])('refuses a write however the path %s is spelled', path => {
+		expect(isSecurityWriteRequest({ method: 'PUT', path })).toBe(true);
+	});
+
 	it('still refuses a POST under _security it does not recognise as a read', () => {
 		expect(isSecurityWriteRequest({ method: 'POST', path: '/_security/oidc/authenticate' })).toBe(true);
 	});

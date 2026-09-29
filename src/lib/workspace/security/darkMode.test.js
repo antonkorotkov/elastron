@@ -54,7 +54,7 @@ describe('security markup uses the inverted classes Semantic actually ships', ()
 		// a child carrying `inverted` cannot win. The group has to carry it.
 		expect(semantic).toContain('.ui.basic.inverted.buttons .button');
 
-		const dialog = source['src/lib/workspace/security/roles/RoleDialog.svelte'];
+		const dialog = source['src/lib/workspace/security/roles/RoleEditor.svelte'];
 		expect(dialog).toMatch(/class="ui tiny basic buttons mode-switch"\s+class:inverted/);
 		expect(dialog).not.toMatch(/class="ui button"\s+class:inverted/);
 	});

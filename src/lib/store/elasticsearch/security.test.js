@@ -3,12 +3,16 @@ import { createStoreon } from 'storeon';
 
 const whoAmI = vi.fn();
 const getSecurityUsers = vi.fn();
+// Most cases only care about the list, so they answer as a cluster without the
+// role query endpoint would. The paging cases drive querySecurityRoles directly.
 const getSecurityRoles = vi.fn();
+const querySecurityRoles = vi.fn();
 const getSecurityApiKeys = vi.fn();
+const answerWholeList = async () => ({ mode: 'full', roles: await getSecurityRoles() });
 
 vi.mock('../../api/elasticsearch', () => ({
 	default: vi.fn(function () {
-		return { whoAmI, getSecurityUsers, getSecurityRoles, getSecurityApiKeys };
+		return { whoAmI, getSecurityUsers, querySecurityRoles, getSecurityApiKeys };
 	}),
 }));
 
@@ -25,6 +29,7 @@ const flush = () => new Promise(r => setTimeout(r, 0));
 let store;
 beforeEach(() => {
 	vi.clearAllMocks();
+	querySecurityRoles.mockReset().mockImplementation(answerWholeList);
 	store = createStoreon([securityIdentity, securityUsers, securityRoles, securityApiKeys]);
 });
 
@@ -229,5 +234,171 @@ describe('the cluster own wording', () => {
 		store.dispatch('security/roles/fetch');
 		await flush();
 		expect(store.get().securityRoles.reason).toBeNull();
+	});
+});
+
+describe('switching to another cluster', () => {
+	it('clears the previous cluster\'s rows and reloads a list that was in use', async () => {
+		whoAmI.mockResolvedValue({ username: 'elastic', roles: ['superuser'] });
+		getSecurityUsers.mockResolvedValueOnce({ alice: { roles: [] } });
+		store.dispatch('security/users/fetch');
+		await flush();
+
+		getSecurityUsers.mockResolvedValueOnce({ bob: { roles: [] } });
+		store.dispatch('connected');
+		expect(store.get().securityUsers.entries).toEqual([]);
+		await flush();
+
+		expect(store.get().securityUsers.entries.map(u => u.username)).toEqual(['bob']);
+		expect(getSecurityRoles).not.toHaveBeenCalled();
+	});
+
+	it('drops a response from the previous cluster that lands after the switch', async () => {
+		whoAmI.mockResolvedValue({ username: 'elastic', roles: [] });
+		let resolveOld;
+		getSecurityUsers.mockReturnValueOnce(new Promise(r => (resolveOld = r)));
+		store.dispatch('security/users/fetch');
+
+		getSecurityUsers.mockResolvedValueOnce({ bob: { roles: [] } });
+		store.dispatch('connected');
+		await flush();
+
+		resolveOld({ alice: { roles: [] } });
+		await flush();
+
+		expect(store.get().securityUsers.entries.map(u => u.username)).toEqual(['bob']);
+	});
+
+	it('forgets the previous account before the new one is known', () => {
+		store.dispatch('security/identity/update', { username: 'admin', roles: ['superuser'] });
+		whoAmI.mockReturnValue(new Promise(() => {}));
+
+		store.dispatch('connected');
+
+		expect(store.get().securityIdentity).toMatchObject({ username: null, roles: [] });
+	});
+});
+
+describe('paged roles', () => {
+	const role = name => ({ name, cluster: [], indices: [] });
+	const page = (names, { total = 250, cursor = [names.at(-1)] } = {}) => ({
+		mode: 'paged',
+		roles: names.map(role),
+		total,
+		cursor,
+	});
+	const names = () => store.get().securityRoles.entries.map(r => r.name);
+
+	it('loads the first page, then appends the next one from the cursor', async () => {
+		querySecurityRoles.mockResolvedValueOnce(page(['a', 'b'])).mockResolvedValueOnce(page(['c'], { cursor: null }));
+
+		store.dispatch('security/roles/fetch');
+		await flush();
+		expect(store.get().securityRoles).toMatchObject({ mode: 'paged', total: 250, cursor: ['b'] });
+
+		store.dispatch('security/roles/more');
+		await flush();
+
+		expect(querySecurityRoles).toHaveBeenLastCalledWith(expect.objectContaining({ after: ['b'] }));
+		expect(names()).toEqual(['a', 'b', 'c']);
+		expect(store.get().securityRoles.cursor).toBeNull();
+	});
+
+	it('asks for one next page at a time, and none once the list is complete', async () => {
+		querySecurityRoles.mockResolvedValueOnce(page(['a']));
+		store.dispatch('security/roles/fetch');
+		await flush();
+
+		querySecurityRoles.mockReturnValueOnce(new Promise(() => {}));
+		store.dispatch('security/roles/more');
+		store.dispatch('security/roles/more');
+		expect(querySecurityRoles).toHaveBeenCalledTimes(2);
+
+		const done = createStoreon([securityRoles]);
+		querySecurityRoles.mockResolvedValueOnce(page(['a'], { cursor: null }));
+		done.dispatch('security/roles/fetch');
+		await flush();
+		done.dispatch('security/roles/more');
+		expect(querySecurityRoles).toHaveBeenCalledTimes(3);
+	});
+
+	it('reloads from the first page when the search or sort changes', async () => {
+		querySecurityRoles.mockResolvedValue(page(['a']));
+		store.dispatch('security/roles/fetch');
+		await flush();
+
+		store.dispatch('security/roles/search', 'ops');
+		await flush();
+		expect(querySecurityRoles).toHaveBeenLastCalledWith(expect.objectContaining({ search: 'ops', after: null }));
+
+		store.dispatch('security/roles/sort', 'desc');
+		await flush();
+		expect(querySecurityRoles).toHaveBeenLastCalledWith(
+			expect.objectContaining({ search: 'ops', direction: 'desc', after: null })
+		);
+	});
+
+	it('drops a page for a search that has since changed', async () => {
+		let resolveOld;
+		querySecurityRoles.mockReturnValueOnce(new Promise(r => (resolveOld = r)));
+		store.dispatch('security/roles/search', 'old');
+
+		querySecurityRoles.mockResolvedValueOnce(page(['new_match']));
+		store.dispatch('security/roles/search', 'new');
+		await flush();
+
+		resolveOld(page(['old_match']));
+		await flush();
+
+		expect(names()).toEqual(['new_match']);
+	});
+
+	it('drops a next page that arrives after the search changed', async () => {
+		querySecurityRoles.mockResolvedValueOnce(page(['a']));
+		store.dispatch('security/roles/fetch');
+		await flush();
+
+		let resolveMore;
+		querySecurityRoles.mockReturnValueOnce(new Promise(r => (resolveMore = r)));
+		store.dispatch('security/roles/more');
+
+		querySecurityRoles.mockResolvedValueOnce(page(['z']));
+		store.dispatch('security/roles/search', 'z');
+		await flush();
+
+		resolveMore(page(['b']));
+		await flush();
+
+		expect(names()).toEqual(['z']);
+	});
+
+	it('remembers a fallback to the whole list and stops refetching for searches', async () => {
+		getSecurityRoles.mockResolvedValue({ a: role('a'), b: role('b') });
+		store.dispatch('security/roles/fetch');
+		await flush();
+		expect(store.get().securityRoles).toMatchObject({ mode: 'full', total: 2, cursor: null });
+
+		store.dispatch('security/roles/search', 'a');
+		store.dispatch('security/roles/sort', 'desc');
+		await flush();
+		expect(querySecurityRoles).toHaveBeenCalledTimes(1);
+
+		store.dispatch('security/roles/fetch');
+		await flush();
+		expect(querySecurityRoles).toHaveBeenLastCalledWith(expect.objectContaining({ full: true }));
+	});
+
+	it('forgets the fallback on a connection switch, since the new cluster may page', async () => {
+		getSecurityRoles.mockResolvedValue({ a: role('a') });
+		store.dispatch('security/roles/fetch');
+		await flush();
+
+		whoAmI.mockResolvedValue({ username: 'elastic', roles: [] });
+		querySecurityRoles.mockResolvedValue(page(['a']));
+		store.dispatch('connected');
+		await flush();
+
+		expect(querySecurityRoles).toHaveBeenLastCalledWith(expect.objectContaining({ full: false }));
+		expect(store.get().securityRoles.mode).toBe('paged');
 	});
 });

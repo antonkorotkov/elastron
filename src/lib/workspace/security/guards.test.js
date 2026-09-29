@@ -63,7 +63,13 @@ describe('refuseUserRoleChange when the role catalogue could not be read', () =>
 		);
 	});
 
-	it('allows the change when a role is kept, since it may be the managing one', () => {
+	it('refuses keeping only a role it cannot vouch for while dropping the rest', () => {
+		expect(
+			refuseUserRoleChange('admin', ['legacy_role'], me('admin', ['superuser', 'legacy_role']), catalogue)
+		).toBe(SELF_DEMOTE_REFUSAL);
+	});
+
+	it('allows an edit that keeps every current role, whatever they are', () => {
 		expect(refuseUserRoleChange('admin', ['custom_admin'], me('admin', ['custom_admin']), {})).toBeNull();
 	});
 });

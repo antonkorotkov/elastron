@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 
 const state = vi.hoisted(() => ({ users: null, roles: null, identity: null, dispatch: null, close: null }));
+const api = vi.hoisted(() => ({ query: null, byName: null }));
 
 vi.mock('@storeon/svelte', () => {
 	const { writable } = require('svelte/store');
@@ -14,6 +15,7 @@ vi.mock('@storeon/svelte', () => {
 		useStoreon: () => ({
 			dispatch: (...a) => state.dispatch(...a),
 			app: writable({ theme: 'light' }),
+			connection: writable({ host: 'http://es', port: '9200' }),
 			securityUsers: state.users,
 			securityRoles: state.roles,
 			securityIdentity: state.identity,
@@ -25,6 +27,15 @@ vi.mock('svelte', async importOriginal => {
 	const actual = await importOriginal();
 	return { ...actual, getContext: () => ({ close: (...a) => state.close(...a) }) };
 });
+
+vi.mock('$lib/api/elasticsearch', () => ({
+	default: vi.fn(function () {
+		return {
+			querySecurityRoles: (...a) => api.query(...a),
+			getSecurityRolesByName: (...a) => api.byName(...a),
+		};
+	}),
+}));
 
 // svelte-select scrolls the hovered option into view; jsdom has no layout and
 // so no scrollIntoView. Selection behaviour is what these tests exercise.
@@ -42,6 +53,15 @@ const generated = n =>
 
 const ROLES = [...generated(300), { name: 'superuser', cluster: ['all'] }, { name: 'viewer', cluster: [] }];
 
+// Answers the way the role query route does: a page of 100 at most.
+const pagedCluster = async ({ search = '' } = {}) => {
+	const found = ROLES.filter(r => r.name.toLowerCase().includes(search.toLowerCase()));
+	return { mode: 'paged', roles: found.slice(0, 100), total: found.length };
+};
+
+// svelte-select debounces what is typed before asking for options.
+const settle = () => new Promise(r => setTimeout(r, 350));
+
 const field = label => screen.getByText(label).closest('.field');
 
 const openList = async label => {
@@ -54,6 +74,7 @@ const openList = async label => {
 const typeIn = async (label, text) => {
 	const f = await openList(label);
 	await fireEvent.input(f.querySelector('.svelte-select input'), { target: { value: text } });
+	await settle();
 	await tick();
 	return f;
 };
@@ -68,6 +89,10 @@ const pick = async (label, option) => {
 };
 
 beforeEach(() => {
+	api.query = vi.fn(pagedCluster);
+	api.byName = vi.fn(async names =>
+		Object.fromEntries(ROLES.filter(r => names.includes(r.name)).map(r => [r.name, r]))
+	);
 	state.dispatch = vi.fn();
 	state.close = vi.fn();
 	state.roles.set({ entries: ROLES });
@@ -90,6 +115,29 @@ describe('the roles selector', () => {
 
 		const f = await typeIn('Roles', 'superuser');
 		expect(options(f)).toEqual(['superuser']);
+		expect(api.query).toHaveBeenLastCalledWith({ search: 'superuser' });
+	});
+
+	it('finds a role the first page of the cluster would not have held', async () => {
+		render(UserDialog, { props: { username: null } });
+
+		const far = ROLES[250].name;
+		const f = await typeIn('Roles', far.slice(-6));
+		expect(options(f)).toContain(far);
+	});
+
+	it('searches a whole list once, when the cluster cannot page', async () => {
+		api.query = vi.fn(async () => ({
+			mode: 'full',
+			roles: Object.fromEntries(ROLES.map(r => [r.name, r])),
+		}));
+		render(UserDialog, { props: { username: null } });
+
+		let f = await typeIn('Roles', 'viewer');
+		expect(options(f)).toEqual(['viewer']);
+		f = await typeIn('Roles', 'superuser');
+		expect(options(f)).toEqual(['superuser']);
+		expect(api.query).toHaveBeenCalledTimes(1);
 	});
 
 	it('adds a role to the selection', async () => {
@@ -137,11 +185,65 @@ describe('the roles selector', () => {
 		expect(screen.getByText('Save').disabled).toBe(true);
 	});
 
-	it('says so when the cluster reported no roles', () => {
-		state.roles.set({ entries: [] });
+	it('warns about removing your own managing role when that role is not loaded anywhere', async () => {
+		api.byName = vi.fn(async () => ({ sec_admin: { cluster: ['manage_security'] } }));
+		state.identity.set({ username: 'bob', roles: ['sec_admin'] });
+		state.users.set({ entries: [{ username: 'bob', roles: ['sec_admin'], enabled: true }] });
+		render(UserDialog, { props: { username: 'bob' } });
+
+		await fireEvent.click(field('Roles').querySelector('.clear-select'));
+		await new Promise(r => setTimeout(r, 0));
+		await tick();
+
+		expect(api.byName).toHaveBeenCalledWith(['sec_admin']);
+		expect(screen.getByText(/without any role/)).toBeTruthy();
+	});
+
+	it('does not look roles up when editing someone else', async () => {
+		state.users.set({ entries: [{ username: 'bob', roles: ['viewer'], enabled: true }] });
+		render(UserDialog, { props: { username: 'bob' } });
+		await tick();
+
+		expect(api.byName).not.toHaveBeenCalled();
+	});
+
+	it('waits for a whole list still arriving rather than asking for it again', async () => {
+		// Debounced searches from earlier tests' dialogs would otherwise land on
+		// this test's mock and be counted.
+		await settle();
+		let deliver;
+		api.query = vi.fn(() => new Promise(r => (deliver = r)));
 		render(UserDialog, { props: { username: null } });
 
-		expect(document.querySelector('.svelte-select input').getAttribute('placeholder')).toMatch(/No roles/);
+		const f = await openList('Roles');
+		await fireEvent.input(f.querySelector('.svelte-select input'), { target: { value: 'v' } });
+		await settle();
+		await fireEvent.input(f.querySelector('.svelte-select input'), { target: { value: 'viewer' } });
+		await settle();
+
+		deliver({ mode: 'full', roles: Object.fromEntries(ROLES.map(r => [r.name, r])) });
+		await settle();
+		await tick();
+
+		expect(api.query).toHaveBeenCalledTimes(1);
+		expect(options(f)).toEqual(['viewer']);
+	});
+
+	it('asks again after a failure, rather than remembering it', async () => {
+		api.query = vi.fn().mockRejectedValueOnce(new Error('unreachable')).mockImplementation(pagedCluster);
+		render(UserDialog, { props: { username: null } });
+
+		await typeIn('Roles', 'viewer');
+		const f = await typeIn('Roles', 'superuser');
+		expect(options(f)).toEqual(['superuser']);
+	});
+
+	it('says so when the cluster will not list roles', async () => {
+		api.query = vi.fn().mockRejectedValue(new Error('This is not available because your account does not have the required privilege on this cluster.'));
+		render(UserDialog, { props: { username: null } });
+
+		await typeIn('Roles', 'x');
+		expect(screen.getByText(/does not have the required privilege/)).toBeTruthy();
 	});
 });
 

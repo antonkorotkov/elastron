@@ -27,10 +27,19 @@ export const isSelf = (username, identity) =>
 export const refuseUserDelete = (username, identity) =>
 	isSelf(username, identity) ? SELF_DELETE_REFUSAL : null
 
+const knownToManageSecurity = (name, catalogue) =>
+	Boolean(catalogue?.[name]) && roleManagesSecurity(name, catalogue[name])
+
 // Elasticsearch refuses an account disabling itself but not an account
 // stripping its own roles, which locks it out on the next request.
+// Unknown roles cut both ways: one being removed may be the managing one, and
+// one being kept cannot be counted on to be.
 export const refuseUserRoleChange = (username, nextRoles, identity, catalogue) => {
 	if (!isSelf(username, identity)) return null
-	if (!anyRoleManagesSecurity(identity?.roles, catalogue)) return null
-	return anyRoleManagesSecurity(nextRoles, catalogue) ? null : SELF_DEMOTE_REFUSAL
+	const kept = new Set(nextRoles || [])
+	const dropped = (identity?.roles || []).filter(name => !kept.has(name))
+	if (!anyRoleManagesSecurity(dropped, catalogue)) return null
+	return [...kept].some(name => MANAGING_RESERVED_ROLES.has(name) || knownToManageSecurity(name, catalogue))
+		? null
+		: SELF_DEMOTE_REFUSAL
 }

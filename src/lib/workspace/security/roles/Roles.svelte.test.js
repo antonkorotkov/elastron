@@ -55,29 +55,95 @@ describe('Roles surface', () => {
 	});
 
 	// jsdom renders every row (VirtualTable's test fallback), so these use a
-	// modest list. The search case below is the one that proves the derived
-	// rows span entries the real virtualiser would never have mounted.
-	it('counts the whole list, not the rendered window', () => {
-		setRoles(many(60));
-		render(Roles);
-		expect(screen.getByText('60 items')).toBeTruthy();
+	// modest list.
+	describe('paged by the cluster', () => {
+		it('says how many of the cluster total are loaded', () => {
+			setRoles(many(100), { mode: 'paged', total: 7000, cursor: ['acc_role_0099'] });
+			render(Roles);
+			expect(screen.getByText('100 of 7000')).toBeTruthy();
+		});
+
+		it('shows the rows in the order the cluster sent them, without filtering again', () => {
+			setRoles(many(3).reverse(), { mode: 'paged', total: 3, search: 'no-such-text' });
+			render(Roles);
+
+			const first = document.querySelector('tbody tr[data-index="0"] td').textContent.trim();
+			expect(first.startsWith('acc_role_0002')).toBe(true);
+		});
+
+		it('sends a search and a name sort to the cluster', async () => {
+			vi.useFakeTimers();
+			setRoles(many(3), { mode: 'paged', total: 3 });
+			render(Roles);
+
+			await fireEvent.keyUp(screen.getByPlaceholderText(/Search/), { target: { value: 'ops' } });
+			vi.advanceTimersByTime(400);
+			vi.useRealTimers();
+			expect(state.dispatch).toHaveBeenCalledWith('security/roles/search', 'ops');
+
+			await fireEvent.click(document.querySelectorAll('thead th')[0]);
+			expect(state.dispatch).toHaveBeenCalledWith('security/roles/sort', 'desc');
+		});
+
+		it('does not sort by a column the cluster cannot order by', async () => {
+			setRoles(many(3), { mode: 'paged', total: 3 });
+			render(Roles);
+
+			await fireEvent.click(document.querySelectorAll('thead th')[2]);
+			expect(state.dispatch).not.toHaveBeenCalledWith('security/roles/sort', expect.anything());
+		});
+
+		it('asks for the next page once when the end of the rows is reached', async () => {
+			setRoles(many(30), { mode: 'paged', total: 300, cursor: ['acc_role_0029'] });
+			render(Roles);
+			await fireEvent.scroll(document.querySelector('.scrollable'));
+			await fireEvent.scroll(document.querySelector('.scrollable'));
+
+			const asks = state.dispatch.mock.calls.filter(([event]) => event === 'security/roles/more');
+			expect(asks).toHaveLength(1);
+		});
+
+		it('spins the toolbar buttons while the next page loads, keeping the rows', () => {
+			setRoles(many(3), { mode: 'paged', total: 300, loadingMore: true });
+			render(Roles);
+
+			expect(screen.getByText('Refresh').closest('button').classList.contains('loading')).toBe(true);
+			expect(screen.getByText('Create').closest('button').classList.contains('loading')).toBe(true);
+			expect(screen.getByText('acc_role_0000')).toBeTruthy();
+		});
 	});
 
-	it('searches across every entry, including ones far outside the rendered window', () => {
-		setRoles(many(300), { search: 'tenant-287-' });
-		render(Roles);
+	describe('a whole list from a cluster that cannot page', () => {
+		it('counts the whole list, not the rendered window', () => {
+			setRoles(many(60), { mode: 'full', total: 60 });
+			render(Roles);
+			expect(screen.getByText('60 items')).toBeTruthy();
+		});
 
-		// The match is the 288th entry; a window-only search would miss it.
-		expect(screen.getByText('1 item')).toBeTruthy();
-		expect(screen.getByText('acc_role_0287')).toBeTruthy();
-	});
+		it('searches names across every entry, including ones far outside the rendered window', () => {
+			setRoles(many(300), { mode: 'full', search: 'ROLE_0287' });
+			render(Roles);
 
-	it('sorts across the whole list so the first row is the global first', () => {
-		setRoles(many(60), { sorting: ['desc', 'Role', 0] });
-		render(Roles);
+			expect(screen.getByText('1 item')).toBeTruthy();
+			expect(screen.getByText('acc_role_0287')).toBeTruthy();
+		});
 
-		const first = document.querySelector('tbody tr[data-index="0"] td').textContent.trim();
-		expect(first.startsWith('acc_role_0059')).toBe(true);
+		it('searches descriptions by word, as the cluster does', () => {
+			const roles = many(3).map((r, i) => ({ ...r, description: i === 1 ? 'Billing team readers' : '' }));
+			setRoles(roles, { mode: 'full', search: 'team billing' });
+			render(Roles);
+
+			expect(screen.getByText('1 item')).toBeTruthy();
+			expect(screen.getByText('acc_role_0001')).toBeTruthy();
+		});
+
+		it('sorts across the whole list so the first row is the global first', () => {
+			setRoles(many(60), { mode: 'full', sorting: ['desc', 'role', 0] });
+			render(Roles);
+
+			const first = document.querySelector('tbody tr[data-index="0"] td').textContent.trim();
+			expect(first.startsWith('acc_role_0059')).toBe(true);
+		});
 	});
 
 	it('shows the in-progress state, not an empty list, while the first load runs', () => {
@@ -171,14 +237,6 @@ describe('Roles surface', () => {
 		expect(title).toContain('.pattern-3-*');
 		expect(title.split('\n').length).toBeLessThanOrEqual(16);
 		expect(title).toMatch(/Open the role to see them all/);
-	});
-
-	it('still finds a role by a pattern the cell does not show', () => {
-		setRoles(sprawling(), { search: '.pattern-150-' });
-		render(Roles);
-
-		expect(screen.getByText('1 item')).toBeTruthy();
-		expect(screen.getByText('kibana_system')).toBeTruthy();
 	});
 
 	it('shows a dash rather than an empty cell when a role grants nothing', async () => {

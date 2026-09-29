@@ -1,17 +1,20 @@
 <script>
-	import { getContext } from 'svelte'
+	import { getContext, untrack } from 'svelte'
 	import { useStoreon } from '@storeon/svelte'
 	import { isThemeToggleChecked } from '$lib/utils/helpers'
+	import API from '$lib/api/elasticsearch'
 	import AdvancedDropdown from '$lib/components/inputs/AdvancedDropdown.svelte'
-	import { refuseUserRoleChange } from '../guards.js'
+	import { ROLE_PAGE_SIZE, searchAndSortRoles } from '$lib/security/roleSearch.js'
+	import { toRoleEntries } from '$lib/store/elasticsearch/securityList.js'
+	import { isSelf, refuseUserRoleChange } from '../guards.js'
 
 	let { username = null } = $props()
 
 	const { close } = getContext('modal-window')
-	const { dispatch, app, securityUsers, securityRoles, securityIdentity } = useStoreon(
+	const { dispatch, app, connection, securityUsers, securityIdentity } = useStoreon(
 		'app',
+		'connection',
 		'securityUsers',
-		'securityRoles',
 		'securityIdentity'
 	)
 
@@ -27,11 +30,62 @@
 	let email = $state(existing?.email || '')
 	let roles = $state([...(existing?.roles || [])])
 
-	let availableRoles = $derived(
-		$securityRoles.entries.map(r => r.name).sort((a, b) => a.localeCompare(b))
-	)
+	// The cluster may hold thousands of roles, so the picker asks it for the
+	// ones matching what was typed. A cluster that cannot page answers the first
+	// question with the whole list, which every later search waits on and
+	// filters here, rather than downloading it again while it is still arriving.
+	let first = null
+	let rolesError = $state('')
 
-	const catalogue = $derived(Object.fromEntries($securityRoles.entries.map(r => [r.name, r])))
+	const ask = text => new API($connection, $app.windowId).querySecurityRoles({ search: text })
+
+	const findRoles = async text => {
+		try {
+			first ??= { text, answer: ask(text) }
+			const opening = await first.answer
+			const answer =
+				opening?.mode === 'full' || first.text === text ? opening : await ask(text)
+
+			const entries = toRoleEntries(answer?.roles)
+			const found = answer?.mode === 'full' ? searchAndSortRoles(entries, text) : entries
+			rolesError = ''
+			return found.map(r => r.name).slice(0, ROLE_PAGE_SIZE)
+		} catch (err) {
+			first = null
+			rolesError = err?.message || 'Roles could not be read from this cluster.'
+			return []
+		}
+	}
+
+	// Definitions for the roles the self-lockout guard has to judge, fetched as
+	// they come into play. A role the cluster does not return stays out of the
+	// catalogue, which the guard treats cautiously; the store repeats the check
+	// with a fresh lookup before sending.
+	let definitions = $state({})
+	let editingSelf = $derived(isSelf(name, $securityIdentity))
+
+	$effect(() => {
+		if (!editingSelf) return
+		const known = untrack(() => definitions)
+		const wanted = [...new Set([...($securityIdentity.roles || []), ...roles])].filter(
+			role => !(role in known)
+		)
+		if (!wanted.length) return
+
+		const settle = found => {
+			definitions = {
+				...definitions,
+				...Object.fromEntries(wanted.map(role => [role, found?.[role] ?? null])),
+			}
+		}
+		new API($connection, $app.windowId)
+			.getSecurityRolesByName(wanted)
+			.then(settle, () => settle({}))
+	})
+
+	let catalogue = $derived(
+		Object.fromEntries(Object.entries(definitions).filter(([, definition]) => definition))
+	)
 	let lockout = $derived(refuseUserRoleChange(name, roles, $securityIdentity, catalogue))
 
 	// Elasticsearch stores this as free text and never reads it, so a typo
@@ -117,19 +171,18 @@
 		<div class="field">
 			<label for="user-roles">Roles</label>
 			<AdvancedDropdown
-				items={availableRoles}
+				loadOptions={findRoles}
 				selectedValue={roles}
 				multiple
 				isCreatable={false}
 				isClearable
-				placeholder={availableRoles.length
-					? 'Search roles…'
-					: 'No roles could be read from this cluster'}
-				isDisabled={availableRoles.length === 0}
+				placeholder="Search roles…"
 				onChange={picked => (roles = picked)}
 				floatingConfig={{ strategy: 'fixed' }}
 			/>
-			{#if roles.length}
+			{#if rolesError}
+				<span class="ui grey text">{rolesError}</span>
+			{:else if roles.length}
 				<span class="ui grey text">{roles.length} selected</span>
 			{/if}
 		</div>

@@ -43,7 +43,13 @@ vi.mock('$lib/components/JsonEditor.svelte', async () => ({
 	default: (await import('../__JsonEditorStub.svelte')).default,
 }));
 
-import RoleDialog from './RoleDialog.svelte';
+import RoleEditor from './RoleEditor.svelte';
+
+const openRole = name => {
+	let entries = [];
+	state.roles.subscribe(v => (entries = v.entries))();
+	return render(RoleEditor, { props: { name, existing: entries.find(r => r.name === name) ?? null } });
+};
 
 // Two blocks restricted differently, which is the case the whole-role JSON
 // made awkward: finding the right entry among several.
@@ -90,21 +96,21 @@ beforeEach(() => {
 
 describe('editing a block query in the block', () => {
 	it('gives every block its own editor', () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		expect(blocks()).toHaveLength(2);
 		expect(screen.getAllByText('Document query')).toHaveLength(2);
 	});
 
 	it('leaves an untouched role exactly as the cluster reported it', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 		await save();
 
 		expect(savedBody().indices).toEqual(TWO_BLOCKS.indices);
 	});
 
 	it('changes only the block that was edited', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		// The stub stands in for every editor, so the second block is edited by
 		// clearing the first one's query and leaving the rest alone.
@@ -118,7 +124,7 @@ describe('editing a block query in the block', () => {
 	});
 
 	it('omits the query when it is cleared rather than sending it empty', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		for (const block of blocks()) {
 			await fireEvent.click([...block.querySelectorAll('button')].find(b => b.textContent.trim() === 'None'));
@@ -132,7 +138,7 @@ describe('editing a block query in the block', () => {
 	});
 
 	it('preserves a template it does not offer to edit', async () => {
-		render(RoleDialog, { props: { name: TEMPLATED.name } });
+		openRole(TEMPLATED.name);
 
 		expect(screen.getByText(/cannot show, such as a template/)).toBeTruthy();
 		expect(screen.queryByText('Template')).toBeNull();
@@ -142,7 +148,7 @@ describe('editing a block query in the block', () => {
 	});
 
 	it('offers no editor or preview for a query it cannot show', () => {
-		render(RoleDialog, { props: { name: TEMPLATED.name } });
+		openRole(TEMPLATED.name);
 
 		expect(screen.queryByTestId('json-editor-stub')).toBeNull();
 		expect(screen.queryByText(/What does this match\?/)).toBeNull();
@@ -160,7 +166,7 @@ describe('after the JSON view has changed the blocks', () => {
 	};
 
 	it('does not write one block query onto another when a block is deleted there', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await jsonMode();
 		// The whole-role editor drops the first block.
@@ -181,7 +187,7 @@ describe('after the JSON view has changed the blocks', () => {
 	});
 
 	it('does not restore a query removed in the JSON view', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await jsonMode();
 		jsonHeld.value = {
@@ -199,7 +205,7 @@ describe('after the JSON view has changed the blocks', () => {
 
 describe('removing one block', () => {
 	it('keeps the queries of the blocks that remain', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		const second = blocks()[1];
 		await fireEvent.click([...second.querySelectorAll('button')].find(b => b.textContent.trim() === 'Remove'));
@@ -214,7 +220,7 @@ describe('removing one block', () => {
 
 describe('checking a restriction before it can silently deny access', () => {
 	it('names the block a bad query came from, since the cluster only gives a position', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		jsonHeld.value = { __throw: 'Unexpected token }' };
 		await save();
@@ -224,7 +230,7 @@ describe('checking a restriction before it can silently deny access', () => {
 	});
 
 	it('reports what a query matches when the account may read the data', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await fireEvent.click(screen.getAllByText(/What does this match\?/)[0]);
 		await new Promise(r => setTimeout(r, 0));
@@ -236,7 +242,7 @@ describe('checking a restriction before it can silently deny access', () => {
 
 	it('groups thousands so a large count stays readable', async () => {
 		api.preview = vi.fn().mockResolvedValue({ matching: 1234, total: 3512 });
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await fireEvent.click(screen.getAllByText(/What does this match\?/)[0]);
 		await new Promise(r => setTimeout(r, 0));
@@ -247,7 +253,7 @@ describe('checking a restriction before it can silently deny access', () => {
 	});
 
 	it('does not repeat the index patterns, which the field above already shows', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await fireEvent.click(screen.getAllByText(/What does this match\?/)[0]);
 		await new Promise(r => setTimeout(r, 0));
@@ -258,7 +264,7 @@ describe('checking a restriction before it can silently deny access', () => {
 
 	it('warns when a query matches nothing, which is valid and usually wrong', async () => {
 		api.preview = vi.fn().mockResolvedValue({ matching: 0, total: 5 });
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await fireEvent.click(screen.getAllByText(/What does this match\?/)[0]);
 		await new Promise(r => setTimeout(r, 0));
@@ -270,7 +276,7 @@ describe('checking a restriction before it can silently deny access', () => {
 
 	it('omits the preview without complaint when the account cannot read the data', async () => {
 		api.preview = vi.fn().mockRejectedValue(Object.assign(new Error('nope'), { cause: 'privilege' }));
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await fireEvent.click(screen.getAllByText(/What does this match\?/)[0]);
 		await new Promise(r => setTimeout(r, 0));
@@ -292,14 +298,14 @@ describe('field restrictions', () => {
 				},
 			],
 		});
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 		await save();
 
 		expect(savedBody().indices[0].field_security).toEqual({ grant: ['x'], except: ['x.secret'] });
 	});
 
 	it('refuses except without grant, which the cluster rejects', async () => {
-		render(RoleDialog, { props: { name: TWO_BLOCKS.name } });
+		openRole(TWO_BLOCKS.name);
 
 		await fireEvent.input(screen.getAllByLabelText('Fields excepted')[0], { target: { value: 'secret' } });
 		await tick();

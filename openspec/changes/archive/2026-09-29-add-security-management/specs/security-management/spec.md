@@ -69,6 +69,10 @@ Deleting a user SHALL require explicit confirmation naming the user.
 - **WHEN** the user dismisses the delete confirmation
 - **THEN** no account SHALL be changed
 
+#### Scenario: Assigning a role on a cluster with many roles
+- **WHEN** the user edits an account's roles on a cluster holding thousands of roles and types part of a role's name
+- **THEN** the system SHALL offer the matching roles from the whole cluster, and roles already assigned to the account SHALL remain shown whether or not the search returns them
+
 ### Requirement: Roles can be listed and managed
 The system SHALL list the roles the cluster reports and SHALL allow creating
 and editing roles that are not reserved. The editor SHALL support cluster
@@ -122,6 +126,12 @@ reports for that entity type, including reserved entries, and SHALL NOT omit a
 class of entry as a side effect of how it retrieves them. Search and sort
 SHALL apply across the whole list, not only the portion currently on screen.
 
+The roles list SHALL be retrieved incrementally where the cluster supports it,
+so the first roles appear without waiting for the whole list. Where the cluster
+does not support it, the system SHALL retrieve the whole list and SHALL offer
+the same search and sort over it. Roles SHALL be searchable by name and
+description and sortable by name.
+
 #### Scenario: A cluster with many roles
 - **WHEN** the user opens the roles surface on a cluster holding several hundred roles
 - **THEN** the list SHALL render and scroll smoothly, and searching SHALL match roles anywhere in the list rather than only those currently rendered
@@ -131,8 +141,20 @@ SHALL apply across the whole list, not only the portion currently on screen.
 - **THEN** both SHALL appear in the users list
 
 #### Scenario: Sorting spans the whole list
-- **WHEN** the user sorts a list by a column
+- **WHEN** the user sorts a list by a sortable column, which for roles is the role name
 - **THEN** the ordering SHALL be computed over every entry the cluster reported, and the first entry shown SHALL be the first in that ordering
+
+#### Scenario: A cluster with thousands of roles
+- **WHEN** the user opens the roles surface on a cluster holding several thousand roles
+- **THEN** the first roles SHALL be shown without waiting for the rest, the surface SHALL state how many roles the cluster holds, and scrolling towards the end SHALL retrieve further roles until all are shown
+
+#### Scenario: Searching roles the table has not retrieved
+- **WHEN** the user searches for a role by name on a cluster holding more roles than have been retrieved
+- **THEN** the matching roles SHALL be shown whether or not they had been retrieved before the search
+
+#### Scenario: A cluster that cannot page roles
+- **WHEN** the user opens the roles surface on a cluster that offers no incremental role retrieval
+- **THEN** the system SHALL show every role, searchable by name and description and sortable by name, without reporting the missing capability as an error
 
 ### Requirement: An index block's restrictions are edited in the block
 The system SHALL allow the document query and the field restrictions of an
@@ -272,6 +294,14 @@ in the application, and SHALL NOT depend on the cluster rejecting the change.
 #### Scenario: Acting on a different account
 - **WHEN** the user makes the same change to an account other than the one the connection authenticates as
 - **THEN** the system SHALL allow it
+
+#### Scenario: The roles involved are not on screen
+- **WHEN** the user removes their own managing role and the roles involved are not among those the roles surface has retrieved
+- **THEN** the system SHALL judge the change from the cluster's definitions of those roles and SHALL refuse it as above
+
+#### Scenario: A role the cluster does not describe
+- **WHEN** the user's own account would keep only a role the cluster does not return a definition for, having lost a role that manages security
+- **THEN** the system SHALL refuse the change rather than assume the kept role manages security
 
 ### Requirement: Credentials never reach the application log
 The system SHALL NOT write passwords, password hashes, or API key secrets to

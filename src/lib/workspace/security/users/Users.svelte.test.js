@@ -60,12 +60,11 @@ describe('Users surface', () => {
 		expect(screen.getByText('3 items')).toBeTruthy();
 	});
 
-	it('fetches users, and the role catalogue the guard needs, on mount', () => {
-		state.roles.set({ entries: [], loaded: false });
+	it('fetches users on mount, and not the role list, which may be thousands long', () => {
 		render(Users);
 
 		expect(state.dispatch).toHaveBeenCalledWith('security/users/fetch');
-		expect(state.dispatch).toHaveBeenCalledWith('security/roles/fetch');
+		expect(state.dispatch).not.toHaveBeenCalledWith('security/roles/fetch');
 	});
 
 	it('offers only a password change on a reserved account', async () => {

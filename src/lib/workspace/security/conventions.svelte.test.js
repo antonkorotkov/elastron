@@ -109,8 +109,8 @@ describe('choosing from a cluster-sourced list', () => {
 	// picked through the app's searchable dropdown, not a wall of checkboxes.
 	it.each([
 		['users/UserDialog.svelte', 'Roles'],
-		['roles/RoleDialog.svelte', 'Cluster Privileges'],
-		['roles/RoleDialog.svelte', 'Privileges'],
+		['roles/RoleEditor.svelte', 'Cluster Privileges'],
+		['roles/RoleEditor.svelte', 'Privileges'],
 	])('%s picks %s through the shared dropdown', file => {
 		const source = readFileSync(`src/lib/workspace/security/${file}`, 'utf8');
 

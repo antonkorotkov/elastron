@@ -23,6 +23,7 @@
 		emptyMessage = 'Nothing here',
 		hasEntries = undefined,
 		indicatorDelay = 200,
+		onEndReached = undefined,
 	} = $props()
 
 	const { app } = useStoreon('app')
@@ -67,6 +68,7 @@
 		{sorting}
 		{Cell}
 		{onSort}
+		{onEndReached}
 		selectable
 		footerColumns
 		emptyMessage={loaded ? emptyMessage : ''}
