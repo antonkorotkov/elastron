@@ -57,6 +57,9 @@ const unwrap = response => (response?.body !== undefined ? response.body : respo
 export const createAssistantTools = ({ connection, windowId }) => {
 	const send = request =>
 		withElasticClient(connection, windowId, async client => unwrap(await client.transport.request(request)))
+	// Lets a tool reuse a whole list it read moments ago for the same cluster
+	// and account. Never includes a credential.
+	send.connectionKey = [connection?.host, connection?.port, connection?.user, windowId].join('|')
 
 	return Object.fromEntries(
 		Object.entries(toolDefinitions).map(([name, definition]) => [

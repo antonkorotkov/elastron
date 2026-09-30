@@ -4,7 +4,7 @@
 
 export const ROLE_PAGE_SIZE = 100;
 
-const escapeWildcard = text => text.replace(/[\\*?]/g, match => `\\${match}`);
+export const escapeWildcard = text => text.replace(/[\\*?]/g, match => `\\${match}`);
 
 // The description is analysed text, so it matches whole words; the name is a
 // keyword, so it matches any substring.

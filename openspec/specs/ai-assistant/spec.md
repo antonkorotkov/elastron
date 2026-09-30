@@ -77,6 +77,78 @@ cluster's own response would carry it.
 - **WHEN** the assistant reads the cluster's API keys
 - **THEN** the result SHALL carry each key's name, owner, and lifecycle dates, and SHALL NOT carry any key secret
 
+### Requirement: Security records can be fetched by what identifies them
+The system SHALL give the assistant read-only actions that fetch individual
+security records by the identifiers a user or an earlier result supplies: users
+by username, roles by name, and API keys by id, by name, by owning username, or
+any combination of these.
+Several users or several roles SHALL be fetchable in one action. A fetched role
+SHALL carry its full definition, including each index entry's document query and
+field restrictions. An API key lookup by name SHALL accept wildcards, and SHALL
+leave out invalidated keys unless the assistant asks for them. These actions
+SHALL run without confirmation, and SHALL NOT return credential material.
+
+When some of the requested identifiers do not exist, the system SHALL return the
+records that do and SHALL name the identifiers that were not found. When none
+exist, it SHALL say so rather than reporting a failure.
+
+#### Scenario: Following a user to their roles
+- **WHEN** the user asks what the account `alice` may do
+- **THEN** the assistant SHALL be able to fetch `alice` by username, then fetch her roles by name in a single action, and answer from their full definitions without pausing for approval
+
+#### Scenario: A role outside the first page of the listing
+- **WHEN** the cluster holds more roles than one page and the user names a role that is not on the first page
+- **THEN** the assistant SHALL be able to fetch that role by its name
+
+#### Scenario: Seeing what a role restricts
+- **WHEN** the assistant fetches a role whose index entry restricts documents and fields
+- **THEN** the result SHALL include that entry's document query and its granted and excepted fields
+
+#### Scenario: Some names do not exist
+- **WHEN** the assistant fetches the roles `ops` and `no_such_role`, and only `ops` exists
+- **THEN** the result SHALL carry `ops` and SHALL state that `no_such_role` was not found
+
+#### Scenario: Finding an API key by its name
+- **WHEN** the user asks about the `ci-deploy` key without knowing its id
+- **THEN** the assistant SHALL be able to fetch the key by that name, and the result SHALL carry its owner and lifecycle dates, its role restrictions where the cluster reports them, and SHALL NOT carry its secret
+
+#### Scenario: A user's API keys
+- **WHEN** the user asks which API keys `bob` owns
+- **THEN** the assistant SHALL be able to fetch the keys by owning username, leaving out invalidated keys unless it asks for them
+
+### Requirement: Security listings can be searched and filtered
+The system SHALL let the assistant narrow each security listing to the entries
+that match a search, so that it can answer from the first page without walking
+the whole list. The search SHALL cover users by username, full name, email, and
+role name; roles by name and description; and API keys by name and owning
+username. The role listing SHALL additionally be filterable to roles granting
+privileges on a given index, and to roles holding a given cluster or index
+privilege, across every role the cluster holds. A role's `all` SHALL count as
+holding a privilege only when the privilege is of the same kind, cluster or
+index, as the `all`, judged from the privilege names the cluster reports. The
+API key listing SHALL leave out invalidated keys unless the assistant asks for
+them.
+
+#### Scenario: Which roles grant write on an index
+- **WHEN** the user asks which roles grant `write` on `logs-2026.09` on a cluster holding thousands of roles
+- **THEN** the assistant SHALL be able to list only the roles whose index entries cover that index with that privilege, drawn from every role on the cluster and not only the first page
+
+#### Scenario: Searching users by email
+- **WHEN** the user asks which account belongs to `bob@example.com`
+- **THEN** the assistant SHALL be able to search the user listing by that address and find the account
+
+#### Scenario: A search on a cluster that cannot query roles
+- **WHEN** the assistant searches roles on a cluster whose version offers no role query
+- **THEN** the first page SHALL still match roles by name and description, without reporting the missing capability as an error, and SHALL tell the assistant how to ask for later pages
+
+#### Scenario: An index all is not a cluster privilege
+- **WHEN** the assistant lists roles holding `manage_security`, and a role holds `all` only on one index
+- **THEN** that role SHALL NOT be listed
+
+#### Scenario: A cluster all is not an index privilege
+- **WHEN** the assistant lists roles holding `write`, and a role holds cluster `all` and no index entries
+- **THEN** that role SHALL NOT be listed
+
 ### Requirement: Mutating actions require explicit confirmation
 The system SHALL NOT execute any assistant-requested action that creates, modifies, or deletes cluster state until the user explicitly approves that specific action. This includes creating, deleting, opening, closing, cloning, or wiping an index, indexing, updating, or deleting a document, changing mappings, settings, or aliases, and any arbitrary request whose effect the system does not classify, which SHALL be treated as mutating regardless of its HTTP method. Each proposed action SHALL be presented with its operation, its target, and the full request it will send.
 
@@ -116,7 +188,7 @@ The system SHALL cap the cluster data included in a single tool result returned 
 - **THEN** the result sent to the AI provider SHALL contain at most the ceiling and SHALL be marked as truncated
 
 ### Requirement: Paged listings
-When the index listing holds more entries than the result ceiling, the system SHALL return it one page at a time, each page stating the total number of entries and pages. The first page SHALL be fetched without confirmation. Every later page SHALL require the user's explicit approval, because each one sends another batch of cluster data to the AI provider, and the approval SHALL state which entries the page contains. Pages SHALL follow the same order, so walking them covers every entry once.
+When the index listing, the user listing, the role listing, or the API key listing holds more entries than the result ceiling, the system SHALL return it one page at a time, each page stating the total number of entries and pages. The first page SHALL be fetched without confirmation. Every later page SHALL require the user's explicit approval, because each one sends another batch of cluster data to the AI provider, and the approval SHALL state which entries the page contains. An approved page SHALL be fetched with the request its approval showed, and SHALL NOT be replaced by a different request. Pages SHALL follow the same order, so walking them covers every entry once. A search or filter SHALL apply before paging, so the total and the pages count only the matching entries. A page beyond what the cluster can page SHALL be answered with a note saying so and how to narrow the listing, without sending a request the cluster would refuse.
 
 #### Scenario: First page runs at once
 - **WHEN** the assistant lists indices on a cluster with more indices than the ceiling
@@ -129,6 +201,22 @@ When the index listing holds more entries than the result ceiling, the system SH
 #### Scenario: Declining a later page
 - **WHEN** the user declines a request for a later page
 - **THEN** the system SHALL NOT fetch it, and the assistant SHALL be told the page was declined
+
+#### Scenario: Paging a security listing
+- **WHEN** the assistant lists roles on a cluster holding more roles than the ceiling
+- **THEN** the system SHALL return the first page without asking, with the total and the number of pages, and a request for the second page SHALL need the user's approval
+
+#### Scenario: Searching before paging
+- **WHEN** the assistant lists roles with a search matching 12 of 7 000 roles
+- **THEN** the result SHALL report a total of 12 on a single page
+
+#### Scenario: An approved role page on a cluster without role search
+- **WHEN** the user approves the second page of a role listing whose card shows the role search, on a cluster that has no role search
+- **THEN** the system SHALL NOT fetch the whole role list in its place, and SHALL tell the assistant to ask for the page again reading the whole list, which its card then shows
+
+#### Scenario: A page past the cluster's result window
+- **WHEN** the assistant asks for page 201 of the API key listing, past the cluster's 10 000-entry window
+- **THEN** the system SHALL answer with a note that the page cannot be fetched and that a narrower search can reach the entries, and SHALL NOT send the request
 
 ### Requirement: Query handoff
 When the assistant proposes a search query or an Elasticsearch request, the system SHALL present it with actions to load it into the Playground and to copy it. A proposed search query SHALL additionally offer an action to open it in the Search view.

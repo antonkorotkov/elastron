@@ -38,20 +38,26 @@ export const capSize = value => {
 }
 
 /**
- * One page of a full list. Pages after the last come back empty with a note.
- * Every page but the last is marked truncated and says how to get the next.
+ * Describes one page of a list whose total is known, whether the page was cut
+ * here or by the cluster. Pages after the last come back empty with a note;
+ * every page but the last is marked truncated and says how to get the next.
  */
-export const pageRows = (rows, page = 1) => {
-	const list = Array.isArray(rows) ? rows : []
-	const pages = Math.max(1, Math.ceil(list.length / RESULT_ROW_LIMIT))
+export const describePage = (slice, total, page = 1) => {
+	const pages = Math.max(1, Math.ceil(total / RESULT_ROW_LIMIT))
 	const start = (page - 1) * RESULT_ROW_LIMIT
-	const slice = list.slice(start, start + RESULT_ROW_LIMIT)
-	const result = { total: list.length, page, pages, returned: slice.length, rows: slice }
+	const result = { total, page, pages, returned: slice.length, rows: slice }
 	if (page > pages) {
 		result.note = `There ${pages === 1 ? 'is only 1 page' : `are only ${pages} pages`}.`
 	} else if (page < pages) {
 		result.truncated = true
-		result.note = `Showing entries ${start + 1}–${start + slice.length} of ${list.length} (page ${page} of ${pages}). Request page ${page + 1} for more; the user must approve each further page.`
+		result.note = `Showing entries ${start + 1}–${start + slice.length} of ${total} (page ${page} of ${pages}). Request page ${page + 1} for more; the user must approve each further page.`
 	}
 	return result
+}
+
+/** One page of a full list. */
+export const pageRows = (rows, page = 1) => {
+	const list = Array.isArray(rows) ? rows : []
+	const start = (page - 1) * RESULT_ROW_LIMIT
+	return describePage(list.slice(start, start + RESULT_ROW_LIMIT), list.length, page)
 }

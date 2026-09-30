@@ -1,12 +1,6 @@
 import { handleSecurityRequest, unwrap } from '$lib/server/security/request.js';
 import { buildRoleQuery, ROLE_PAGE_SIZE } from '$lib/security/roleSearch.js';
-
-// Older clusters, and clusters with security off, have no role query endpoint.
-const hasNoQueryEndpoint = err => {
-	const body = err?.meta?.body?.error;
-	const reason = typeof body === 'string' ? body : body?.reason || err?.message || '';
-	return /no handler found for uri \[\/?_security\/_query\/role/i.test(reason);
-};
+import { lacksQueryEndpoint } from '$lib/server/security/queryEndpoint.js';
 
 const fullList = async client => ({
 	mode: 'full',
@@ -46,7 +40,7 @@ export const POST = async ({ request }) =>
 		try {
 			return await page(client, params);
 		} catch (err) {
-			if (!hasNoQueryEndpoint(err)) throw err;
+			if (!lacksQueryEndpoint(err, 'role')) throw err;
 			return fullList(client);
 		}
 	});

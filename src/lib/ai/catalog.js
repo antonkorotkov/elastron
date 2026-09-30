@@ -7,6 +7,8 @@
  * import it without pulling in server code.
  */
 
+import { buildRoleQuery, escapeWildcard } from '../security/roleSearch.js'
+
 export const AUTO = 'auto'
 export const CONFIRM = 'confirm'
 
@@ -29,6 +31,9 @@ export const TOOL_POLICY = {
 	'list-security-users': AUTO,
 	'list-security-roles': AUTO,
 	'list-security-api-keys': AUTO,
+	'get-security-user': AUTO,
+	'get-security-role': AUTO,
+	'get-security-api-key': AUTO,
 	'create-index': CONFIRM,
 	'delete-index': CONFIRM,
 	'clone-index': CONFIRM,
@@ -62,7 +67,12 @@ export const LIST_PAGE_SIZE = 50
  * the user's approval, since each sends another batch of cluster data to the
  * AI provider.
  */
-export const PAGED_TOOLS = new Set(['list-indices'])
+export const PAGED_TOOLS = new Set([
+	'list-indices',
+	'list-security-users',
+	'list-security-roles',
+	'list-security-api-keys',
+])
 
 const pageOf = input => (Number.isInteger(input?.page) && input.page > 0 ? input.page : 1)
 
@@ -164,13 +174,95 @@ export const pathWithQuery = ({ path, querystring } = {}) => {
 	return query ? `${path}?${query}` : path
 }
 
+const offsetOf = page => (pageOf({ page }) - 1) * LIST_PAGE_SIZE
+
+/** Elasticsearch refuses a search whose from plus size passes this. */
+export const RESULT_WINDOW = 10000
+
+/** Whether a page lies past what a cluster search can reach. */
+export const beyondResultWindow = page => offsetOf(page) + LIST_PAGE_SIZE > RESULT_WINDOW
+
+// Newest first; the name breaks ties so pages never overlap.
+const API_KEY_ORDER = [{ creation: { order: 'desc' } }, { name: { order: 'asc' } }]
+
 const REQUESTS = {
 	// Security state is readable but never writable by the assistant. There is
 	// no corresponding write tool, so there is nothing for an approval flow to
 	// expose; see the security-management change for why.
 	'list-security-users': () => ({ method: 'GET', path: '/_security/user' }),
-	'list-security-roles': () => ({ method: 'GET', path: '/_security/role' }),
-	'list-security-api-keys': () => ({ method: 'GET', path: '/_security/api_key' }),
+	// The role query cannot see index patterns or privileges, so those filters
+	// read every role; a search alone is answered by the cluster a page at a time.
+	'list-security-roles': ({ search, index, privilege, source, page } = {}) =>
+		index || privilege || source === 'whole_list'
+			? { method: 'GET', path: '/_security/role' }
+			: {
+					method: 'POST',
+					path: '/_security/_query/role',
+					body: {
+						from: offsetOf(page),
+						size: LIST_PAGE_SIZE,
+						sort: [{ name: { order: 'asc' } }],
+						...(buildRoleQuery(search) ? { query: buildRoleQuery(search) } : {}),
+					},
+				},
+	'list-security-api-keys': ({ search, include_invalidated, page } = {}) => ({
+		method: 'POST',
+		path: '/_security/_query/api_key',
+		body: {
+			from: offsetOf(page),
+			size: LIST_PAGE_SIZE,
+			sort: API_KEY_ORDER,
+			query: {
+				bool: {
+					...(search
+						? {
+								must: [
+									{
+										bool: {
+											should: [
+												{ wildcard: { name: { value: `*${escapeWildcard(search)}*`, case_insensitive: true } } },
+												{ term: { username: search } },
+											],
+											minimum_should_match: 1,
+										},
+									},
+								],
+							}
+						: {}),
+					filter: include_invalidated ? [] : [{ term: { invalidated: false } }],
+				},
+			},
+		},
+	}),
+	// Each name is encoded on its own, so a slash stays inside the name.
+	'get-security-user': ({ usernames = [] }) => ({
+		method: 'GET',
+		path: `/_security/user/${usernames.map(seg).join(',')}`,
+	}),
+	'get-security-role': ({ names = [] }) => ({
+		method: 'GET',
+		path: `/_security/role/${names.map(seg).join(',')}`,
+	}),
+	// The key query rather than GET /_security/api_key: the GET refuses a name
+	// and an owner together, and 8.0 has no active_only.
+	'get-security-api-key': ({ id, name, username, include_invalidated } = {}) => ({
+		method: 'POST',
+		path: '/_security/_query/api_key',
+		body: {
+			size: LIST_PAGE_SIZE,
+			sort: API_KEY_ORDER,
+			query: {
+				bool: {
+					filter: [
+						...(id ? [{ ids: { values: [id] } }] : []),
+						...(name ? [{ wildcard: { name: { value: name, case_insensitive: true } } }] : []),
+						...(username ? [{ term: { username } }] : []),
+						...(include_invalidated ? [] : [{ term: { invalidated: false } }]),
+					],
+				},
+			},
+		},
+	}),
 	'list-indices': ({ index, sort, bytes } = {}) => ({
 		method: 'GET',
 		path: index ? `/_cat/indices/${seg(index)}` : '/_cat/indices',
