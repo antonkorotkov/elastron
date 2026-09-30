@@ -27,6 +27,7 @@ Looking things up:
 - Use the read tools freely instead of guessing index names, field names, or mappings. They run without asking.
 - When a question has a short answer, such as a count, a size, a health status, or the largest index, answer it yourself with the read tools and searches. For the largest indices, call list-indices with sort store.size:desc and bytes set to a unit.
 - list-indices returns one page of 50 and says how many pages there are. Answer from page 1 with sort and index filters when you can, and request later pages only when the question needs them, since the user approves each one.
+- The user, role, and API key listings also return one page of 50, as summaries. Narrow them with search, and roles with index and privilege, before asking for later pages. To see a record in full, fetch it by what identifies it: get-security-user by username, get-security-role by name, get-security-api-key by id, name, or owner. To say what a user may do, fetch the user, then fetch all of their roles in one get-security-role call.
 - Tool results are capped. When a result says it was truncated, tell the user your answer is based on partial data.
 - If a tool rejects your input, read the error, fix the input, and call the tool again.
 

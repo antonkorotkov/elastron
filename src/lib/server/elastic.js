@@ -114,6 +114,33 @@ export const getErrorReason = err =>
 	(isUnreachableError(err) ? `The cluster could not be reached (${err.name}).` : undefined);
 
 /**
+ * Builds the record logged when a request fails.
+ *
+ * Client errors carry `meta.meta.request.params`, which includes the request
+ * body. Logging the error object whole would put a new user's plaintext
+ * password, or an API key's role descriptors, into the application log the
+ * moment a security write fails. Only the status, the path, and the cluster's
+ * own reason are ever logged, and no value taken from the request body is.
+ */
+export const describeErrorForLog = err => {
+	const params = err?.meta?.meta?.request?.params;
+	const record = {
+		name: err?.name || 'Error',
+		status: err?.meta?.statusCode ?? err?.statusCode,
+		method: params?.method,
+		path: params?.path,
+		reason: getErrorReason(err),
+	};
+
+	// An error the cluster did not produce is an ordinary bug in a route, and
+	// without a stack there is nothing to locate it by. Cluster errors carry
+	// the request that caused them, and their stack is all transport frames.
+	if (!err?.meta && err?.stack) record.stack = err.stack;
+
+	return record;
+};
+
+/**
  * Helper to process the incoming SvelteKit request, extract connection info,
  * create a client, perform an action, and handle any errors.
  *
@@ -140,7 +167,7 @@ export async function handleElasticRequest(request, action) {
 		);
 		return json({ data: result });
 	} catch (err) {
-		console.error("Elasticsearch Error", err);
+		console.error('Elasticsearch Error', describeErrorForLog(err));
 		return json(
 			{
 				error: getErrorReason(err),

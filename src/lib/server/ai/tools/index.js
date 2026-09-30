@@ -1,5 +1,12 @@
 import { tool } from 'ai'
-import { buildToolRequest, needsConfirmation, requiresApproval, PAGED_TOOLS, TOOL_NAMES } from '../../../ai/catalog.js'
+import {
+	buildToolRequest,
+	isSecurityWriteRequest,
+	needsConfirmation,
+	requiresApproval,
+	PAGED_TOOLS,
+	TOOL_NAMES,
+} from '../../../ai/catalog.js'
 import { withElasticClient, getErrorReason } from '../../elastic.js'
 import { capSize } from './limits.js'
 import { readTools } from './read.js'
@@ -50,6 +57,9 @@ const unwrap = response => (response?.body !== undefined ? response.body : respo
 export const createAssistantTools = ({ connection, windowId }) => {
 	const send = request =>
 		withElasticClient(connection, windowId, async client => unwrap(await client.transport.request(request)))
+	// Lets a tool reuse a whole list it read moments ago for the same cluster
+	// and account. Never includes a credential.
+	send.connectionKey = [connection?.host, connection?.port, connection?.user, windowId].join('|')
 
 	return Object.fromEntries(
 		Object.entries(toolDefinitions).map(([name, definition]) => [
@@ -62,6 +72,15 @@ export const createAssistantTools = ({ connection, windowId }) => {
 					try {
 						if (definition.local) return capSize(await definition.run(input))
 						const request = buildToolRequest(name, input)
+						// The assistant may read the cluster's security state and may
+						// never change it. There is no security write tool, so the
+						// generic request tool is the only way one could be reached;
+						// it is refused here rather than offered for approval.
+						if (isSecurityWriteRequest(request)) {
+							throw new Error(
+								'Changing users, roles, or API keys is not available to the assistant. Make this change in the Security area of the app.'
+							)
+						}
 						const result = definition.run
 							? await definition.run(input, send, request, rawInput)
 							: await send(request)

@@ -65,6 +65,14 @@ describe('Header', () => {
 		expect(link.closest('a').getAttribute('href')).toBe('/dashboard/indices');
 	});
 
+	// The security entry is deliberately unconditional: Elastron does not probe
+	// the cluster for what the account may do, so the entry must not appear and
+	// disappear with privileges or with security being enabled.
+	it('renders Security navigation link', () => {
+		const link = screen.getByText('Security');
+		expect(link.closest('a').getAttribute('href')).toBe('/security/users');
+	});
+
 	it('renders Search navigation link', () => {
 		const link = screen.getByText('Search');
 		expect(link.closest('a').getAttribute('href')).toBe('/search');

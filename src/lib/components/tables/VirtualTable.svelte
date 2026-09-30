@@ -15,6 +15,7 @@
 	 * @property {any} [Cell]
 	 * @property {(col: string, index: number, dir: 'asc' | 'desc') => void} [onSort]
 	 * @property {boolean} [footerColumns]
+	 * @property {() => void} [onEndReached] Called once per set of rows when the last few are in view
 	 */
 
 	/** @type {Props} */
@@ -27,6 +28,7 @@
 		Cell = null,
 		footerColumns = false,
 		onSort,
+		onEndReached,
 	} = $props()
 
 	let CellRenderer = $derived(Cell ? Cell : RowCell)
@@ -102,6 +104,17 @@
 	)
 	let totalSize = $derived(virtualSize || rows.length * 38)
 
+	// Keyed to the rows array so scrolling within the same rows asks only once.
+	const END_THRESHOLD = 20
+	let endReportedFor = null
+	$effect(() => {
+		if (typeof onEndReached !== 'function' || !rows.length) return
+		const lastVisible = virtualRows.at(-1)?.index ?? -1
+		if (lastVisible < rows.length - END_THRESHOLD || endReportedFor === rows) return
+		endReportedFor = rows
+		untrack(onEndReached)
+	})
+
 	let paddingTop = $derived(virtualItems.length > 0 ? virtualRows[0].start : 0)
 	let paddingBottom = $derived(
 		virtualItems.length > 0
@@ -157,7 +170,10 @@
 					<tr data-index={rowIndex} use:measureNode>
 						{#each row as cell, i (i)}
 							<td colspan={getColspan(row.length, i, columns.length)}>
-								<CellRenderer {cell} {i} {columns} />
+								<!-- `row` lets a cell identify its record when the visible
+								     columns alone are not enough to. Cells that don't need
+								     it simply ignore the prop. -->
+								<CellRenderer {cell} {i} {columns} {row} />
 							</td>
 						{/each}
 					</tr>

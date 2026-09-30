@@ -19,6 +19,10 @@ import { updater } from './updater'
 import { analytics } from './analytics'
 import { aiSettings } from './aiSettings'
 import { assistant } from './assistant'
+import { securityIdentity } from './elasticsearch/securityIdentity'
+import { securityUsers } from './elasticsearch/securityUsers'
+import { securityRoles } from './elasticsearch/securityRoles'
+import { securityApiKeys } from './elasticsearch/securityApiKeys'
 
 
 export const store = createStoreon([
@@ -40,6 +44,10 @@ export const store = createStoreon([
 	analytics,
 	aiSettings,
 	assistant,
+	securityIdentity,
+	securityUsers,
+	securityRoles,
+	securityApiKeys,
 	storeonDevtools
 ])
 
