@@ -147,7 +147,6 @@
 			// The Playground has one URL field, so parameters go on the path.
 			path: pathWithQuery(proposal),
 			body: proposal.body ?? {},
-			headers: [],
 		})
 		goto(resolve('/playground'))
 	}

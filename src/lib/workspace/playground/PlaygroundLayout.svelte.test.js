@@ -10,8 +10,6 @@ const defaultPlaygroundState = () => ({
 		method: 'GET',
 		path: '{{index}}/_search',
 		bodyText: '{}',
-		headers: [],
-		activeTab: 'body',
 	},
 	selectedIndex: null,
 	responseBody: null,
@@ -346,7 +344,9 @@ describe('PlaygroundLayout response pane', () => {
 		await send(async () => clusterResponse(200, 'OK', { a: 1 }))
 
 		await send(async () => {
-			throw new Error('The cluster could not be reached (ConnectionError).')
+			throw Object.assign(new Error('The cluster could not be reached (ConnectionError).'), {
+				unreachable: true,
+			})
 		})
 
 		expect(dispatch).toHaveBeenCalledWith('notification/add', {
@@ -356,5 +356,89 @@ describe('PlaygroundLayout response pane', () => {
 		expect(screen.getByText('No response')).toBeTruthy()
 		expect(badge()).toBeNull()
 		expect(get(playgroundStore).responseBody).toBeNull()
+	})
+
+	it('reports a failure that is not about reaching the cluster without a badge', async () => {
+		await renderPlayground()
+		await send(async () => clusterResponse(200, 'OK', { a: 1 }))
+
+		await send(async () => {
+			throw new Error('Invalid JSON payload')
+		})
+
+		expect(dispatch).toHaveBeenCalledWith('notification/add', {
+			type: 'error',
+			message: 'Invalid JSON payload',
+		})
+		expect(screen.queryByText('No response')).toBeNull()
+		expect(badge()).toBeNull()
+		expect(get(playgroundStore).responseBody).toBeNull()
+	})
+
+	it('keeps the latest response when an earlier request finishes last', async () => {
+		await renderPlayground()
+		const pending = []
+		genericRequest.mockImplementation(() => new Promise(resolve => pending.push(resolve)))
+
+		await fireEvent.click(screen.getByText('Send'))
+		await fireEvent.click(screen.getByText('Send'))
+		await tick()
+
+		pending[1](clusterResponse(200, 'OK', { latest: true }))
+		for (let i = 0; i < 5; i++) await tick()
+		expect(get(playgroundStore).isRequestLoading).toBe(false)
+
+		pending[0](clusterResponse(404, 'Not Found', { earlier: true }))
+		for (let i = 0; i < 5; i++) await tick()
+
+		expect(get(playgroundStore).responseBody).toEqual({ latest: true })
+		expect(badge().textContent).toMatch(/^200 OK/)
+	})
+
+	it('keeps loading until the latest request finishes', async () => {
+		await renderPlayground()
+		const pending = []
+		genericRequest.mockImplementation(() => new Promise(resolve => pending.push(resolve)))
+
+		await fireEvent.click(screen.getByText('Send'))
+		await fireEvent.click(screen.getByText('Send'))
+		await tick()
+
+		pending[0](clusterResponse(200, 'OK', { earlier: true }))
+		for (let i = 0; i < 5; i++) await tick()
+
+		expect(get(playgroundStore).isRequestLoading).toBe(true)
+		expect(get(playgroundStore).responseBody).toBeNull()
+	})
+})
+
+describe('PlaygroundLayout request headers', () => {
+	beforeEach(() => {
+		playgroundStore.set(defaultPlaygroundState())
+		stores.connection.set({ id: 'c1', version: '8.0.0' })
+		genericRequest.mockReset()
+		genericRequest.mockImplementation(async () => clusterResponse(200, 'OK', {}))
+	})
+
+	it('offers no way to set request headers', async () => {
+		await renderPlayground()
+
+		expect(screen.queryByRole('button', { name: 'Headers' })).toBeNull()
+	})
+
+	it('sends no request headers, even from a draft saved with some', async () => {
+		playgroundStore.set({
+			...defaultPlaygroundState(),
+			draft: {
+				...defaultPlaygroundState().draft,
+				headers: [{ key: 'X-Opaque-Id', value: 'abc', enabled: true }],
+			},
+		})
+		await renderPlayground()
+
+		await fireEvent.click(screen.getByText('Send'))
+		await tick()
+
+		expect(genericRequest).toHaveBeenCalledWith(expect.not.objectContaining({ headers: expect.anything() }))
 	})
 })

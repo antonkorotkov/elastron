@@ -235,7 +235,7 @@ When the assistant proposes a search query or an Elasticsearch request, the syst
 
 #### Scenario: Loading a proposed request into the Playground
 - **WHEN** the user activates load-into-playground on a proposed request
-- **THEN** the Playground draft's method, path, body, and headers SHALL be replaced with the request's, as the playground capability defines for loading a template, and the user SHALL be moved to the Playground view
+- **THEN** the Playground draft's method, path, and body SHALL be replaced with the request's, as the playground capability defines for loading a template, and the user SHALL be moved to the Playground view
 
 #### Scenario: A non-search request is not offered to Search
 - **WHEN** the assistant proposes a request that is not a search, such as a mapping update

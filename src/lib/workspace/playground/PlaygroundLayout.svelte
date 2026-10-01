@@ -1,9 +1,7 @@
 <script>
-	import isEqual from 'lodash/isEqual'
 	import { useStoreon } from '@storeon/svelte'
 	import API from '$lib/api/elasticsearch'
 	import JsonEditor from '$lib/components/JsonEditor.svelte'
-	import KeyValueList from './KeyValueList.svelte'
 	import IndexSelector from '$lib/components/inputs/IndexSelector.svelte'
 	import TemplateDrawer from './TemplateDrawer.svelte'
 	import {
@@ -29,7 +27,6 @@
 
 	let method = $derived($playground.draft.method)
 	let path = $derived($playground.draft.path)
-	let activeTab = $derived($playground.draft.activeTab)
 	let selectedIndex = $derived($playground.selectedIndex)
 	let responseBody = $derived($playground.responseBody)
 	let responseMeta = $derived($playground.responseMeta)
@@ -75,7 +72,6 @@
 				method,
 				path,
 				body,
-				headers: $playground.draft.headers,
 			})
 			templateName = ''
 			showSaveInput = false
@@ -97,38 +93,6 @@
 		}
 	})
 
-	// KeyValueList needs a deeply-mutable array to back its per-row
-	// checkbox/text bindings, which a plain object from the store cannot be.
-	// `headerItems` is that local buffer: reseeded from the store whenever the
-	// store's headers are a genuinely different array (hydrate, template
-	// load), and mirrored back to the store whenever its contents diverge
-	// from what was last synced (the user editing a row). Both directions
-	// compare by content (`isEqual`), not reference, so this stays correct
-	// even if `playground/update` starts cloning `headers` instead of storing
-	// the patch by reference.
-	let lastSyncedHeaders = $playground.draft.headers || []
-	let headerItems = $state(lastSyncedHeaders.map(h => ({ ...h })))
-
-	$effect(() => {
-		const stored = $playground.draft.headers || []
-		if (!isEqual(stored, lastSyncedHeaders)) {
-			lastSyncedHeaders = stored
-			headerItems = stored.map(h => ({ ...h }))
-		}
-	})
-
-	$effect(() => {
-		const snapshot = headerItems.map(h => ({
-			key: h.key,
-			value: h.value,
-			enabled: h.enabled,
-		}))
-		if (!isEqual(snapshot, lastSyncedHeaders)) {
-			lastSyncedHeaders = snapshot
-			dispatch('playground/update', { headers: snapshot })
-		}
-	})
-
 	let requestEditorOptions = {
 		mode: 'code',
 		modes: ['code', 'tree'],
@@ -143,29 +107,27 @@
 		modes: ['view', 'code', 'tree'],
 	}
 
+	let latestRequestId = 0
+
 	const sendRequest = async () => {
 		if (!$connection) return
 
 		const { body, error } = readRequestBody()
 		if (error) return
 
-		// Captured so a response arriving after the user has switched
-		// connections is discarded instead of repopulating the just-cleared
-		// response pane with data from the connection they left.
+		// Only the latest request on the connection it was sent to may fill the
+		// pane: an earlier, slower one or one from a connection the user has
+		// since left would otherwise overwrite what they are looking at.
+		const requestId = ++latestRequestId
 		const requestConnection = $connection
+		const isCurrent = () =>
+			requestId === latestRequestId && $connection === requestConnection
 		const startedAt = performance.now()
 
 		try {
 			dispatch('playground/update', { isRequestLoading: true })
 
 			const api = new API(requestConnection)
-
-			let customHeaders = {}
-			for (const { key, value, enabled } of $playground.draft.headers) {
-				if (enabled && key) {
-					customHeaders[key] = value
-				}
-			}
 
 			let resolvedPath = path
 			if (resolvedPath.includes('{{index}}')) {
@@ -184,10 +146,8 @@
 				method,
 				path: resolvedPath,
 				elasticBody: Object.keys(body).length > 0 ? body : undefined,
-				headers:
-					Object.keys(customHeaders).length > 0 ? customHeaders : undefined,
 			})
-			if ($connection === requestConnection) {
+			if (isCurrent()) {
 				dispatch('playground/update', {
 					responseBody: result.body,
 					responseMeta: {
@@ -200,19 +160,23 @@
 				})
 			}
 		} catch (error) {
-			if ($connection === requestConnection) {
+			if (isCurrent()) {
 				dispatch('playground/update', {
 					responseBody: null,
-					responseMeta: {
-						unreachable: true,
-						durationMs: Math.round(performance.now() - startedAt),
-					},
+					responseMeta: error.unreachable
+						? {
+								unreachable: true,
+								durationMs: Math.round(performance.now() - startedAt),
+							}
+						: null,
 					responseView: 'json',
 				})
 				notifyError(error.message)
 			}
 		} finally {
-			dispatch('playground/update', { isRequestLoading: false })
+			if (requestId === latestRequestId) {
+				dispatch('playground/update', { isRequestLoading: false })
+			}
 		}
 	}
 </script>
@@ -332,38 +296,16 @@
 
 		<div class="editor-panel">
 			<div class="panel-tabs" class:inverted>
-				<button
-					class="tab"
-					class:active={activeTab === 'body'}
-					onclick={() => dispatch('playground/update', { activeTab: 'body' })}
-				>
-					Request Body
-				</button>
-				<button
-					class="tab"
-					class:active={activeTab === 'headers'}
-					onclick={() => dispatch('playground/update', { activeTab: 'headers' })}
-				>
-					Headers
-				</button>
+				<span class="tab panel-title">Request Body</span>
 			</div>
 
-			<div
-				class="editor-wrapper"
-				style="display: {activeTab === 'body' ? 'block' : 'none'}"
-			>
+			<div class="editor-wrapper">
 				<JsonEditor
 					id="playgroundRequestEditor"
 					bind:editor={requestEditor}
 					options={requestEditorOptions}
 					onError={error => notifyError(error.message)}
 				/>
-			</div>
-			<div
-				class="editor-wrapper"
-				style="display: {activeTab === 'headers' ? 'block' : 'none'}"
-			>
-				<KeyValueList bind:items={headerItems} />
 			</div>
 		</div>
 
@@ -505,6 +447,11 @@
 		flex: 1;
 		position: relative;
 		overflow: hidden;
+	}
+	.tab.panel-title,
+	:global(.inverted) .tab.panel-title:hover {
+		cursor: default;
+		background: none;
 	}
 	.tab:disabled {
 		opacity: 0.45;

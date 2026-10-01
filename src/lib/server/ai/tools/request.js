@@ -10,7 +10,6 @@ export const requestTools = {
 			path: z.string().min(1).describe('The API path, such as /_cat/nodes or /my-index/_stats'),
 			querystring: openObject(z.string()).optional(),
 			body: z.unknown().optional().describe('The JSON request body, if any'),
-			headers: openObject(z.string()).optional(),
 		}),
 	},
 }

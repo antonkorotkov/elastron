@@ -25,7 +25,7 @@ describe('performRequest', () => {
 		});
 		expect(client.transport.request).toHaveBeenCalledWith(
 			{ method: 'GET', path: '/_cluster/health' },
-			{ meta: true }
+			{ meta: true, maxRetries: 0 }
 		);
 	});
 
@@ -56,14 +56,19 @@ describe('performRequest', () => {
 		});
 	});
 
-	it('passes the body and only non-empty headers', async () => {
+	it('passes the body and never request headers', async () => {
 		const client = clientAnswering(async () => meta(200, {}));
 
-		await performRequest(client, { method: 'POST', path: '/x/_search', elasticBody: { size: 0 }, headers: {} });
+		await performRequest(client, {
+			method: 'POST',
+			path: '/x/_search',
+			elasticBody: { size: 0 },
+			headers: { 'x-opaque-id': 'nope' },
+		});
 
 		expect(client.transport.request).toHaveBeenCalledWith(
 			{ method: 'POST', path: '/x/_search', body: { size: 0 } },
-			{ meta: true }
+			{ meta: true, maxRetries: 0 }
 		);
 	});
 

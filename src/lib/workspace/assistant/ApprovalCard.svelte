@@ -56,9 +56,6 @@
 		{#if request.body !== undefined}
 			<pre class="request-body">{prettyJson(request.body)}</pre>
 		{/if}
-		{#if request.headers}
-			<pre class="request-body">{prettyJson({ headers: request.headers })}</pre>
-		{/if}
 	{/if}
 	{#if destructive && pending}
 		<p class="warning">This cannot be undone.</p>

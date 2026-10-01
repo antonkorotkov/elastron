@@ -33,10 +33,13 @@ export const createClient = (connection) => {
 	}
 
 	if (addHeaders && Array.isArray(headers)) {
+		// The client hands these to both the transport, which lowercases names,
+		// and each connection, which does not; a mixed-case name then survives
+		// the merge twice and is sent twice.
 		const customHeaders = {};
 		for (const header of headers) {
 			if (header.name && header.value) {
-				customHeaders[header.name] = header.value;
+				customHeaders[header.name.toLowerCase()] = header.value;
 			}
 		}
 		if (Object.keys(customHeaders).length > 0) {

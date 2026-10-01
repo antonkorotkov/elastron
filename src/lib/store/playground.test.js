@@ -27,8 +27,6 @@ describe('playground store', () => {
 				method: 'GET',
 				path: '{{index}}/_search',
 				bodyText: '{}',
-				headers: [],
-				activeTab: 'body',
 			},
 			selectedIndex: null,
 			responseBody: null,
@@ -45,7 +43,6 @@ describe('playground store', () => {
 		expect(draft()).toMatchObject({
 			method: 'POST',
 			path: '{{index}}/_search',
-			headers: [],
 		})
 	})
 
@@ -102,9 +99,34 @@ describe('playground store', () => {
 			method: 'PUT',
 			bodyText: '{"x":1}',
 			path: '{{index}}/_search',
-			headers: [],
-			activeTab: 'body',
 		})
+	})
+
+	it('drops request headers and the pane selection from a draft persisted before they were removed', () => {
+		store.dispatch('playground/hydrate', {
+			templates: [],
+			draft: {
+				method: 'POST',
+				headers: [{ key: 'X', value: 'Y', enabled: true }],
+				activeTab: 'headers',
+			},
+		})
+
+		expect(draft().method).toBe('POST')
+		expect(draft()).not.toHaveProperty('headers')
+		expect(draft()).not.toHaveProperty('activeTab')
+	})
+
+	it('ignores request headers on a template saved before they were removed', () => {
+		store.dispatch('playground/loadTemplate', {
+			name: 'Old',
+			method: 'GET',
+			path: '/x',
+			body: {},
+			headers: [{ key: 'X', value: 'Y', enabled: true }],
+		})
+
+		expect(draft()).not.toHaveProperty('headers')
 	})
 
 	it('stringifies a loaded template body into bodyText', () => {
@@ -113,7 +135,6 @@ describe('playground store', () => {
 			method: 'GET',
 			path: '/_cluster/health',
 			body: { a: 1 },
-			headers: [],
 		})
 
 		expect(draft().bodyText).toBe(JSON.stringify({ a: 1 }, null, 2))
@@ -126,7 +147,6 @@ describe('playground store', () => {
 			method: 'PUT',
 			path: '/custom',
 			bodyText: '{"q":1}',
-			headers: [{ key: 'X', value: 'Y', enabled: true }],
 		})
 
 		store.dispatch('playground/saveTemplate', {
@@ -134,7 +154,6 @@ describe('playground store', () => {
 			method: 'PUT',
 			path: '/custom',
 			body: { q: 1 },
-			headers: [{ key: 'X', value: 'Y', enabled: true }],
 		})
 
 		expect(draft()).toMatchObject({
@@ -142,7 +161,6 @@ describe('playground store', () => {
 			method: 'PUT',
 			path: '/custom',
 			bodyText: '{"q":1}',
-			headers: [{ key: 'X', value: 'Y', enabled: true }],
 		})
 	})
 
