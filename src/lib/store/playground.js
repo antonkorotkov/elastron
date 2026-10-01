@@ -104,12 +104,18 @@ const writeThroughDraft = draft => {
 	persistDraft.flush();
 };
 
+const emptyResponse = {
+	responseBody: null,
+	responseMeta: null,
+	responseView: 'json'
+};
+
 export const playground = store => {
 	store.on('@init', () => ({
 		playground: {
 			draft: { ...initialRequest },
 			selectedIndex: null,
-			responseBody: {},
+			...emptyResponse,
 			isRequestLoading: false,
 			builtinTemplates,
 			customTemplates: [],
@@ -121,7 +127,7 @@ export const playground = store => {
 		playground: {
 			...state.playground,
 			selectedIndex: null,
-			responseBody: {},
+			...emptyResponse,
 			isRequestLoading: false
 		}
 	}));
@@ -146,7 +152,7 @@ export const playground = store => {
 	});
 
 	store.on('playground/update', (state, patch) => {
-		const memoryKeys = ['selectedIndex', 'responseBody', 'isRequestLoading'];
+		const memoryKeys = ['selectedIndex', 'responseBody', 'responseMeta', 'responseView', 'isRequestLoading'];
 		const draftPatch = {};
 		const memoryPatch = {};
 

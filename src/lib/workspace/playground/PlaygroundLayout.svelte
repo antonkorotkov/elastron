@@ -7,6 +7,13 @@
 	import IndexSelector from '$lib/components/inputs/IndexSelector.svelte'
 	import TemplateDrawer from './TemplateDrawer.svelte'
 	import {
+		NOT_JSON,
+		pickResponseView,
+		statusClass,
+		toJsonValue,
+		toRawText,
+	} from './response'
+	import {
 		invalidJsonBodyMessage,
 		isThemeToggleChecked,
 		parseJsonBody,
@@ -25,6 +32,15 @@
 	let activeTab = $derived($playground.draft.activeTab)
 	let selectedIndex = $derived($playground.selectedIndex)
 	let responseBody = $derived($playground.responseBody)
+	let responseMeta = $derived($playground.responseMeta)
+	let responseJson = $derived(toJsonValue(responseBody))
+	let isJsonAvailable = $derived(responseBody === null || responseJson !== NOT_JSON)
+	let responseView = $derived(isJsonAvailable ? $playground.responseView : 'raw')
+	let responseEditorValue = $derived(
+		responseBody === null || responseJson === NOT_JSON ? {} : responseJson
+	)
+	let responseText = $derived(responseBody === null ? '' : toRawText(responseBody))
+	const badgeColors = { success: 'green', 'client-error': 'orange', 'server-error': 'red' }
 	let isRequestLoading = $derived($playground.isRequestLoading)
 
 	let isDrawerOpen = $derived($playground.isDrawerOpen)
@@ -137,6 +153,7 @@
 		// connections is discarded instead of repopulating the just-cleared
 		// response pane with data from the connection they left.
 		const requestConnection = $connection
+		const startedAt = performance.now()
 
 		try {
 			dispatch('playground/update', { isRequestLoading: true })
@@ -163,7 +180,7 @@
 				if (!resolvedPath.startsWith('/')) resolvedPath = '/' + resolvedPath
 			}
 
-			const response = await api.genericRequest({
+			const result = await api.genericRequest({
 				method,
 				path: resolvedPath,
 				elasticBody: Object.keys(body).length > 0 ? body : undefined,
@@ -171,16 +188,28 @@
 					Object.keys(customHeaders).length > 0 ? customHeaders : undefined,
 			})
 			if ($connection === requestConnection) {
-				dispatch('playground/update', { responseBody: response })
+				dispatch('playground/update', {
+					responseBody: result.body,
+					responseMeta: {
+						statusCode: result.statusCode,
+						statusText: result.statusText,
+						contentType: result.contentType,
+						durationMs: Math.round(performance.now() - startedAt),
+					},
+					responseView: pickResponseView(result),
+				})
 			}
 		} catch (error) {
 			if ($connection === requestConnection) {
-				try {
-					dispatch('playground/update', { responseBody: JSON.parse(error.message) })
-				} catch {
-					dispatch('playground/update', { responseBody: { error: error.message } })
-					notifyError(error.message)
-				}
+				dispatch('playground/update', {
+					responseBody: null,
+					responseMeta: {
+						unreachable: true,
+						durationMs: Math.round(performance.now() - startedAt),
+					},
+					responseView: 'json',
+				})
+				notifyError(error.message)
 			}
 		} finally {
 			dispatch('playground/update', { isRequestLoading: false })
@@ -340,15 +369,57 @@
 
 		<div class="editor-panel">
 			<div class="panel-tabs" class:inverted>
-				<button class="tab response-tab" disabled>Response</button>
+				<button
+					class="tab"
+					class:active={responseView === 'json'}
+					disabled={!isJsonAvailable}
+					title={isJsonAvailable ? undefined : 'Response is not JSON'}
+					onclick={() => dispatch('playground/update', { responseView: 'json' })}
+				>
+					JSON
+				</button>
+				<button
+					class="tab"
+					class:active={responseView === 'raw'}
+					onclick={() => dispatch('playground/update', { responseView: 'raw' })}
+				>
+					Raw
+				</button>
+				{#if responseMeta}
+					<div class="response-status">
+						{#if responseMeta.unreachable}
+							<span class="ui tiny red label">No response</span>
+						{:else}
+							<span
+								class="ui tiny label {badgeColors[statusClass(responseMeta.statusCode)]}"
+								data-testid="response-status"
+							>
+								{`${responseMeta.statusCode} ${responseMeta.statusText} · ${responseMeta.durationMs} ms`}
+							</span>
+						{/if}
+					</div>
+				{/if}
 			</div>
-			<div class="editor-wrapper">
+			<div
+				class="editor-wrapper"
+				style="display: {responseView === 'json' ? 'block' : 'none'}"
+			>
 				<JsonEditor
 					id="playgroundResponseEditor"
-					value={responseBody}
+					value={responseEditorValue}
 					options={responseEditorOptions}
 					onError={error => notifyError(error.message)}
 				/>
+			</div>
+			<div
+				class="editor-wrapper raw-wrapper"
+				style="display: {responseView === 'raw' ? 'block' : 'none'}"
+			>
+				{#if responseBody === ''}
+					<p class="empty-response">Empty response</p>
+				{:else}
+					<pre class="raw-response" data-testid="raw-response">{responseText}</pre>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -435,12 +506,34 @@
 		position: relative;
 		overflow: hidden;
 	}
-	.response-tab {
-		cursor: default !important;
-		opacity: 1 !important;
+	.tab:disabled {
+		opacity: 0.45;
+		cursor: not-allowed;
 	}
-	.response-tab:hover {
-		background: none !important;
+	.tab:disabled:hover {
+		background: none;
+	}
+	.response-status {
+		display: flex;
+		align-items: center;
+		padding: 0 0.8rem;
+		white-space: nowrap;
+	}
+	.raw-wrapper {
+		overflow: auto;
+	}
+	.raw-response {
+		margin: 0;
+		padding: 0.8rem 1rem;
+		font-family: Menlo, Consolas, 'Liberation Mono', monospace;
+		font-size: 0.9em;
+		white-space: pre;
+		user-select: text;
+	}
+	.empty-response {
+		padding: 0.8rem 1rem;
+		opacity: 0.6;
+		font-style: italic;
 	}
 	.themed {
 		min-width: 190px;

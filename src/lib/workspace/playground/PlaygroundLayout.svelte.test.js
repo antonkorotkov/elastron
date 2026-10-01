@@ -14,7 +14,9 @@ const defaultPlaygroundState = () => ({
 		activeTab: 'body',
 	},
 	selectedIndex: null,
-	responseBody: {},
+	responseBody: null,
+	responseMeta: null,
+	responseView: 'json',
 	isRequestLoading: false,
 	builtinTemplates: [],
 	customTemplates: [],
@@ -38,7 +40,13 @@ const stores = {
 const dispatch = vi.fn((event, payload) => {
 	if (event === 'playground/update') {
 		playgroundStore.update(state => {
-			const memoryKeys = ['selectedIndex', 'responseBody', 'isRequestLoading']
+			const memoryKeys = [
+				'selectedIndex',
+				'responseBody',
+				'responseMeta',
+				'responseView',
+				'isRequestLoading',
+			]
 			const draftPatch = {}
 			const memoryPatch = {}
 			for (const key of Object.keys(payload)) {
@@ -62,7 +70,14 @@ vi.mock('@storeon/svelte', () => ({
 	},
 }))
 
-const genericRequest = vi.fn(async () => ({ took: 1 }))
+const clusterResponse = (statusCode, statusText, body, contentType = 'application/json') => ({
+	statusCode,
+	statusText,
+	contentType,
+	body,
+})
+
+const genericRequest = vi.fn(async () => clusterResponse(200, 'OK', { took: 1 }))
 
 vi.mock('$lib/api/elasticsearch', () => ({
 	default: class {
@@ -203,10 +218,143 @@ describe('PlaygroundLayout request body', () => {
 		stores.connection.set({ id: 'c2', version: '8.0.0' })
 		await tick()
 
-		resolveRequest({ took: 1, hits: {} })
+		resolveRequest(clusterResponse(200, 'OK', { took: 1, hits: {} }))
 		await tick()
 
-		expect(get(playgroundStore).responseBody).toEqual({})
+		expect(get(playgroundStore).responseBody).toBeNull()
+		expect(get(playgroundStore).responseMeta).toBeNull()
 		expect(get(playgroundStore).isRequestLoading).toBe(false)
+	})
+})
+
+describe('PlaygroundLayout response pane', () => {
+	beforeEach(() => {
+		playgroundStore.set(defaultPlaygroundState())
+		stores.connection.set({ id: 'c1', version: '8.0.0' })
+		dispatch.mockClear()
+		genericRequest.mockReset()
+	})
+
+	const send = async answer => {
+		genericRequest.mockImplementationOnce(answer)
+		await fireEvent.click(screen.getByText('Send'))
+		for (let i = 0; i < 5; i++) await tick()
+	}
+
+	const tab = name => screen.getByRole('button', { name })
+	const isShown = el => el.closest('.editor-wrapper').style.display === 'block'
+	const badge = () => screen.queryByTestId('response-status')
+	const notified = () => dispatch.mock.calls.some(([event]) => event === 'notification/add')
+
+	it('shows no status badge before a request is sent', async () => {
+		await renderPlayground()
+
+		expect(badge()).toBeNull()
+		expect(screen.queryByText('No response')).toBeNull()
+	})
+
+	it('opens a JSON response in the JSON view with a success badge', async () => {
+		await renderPlayground()
+
+		await send(async () => clusterResponse(200, 'OK', { status: 'green' }))
+
+		expect(tab('JSON').classList.contains('active')).toBe(true)
+		expect(get(playgroundStore).responseBody).toEqual({ status: 'green' })
+		expect(badge().textContent).toMatch(/^200 OK · \d+ ms$/)
+		expect(badge().classList.contains('green')).toBe(true)
+	})
+
+	it('shows a JSON response as pretty-printed text in the Raw view', async () => {
+		await renderPlayground()
+		await send(async () => clusterResponse(200, 'OK', { status: 'green' }))
+
+		await fireEvent.click(tab('Raw'))
+
+		const raw = screen.getByTestId('raw-response')
+		expect(isShown(raw)).toBe(true)
+		expect(raw.textContent).toBe('{\n  "status": "green"\n}')
+	})
+
+	it('opens a text response in the Raw view with JSON unavailable', async () => {
+		await renderPlayground()
+		const table = 'health status index\ngreen  open   logs\n'
+
+		await send(async () => clusterResponse(200, 'OK', table, 'text/plain; charset=UTF-8'))
+
+		const raw = screen.getByTestId('raw-response')
+		expect(isShown(raw)).toBe(true)
+		expect(raw.textContent).toBe(table)
+		expect(tab('Raw').classList.contains('active')).toBe(true)
+		expect(tab('JSON').disabled).toBe(true)
+		expect(tab('JSON').title).toBe('Response is not JSON')
+	})
+
+	it('selects the fitting view for each new response', async () => {
+		await renderPlayground()
+		await send(async () => clusterResponse(200, 'OK', { a: 1 }))
+		await fireEvent.click(tab('Raw'))
+
+		await send(async () => clusterResponse(200, 'OK', { b: 2 }))
+
+		expect(tab('JSON').classList.contains('active')).toBe(true)
+	})
+
+	it('shows a cluster error response in full without a notification', async () => {
+		await renderPlayground()
+		const body = { error: { root_cause: [{ reason: 'no such index [nope]' }] }, status: 404 }
+
+		await send(async () => clusterResponse(404, 'Not Found', body))
+
+		expect(notified()).toBe(false)
+		expect(get(playgroundStore).responseBody).toEqual(body)
+		expect(tab('JSON').classList.contains('active')).toBe(true)
+		expect(badge().textContent).toMatch(/^404 Not Found · \d+ ms$/)
+		expect(badge().classList.contains('orange')).toBe(true)
+	})
+
+	it('styles a server error response as an error', async () => {
+		await renderPlayground()
+
+		await send(async () => clusterResponse(500, 'Internal Server Error', { error: 'boom' }))
+
+		expect(notified()).toBe(false)
+		expect(badge().classList.contains('red')).toBe(true)
+	})
+
+	it('shows a HEAD result as text and replaces the previous response', async () => {
+		await renderPlayground()
+		await send(async () => clusterResponse(200, 'OK', 'previous\n', 'text/plain'))
+
+		await send(async () => clusterResponse(404, 'Not Found', false, ''))
+
+		expect(screen.getByTestId('raw-response').textContent).toBe('false')
+		expect(badge().textContent).toMatch(/^404 Not Found/)
+	})
+
+	it('shows an empty text response instead of the previous one', async () => {
+		await renderPlayground()
+		await send(async () => clusterResponse(200, 'OK', 'previous\n', 'text/plain'))
+
+		await send(async () => clusterResponse(200, 'OK', '', 'text/plain'))
+
+		expect(screen.queryByTestId('raw-response')).toBeNull()
+		expect(isShown(screen.getByText('Empty response'))).toBe(true)
+	})
+
+	it('reports a request that got no cluster response', async () => {
+		await renderPlayground()
+		await send(async () => clusterResponse(200, 'OK', { a: 1 }))
+
+		await send(async () => {
+			throw new Error('The cluster could not be reached (ConnectionError).')
+		})
+
+		expect(dispatch).toHaveBeenCalledWith('notification/add', {
+			type: 'error',
+			message: 'The cluster could not be reached (ConnectionError).',
+		})
+		expect(screen.getByText('No response')).toBeTruthy()
+		expect(badge()).toBeNull()
+		expect(get(playgroundStore).responseBody).toBeNull()
 	})
 })

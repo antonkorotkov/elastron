@@ -31,7 +31,9 @@ describe('playground store', () => {
 				activeTab: 'body',
 			},
 			selectedIndex: null,
-			responseBody: {},
+			responseBody: null,
+			responseMeta: null,
+			responseView: 'json',
 			isRequestLoading: false,
 			isDrawerOpen: false,
 		})
@@ -70,17 +72,24 @@ describe('playground store', () => {
 		)
 	})
 
-	it('does not persist selectedIndex, responseBody or isRequestLoading', () => {
+	it('does not persist the selected index or any response state', () => {
+		const meta = { statusCode: 200, statusText: 'OK', contentType: 'text/plain', durationMs: 12 }
 		store.dispatch('playground/update', {
 			selectedIndex: 'logs',
-			responseBody: { took: 1 },
+			responseBody: 'green open logs\n',
+			responseMeta: meta,
+			responseView: 'raw',
 			isRequestLoading: true,
 		})
 
 		expect(setStorage).not.toHaveBeenCalled()
-		expect(store.get().playground.selectedIndex).toBe('logs')
-		expect(store.get().playground.responseBody).toEqual({ took: 1 })
-		expect(store.get().playground.isRequestLoading).toBe(true)
+		expect(store.get().playground).toMatchObject({
+			selectedIndex: 'logs',
+			responseBody: 'green open logs\n',
+			responseMeta: meta,
+			responseView: 'raw',
+			isRequestLoading: true,
+		})
 	})
 
 	it('merges a partial persisted draft over the defaults on hydrate', () => {
@@ -137,10 +146,12 @@ describe('playground store', () => {
 		})
 	})
 
-	it('resets selectedIndex, responseBody and isRequestLoading on connected, keeping the draft', () => {
+	it('resets the selected index and response state on connected, keeping the draft', () => {
 		store.dispatch('playground/update', {
 			selectedIndex: 'logs',
 			responseBody: { took: 1 },
+			responseMeta: { statusCode: 200, statusText: 'OK', contentType: 'application/json', durationMs: 5 },
+			responseView: 'raw',
 			isRequestLoading: true,
 			method: 'PUT',
 			path: '/custom',
@@ -149,7 +160,9 @@ describe('playground store', () => {
 		store.dispatch('connected')
 
 		expect(store.get().playground.selectedIndex).toBeNull()
-		expect(store.get().playground.responseBody).toEqual({})
+		expect(store.get().playground.responseBody).toBeNull()
+		expect(store.get().playground.responseMeta).toBeNull()
+		expect(store.get().playground.responseView).toBe('json')
 		expect(store.get().playground.isRequestLoading).toBe(false)
 		expect(draft()).toMatchObject({ method: 'PUT', path: '/custom' })
 	})
