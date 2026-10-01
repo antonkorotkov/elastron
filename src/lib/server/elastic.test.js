@@ -104,8 +104,8 @@ describe('createClient', () => {
 			],
 		});
 		expect(client._opts.headers).toEqual({
-			'X-Custom': 'foo',
-			Authorization: 'Bearer token',
+			'x-custom': 'foo',
+			authorization: 'Bearer token',
 		});
 	});
 

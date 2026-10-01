@@ -1,13 +1,12 @@
 import debounce from 'lodash/debounce';
+import omit from 'lodash/omit';
 import { setStorage } from '../utils/storage.js';
 
 const initialRequest = {
 	name: 'New Request',
 	method: 'GET',
 	path: '{{index}}/_search',
-	bodyText: '{}',
-	headers: [],
-	activeTab: 'body'
+	bodyText: '{}'
 };
 
 export const builtinTemplates = [
@@ -17,7 +16,6 @@ export const builtinTemplates = [
 		method: 'GET',
 		path: '{{index}}/_search',
 		body: {},
-		headers: [],
 		type: 'built-in'
 	},
 	{
@@ -26,7 +24,6 @@ export const builtinTemplates = [
 		method: 'GET',
 		path: '/_cluster/health',
 		body: {},
-		headers: [],
 		type: 'built-in'
 	},
 	{
@@ -35,7 +32,6 @@ export const builtinTemplates = [
 		method: 'PUT',
 		path: '{{index}}/_settings',
 		body: { 'index': { 'number_of_replicas': 1 } },
-		headers: [],
 		type: 'built-in'
 	},
 	{
@@ -44,7 +40,6 @@ export const builtinTemplates = [
 		method: 'PUT',
 		path: '{{index}}',
 		body: { 'settings': {}, 'mappings': {} },
-		headers: [],
 		type: 'built-in'
 	},
 	{
@@ -53,7 +48,6 @@ export const builtinTemplates = [
 		method: 'DELETE',
 		path: '{{index}}',
 		body: {},
-		headers: [],
 		type: 'built-in'
 	},
 	{
@@ -62,7 +56,6 @@ export const builtinTemplates = [
 		method: 'PUT',
 		path: '{{index}}/_mapping',
 		body: { 'properties': {} },
-		headers: [],
 		type: 'built-in'
 	},
 	{
@@ -71,7 +64,6 @@ export const builtinTemplates = [
 		method: 'POST',
 		path: '{{index}}/_doc',
 		body: { 'field': 'value' },
-		headers: [],
 		type: 'built-in'
 	},
 	{
@@ -80,7 +72,6 @@ export const builtinTemplates = [
 		method: 'DELETE',
 		path: '{{index}}/_doc/1',
 		body: {},
-		headers: [],
 		type: 'built-in'
 	}
 ];
@@ -104,12 +95,21 @@ const writeThroughDraft = draft => {
 	persistDraft.flush();
 };
 
+// Drafts persisted before request headers were removed still carry them.
+const withoutRetiredFields = draft => omit(draft || {}, ['headers', 'activeTab']);
+
+const emptyResponse = {
+	responseBody: null,
+	responseMeta: null,
+	responseView: 'json'
+};
+
 export const playground = store => {
 	store.on('@init', () => ({
 		playground: {
 			draft: { ...initialRequest },
 			selectedIndex: null,
-			responseBody: {},
+			...emptyResponse,
 			isRequestLoading: false,
 			builtinTemplates,
 			customTemplates: [],
@@ -121,7 +121,7 @@ export const playground = store => {
 		playground: {
 			...state.playground,
 			selectedIndex: null,
-			responseBody: {},
+			...emptyResponse,
 			isRequestLoading: false
 		}
 	}));
@@ -131,7 +131,7 @@ export const playground = store => {
 			playground: {
 				...state.playground,
 				customTemplates: templates || [],
-				draft: { ...state.playground.draft, ...(draft || {}) }
+				draft: { ...state.playground.draft, ...withoutRetiredFields(draft) }
 			}
 		};
 	});
@@ -146,7 +146,7 @@ export const playground = store => {
 	});
 
 	store.on('playground/update', (state, patch) => {
-		const memoryKeys = ['selectedIndex', 'responseBody', 'isRequestLoading'];
+		const memoryKeys = ['selectedIndex', 'responseBody', 'responseMeta', 'responseView', 'isRequestLoading'];
 		const draftPatch = {};
 		const memoryPatch = {};
 
@@ -180,8 +180,7 @@ export const playground = store => {
 			name: template.name,
 			method: template.method,
 			path: template.path,
-			bodyText: JSON.stringify(template.body || {}, null, 2),
-			headers: template.headers ? [...template.headers] : []
+			bodyText: JSON.stringify(template.body || {}, null, 2)
 		};
 
 		writeThroughDraft(draft);

@@ -55,6 +55,15 @@ describe('buildToolRequest', () => {
 		expect(request.querystring).toEqual({ v: '', s: 'store.size:desc', bytes: 'mb' })
 		expect(formatRequestLine(request)).toBe('GET /_cat/indices?v&s=store.size:desc&bytes=mb')
 	})
+
+	it('never sends request headers from the generic request', () => {
+		const request = buildToolRequest('run-es-request', {
+			method: 'GET',
+			path: '/_cluster/health',
+			headers: { 'x-opaque-id': 'model' },
+		})
+		expect(request).toEqual({ method: 'GET', path: '/_cluster/health' })
+	})
 })
 
 describe('approval for paged listings', () => {

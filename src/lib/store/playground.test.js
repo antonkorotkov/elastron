@@ -27,11 +27,11 @@ describe('playground store', () => {
 				method: 'GET',
 				path: '{{index}}/_search',
 				bodyText: '{}',
-				headers: [],
-				activeTab: 'body',
 			},
 			selectedIndex: null,
-			responseBody: {},
+			responseBody: null,
+			responseMeta: null,
+			responseView: 'json',
 			isRequestLoading: false,
 			isDrawerOpen: false,
 		})
@@ -43,7 +43,6 @@ describe('playground store', () => {
 		expect(draft()).toMatchObject({
 			method: 'POST',
 			path: '{{index}}/_search',
-			headers: [],
 		})
 	})
 
@@ -70,17 +69,24 @@ describe('playground store', () => {
 		)
 	})
 
-	it('does not persist selectedIndex, responseBody or isRequestLoading', () => {
+	it('does not persist the selected index or any response state', () => {
+		const meta = { statusCode: 200, statusText: 'OK', contentType: 'text/plain', durationMs: 12 }
 		store.dispatch('playground/update', {
 			selectedIndex: 'logs',
-			responseBody: { took: 1 },
+			responseBody: 'green open logs\n',
+			responseMeta: meta,
+			responseView: 'raw',
 			isRequestLoading: true,
 		})
 
 		expect(setStorage).not.toHaveBeenCalled()
-		expect(store.get().playground.selectedIndex).toBe('logs')
-		expect(store.get().playground.responseBody).toEqual({ took: 1 })
-		expect(store.get().playground.isRequestLoading).toBe(true)
+		expect(store.get().playground).toMatchObject({
+			selectedIndex: 'logs',
+			responseBody: 'green open logs\n',
+			responseMeta: meta,
+			responseView: 'raw',
+			isRequestLoading: true,
+		})
 	})
 
 	it('merges a partial persisted draft over the defaults on hydrate', () => {
@@ -93,9 +99,34 @@ describe('playground store', () => {
 			method: 'PUT',
 			bodyText: '{"x":1}',
 			path: '{{index}}/_search',
-			headers: [],
-			activeTab: 'body',
 		})
+	})
+
+	it('drops request headers and the pane selection from a draft persisted before they were removed', () => {
+		store.dispatch('playground/hydrate', {
+			templates: [],
+			draft: {
+				method: 'POST',
+				headers: [{ key: 'X', value: 'Y', enabled: true }],
+				activeTab: 'headers',
+			},
+		})
+
+		expect(draft().method).toBe('POST')
+		expect(draft()).not.toHaveProperty('headers')
+		expect(draft()).not.toHaveProperty('activeTab')
+	})
+
+	it('ignores request headers on a template saved before they were removed', () => {
+		store.dispatch('playground/loadTemplate', {
+			name: 'Old',
+			method: 'GET',
+			path: '/x',
+			body: {},
+			headers: [{ key: 'X', value: 'Y', enabled: true }],
+		})
+
+		expect(draft()).not.toHaveProperty('headers')
 	})
 
 	it('stringifies a loaded template body into bodyText', () => {
@@ -104,7 +135,6 @@ describe('playground store', () => {
 			method: 'GET',
 			path: '/_cluster/health',
 			body: { a: 1 },
-			headers: [],
 		})
 
 		expect(draft().bodyText).toBe(JSON.stringify({ a: 1 }, null, 2))
@@ -117,7 +147,6 @@ describe('playground store', () => {
 			method: 'PUT',
 			path: '/custom',
 			bodyText: '{"q":1}',
-			headers: [{ key: 'X', value: 'Y', enabled: true }],
 		})
 
 		store.dispatch('playground/saveTemplate', {
@@ -125,7 +154,6 @@ describe('playground store', () => {
 			method: 'PUT',
 			path: '/custom',
 			body: { q: 1 },
-			headers: [{ key: 'X', value: 'Y', enabled: true }],
 		})
 
 		expect(draft()).toMatchObject({
@@ -133,14 +161,15 @@ describe('playground store', () => {
 			method: 'PUT',
 			path: '/custom',
 			bodyText: '{"q":1}',
-			headers: [{ key: 'X', value: 'Y', enabled: true }],
 		})
 	})
 
-	it('resets selectedIndex, responseBody and isRequestLoading on connected, keeping the draft', () => {
+	it('resets the selected index and response state on connected, keeping the draft', () => {
 		store.dispatch('playground/update', {
 			selectedIndex: 'logs',
 			responseBody: { took: 1 },
+			responseMeta: { statusCode: 200, statusText: 'OK', contentType: 'application/json', durationMs: 5 },
+			responseView: 'raw',
 			isRequestLoading: true,
 			method: 'PUT',
 			path: '/custom',
@@ -149,7 +178,9 @@ describe('playground store', () => {
 		store.dispatch('connected')
 
 		expect(store.get().playground.selectedIndex).toBeNull()
-		expect(store.get().playground.responseBody).toEqual({})
+		expect(store.get().playground.responseBody).toBeNull()
+		expect(store.get().playground.responseMeta).toBeNull()
+		expect(store.get().playground.responseView).toBe('json')
 		expect(store.get().playground.isRequestLoading).toBe(false)
 		expect(draft()).toMatchObject({ method: 'PUT', path: '/custom' })
 	})

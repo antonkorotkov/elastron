@@ -377,11 +377,8 @@ const REQUESTS = {
 		method: 'DELETE',
 		path: `/${seg(index)}/_doc/${seg(id)}`,
 	}),
-	'run-es-request': ({ method, path, querystring, body, headers }) => {
-		const request = { method, ...splitPathQuery(path, querystring) }
-		if (headers && Object.keys(headers).length) request.headers = headers
-		return withBody(request, body)
-	},
+	'run-es-request': ({ method, path, querystring, body }) =>
+		withBody({ method, ...splitPathQuery(path, querystring) }, body),
 }
 
 /** The exact request a tool sends for this input, or null for non-ES tools. */
