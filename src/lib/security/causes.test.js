@@ -80,6 +80,26 @@ describe('describeSecurityFailure', () => {
 		expect(described.message).toContain(raw);
 	});
 
+	it('reports what was wrong in a parse failure, not only which field failed', () => {
+		const outer = '[1:53] [role-mapping] failed to parse field [rules]';
+		const inner = 'failed to parse rules expression. field [except] is not allowed within [any]';
+		const err = {
+			meta: {
+				statusCode: 400,
+				body: {
+					error: {
+						type: 'parsing_exception',
+						reason: outer,
+						root_cause: [{ type: 'parsing_exception', reason: outer }],
+						caused_by: { type: 'x_content_parse_exception', reason: outer, caused_by: { type: 'parse_exception', reason: inner } },
+					},
+				},
+			},
+		};
+
+		expect(describeSecurityFailure(err).message).toContain(inner);
+	});
+
 	it('gives every cause a distinct sentence', () => {
 		const seen = Object.values(CAUSE).map(messageForCause);
 		expect(new Set(seen).size).toBe(seen.length);
