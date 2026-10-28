@@ -25,6 +25,13 @@
 		Roles
 	</a>
 	<a
+		href={resolve('/security/role-mappings')}
+		class="item"
+		class:active={$page.url.pathname === '/security/role-mappings'}
+	>
+		Role mappings
+	</a>
+	<a
 		href={resolve('/security/api-keys')}
 		class="item"
 		class:active={$page.url.pathname === '/security/api-keys'}

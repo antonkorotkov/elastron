@@ -4,8 +4,7 @@
 	import { isThemeToggleChecked } from '$lib/utils/helpers'
 	import API from '$lib/api/elasticsearch'
 	import AdvancedDropdown from '$lib/components/inputs/AdvancedDropdown.svelte'
-	import { ROLE_PAGE_SIZE, searchAndSortRoles } from '$lib/security/roleSearch.js'
-	import { toRoleEntries } from '$lib/store/elasticsearch/securityList.js'
+	import { createRoleFinder } from '$lib/security/roleFinder.js'
 	import { isSelf, refuseUserRoleChange } from '../guards.js'
 
 	let { username = null } = $props()
@@ -30,32 +29,12 @@
 	let email = $state(existing?.email || '')
 	let roles = $state([...(existing?.roles || [])])
 
-	// The cluster may hold thousands of roles, so the picker asks it for the
-	// ones matching what was typed. A cluster that cannot page answers the first
-	// question with the whole list, which every later search waits on and
-	// filters here, rather than downloading it again while it is still arriving.
-	let first = null
 	let rolesError = $state('')
 
-	const ask = text => new API($connection, $app.windowId).querySecurityRoles({ search: text })
-
-	const findRoles = async text => {
-		try {
-			first ??= { text, answer: ask(text) }
-			const opening = await first.answer
-			const answer =
-				opening?.mode === 'full' || first.text === text ? opening : await ask(text)
-
-			const entries = toRoleEntries(answer?.roles)
-			const found = answer?.mode === 'full' ? searchAndSortRoles(entries, text) : entries
-			rolesError = ''
-			return found.map(r => r.name).slice(0, ROLE_PAGE_SIZE)
-		} catch (err) {
-			first = null
-			rolesError = err?.message || 'Roles could not be read from this cluster.'
-			return []
-		}
-	}
+	const findRoles = createRoleFinder(
+		text => new API($connection, $app.windowId).querySecurityRoles({ search: text }),
+		message => (rolesError = message)
+	)
 
 	// Definitions for the roles the self-lockout guard has to judge, fetched as
 	// they come into play. A role the cluster does not return stays out of the
