@@ -348,6 +348,21 @@ export default class API {
 		const response = await this._request('security/api-key/invalidate', { id })
 		return response.data
 	}
+
+	async getSecurityRoleMappings(names = []) {
+		const response = await this._request('security/role-mappings', { names })
+		return response.data
+	}
+
+	async putSecurityRoleMapping(name, body) {
+		const response = await this._request('security/role-mapping/put', { name, body })
+		return response.data
+	}
+
+	async deleteSecurityRoleMapping(name) {
+		const response = await this._request('security/role-mapping/delete', { name })
+		return response.data
+	}
 }
 
 class ConnectionError extends Error {

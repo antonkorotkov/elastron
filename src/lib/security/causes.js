@@ -16,7 +16,7 @@ const KNOWN_CAUSES = new Set(Object.values(CAUSE));
 
 const MESSAGES = {
 	[CAUSE.SECURITY_DISABLED]:
-		'Security is not enabled on this cluster, so users, roles, and API keys cannot be managed.',
+		'Security is not enabled on this cluster, so users, roles, role mappings, and API keys cannot be managed.',
 	[CAUSE.LICENSE]:
 		"This feature is not available because the cluster's licence does not cover it.",
 	[CAUSE.PRIVILEGE]:
@@ -31,7 +31,18 @@ const MESSAGES = {
 
 const statusOf = err => err?.meta?.statusCode ?? err?.statusCode;
 
+// A parse failure's root cause only says which field failed to parse; what was
+// wrong with it is at the bottom of the caused_by chain.
+const innermostReason = error => {
+	let reason = ''
+	for (let node = error?.caused_by; node; node = node.caused_by) {
+		if (node.reason) reason = node.reason
+	}
+	return reason
+}
+
 const reasonOf = err =>
+	(err?.meta?.body?.error?.type === 'parsing_exception' && innermostReason(err.meta.body.error)) ||
 	err?.meta?.body?.error?.root_cause?.[0]?.reason ||
 	err?.meta?.body?.error?.reason ||
 	// A cluster with security disabled answers with a bare string body rather

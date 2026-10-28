@@ -1,4 +1,5 @@
 import { classifySecurityError } from '../../security/causes.js'
+import { describeRules, isReadOnlyMapping } from '../../security/mappingRules.js'
 
 // Shared shape for the three security surfaces, so a failure on one does not
 // touch the others. A `load` that returns a `cursor` makes the list paged:
@@ -140,3 +141,12 @@ export const toRoleEntries = payload =>
 
 export const toApiKeyEntries = payload =>
 	(payload?.api_keys || []).map(key => ({ ...key }))
+
+export const toRoleMappingEntries = payload =>
+	Object.entries(payload || {}).map(([name, mapping]) => ({
+		...mapping,
+		name,
+		readOnly: isReadOnlyMapping(name, mapping),
+		usesTemplates: Array.isArray(mapping?.role_templates),
+		rulesText: describeRules(mapping?.rules),
+	}))

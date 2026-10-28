@@ -15,6 +15,9 @@ import { POST as invalidateKey } from './api-key/invalidate/+server.js';
 import { POST as builtinPrivileges } from './privileges/+server.js';
 import { POST as previewQuery } from './query/preview/+server.js';
 import { POST as authenticate } from './authenticate/+server.js';
+import { POST as listMappings } from './role-mappings/+server.js';
+import { POST as putMapping } from './role-mapping/put/+server.js';
+import { POST as deleteMapping } from './role-mapping/delete/+server.js';
 
 // Exercises the routes against a real cluster, through the real client, so the
 // paths and bodies are proven rather than asserted against a mock. Skipped
@@ -92,11 +95,13 @@ beforeAll(async () => {
 const USER = 'itest_user';
 const ROLE = 'itest_role';
 const KEY = 'itest_key';
+const MAPPING = 'itest_mapping';
 
 afterAll(async () => {
 	if (!live) return;
 	await call(deleteUser, { username: USER }).catch(() => {});
 	await call(deleteRole, { name: ROLE }).catch(() => {});
+	await call(deleteMapping, { name: MAPPING }).catch(() => {});
 	await asElastic('/_security/user/itest_secadmin', 'DELETE').catch(() => {});
 	await asElastic('/_security/role/itest_sec_only', 'DELETE').catch(() => {});
 	await asElastic('/itest-logs', 'DELETE').catch(() => {});
@@ -336,5 +341,66 @@ describe('role paging routes', () => {
 
 		const none = await call(getRoles, { names: ['itest_no_such_role'] });
 		expect(none).toMatchObject({ status: 200, data: {} });
+	});
+});
+
+describe('role mapping routes', () => {
+	const RULES = {
+		all: [
+			{ field: { 'realm.name': 'ldap1' } },
+			{ field: { groups: ['cn=ops,ou=groups,dc=example,dc=com', 'cn=sre,ou=groups,dc=example,dc=com'] } },
+			{ except: { field: { groups: 'cn=contractors,ou=groups,dc=example,dc=com' } } },
+		],
+	};
+
+	it('creates, lists, fetches by name, disables, and deletes a mapping', async () => {
+		if (!live) return;
+		const created = await call(putMapping, { name: MAPPING, body: { enabled: true, roles: ['viewer'], rules: RULES } });
+		expect(created.status).toBe(200);
+
+		const listed = await call(listMappings);
+		expect(listed.data[MAPPING]).toMatchObject({ enabled: true, roles: ['viewer'], rules: RULES });
+
+		const disabled = await call(putMapping, { name: MAPPING, body: { enabled: false, roles: ['viewer'], rules: RULES } });
+		expect(disabled.status).toBe(200);
+		const fetched = await call(listMappings, { names: [MAPPING, 'itest_no_such_mapping'] });
+		expect(Object.keys(fetched.data)).toEqual([MAPPING]);
+		expect(fetched.data[MAPPING].enabled).toBe(false);
+
+		const deleted = await call(deleteMapping, { name: MAPPING });
+		expect(deleted.status).toBe(200);
+		expect((await call(listMappings)).data[MAPPING]).toBeUndefined();
+	});
+
+	it('answers an empty set for names none of which exist', async () => {
+		if (!live) return;
+		const { status, data } = await call(listMappings, { names: ['itest_no_such_mapping'] });
+		expect(status).toBe(200);
+		expect(data).toEqual({});
+	});
+
+	it('names a missing mapping on delete instead of reporting success', async () => {
+		if (!live) return;
+		const res = await call(deleteMapping, { name: 'itest_no_such_mapping' });
+		expect(res.status).toBe(500);
+		expect(res.error).toContain('itest_no_such_mapping');
+		expect(res.error).toMatch(/does not exist/);
+	});
+
+	it('says a read-only mapping cannot be deleted rather than that it is missing', async () => {
+		if (!live) return;
+		const res = await call(deleteMapping, { name: 'itest-read-only-operator-mapping' });
+		expect(res.status).toBe(500);
+		expect(res.error).toMatch(/operator settings/);
+	});
+
+	it('passes the cluster reason through for a mapping it refuses', async () => {
+		if (!live) return;
+		const res = await call(putMapping, {
+			name: MAPPING,
+			body: { enabled: true, roles: ['viewer'], rules: { any: [{ except: { field: { username: 'x' } } }] } },
+		});
+		expect(res.status).toBe(500);
+		expect(res.reason).toMatch(/except/);
 	});
 });

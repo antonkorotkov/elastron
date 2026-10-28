@@ -23,6 +23,7 @@ import { securityIdentity } from './elasticsearch/securityIdentity'
 import { securityUsers } from './elasticsearch/securityUsers'
 import { securityRoles } from './elasticsearch/securityRoles'
 import { securityApiKeys } from './elasticsearch/securityApiKeys'
+import { securityRoleMappings } from './elasticsearch/securityRoleMappings'
 
 
 export const store = createStoreon([
@@ -48,6 +49,7 @@ export const store = createStoreon([
 	securityUsers,
 	securityRoles,
 	securityApiKeys,
+	securityRoleMappings,
 	storeonDevtools
 ])
 

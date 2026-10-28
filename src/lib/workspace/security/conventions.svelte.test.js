@@ -22,6 +22,8 @@ vi.mock('@storeon/svelte', () => {
 			securityUsers: writable({ entries: [], loaded: true, loading: false, cause: null, message: '', reason: '', search: '', sorting: [] }),
 			securityRoles: writable({ entries: [], loaded: true, loading: false, cause: null, message: '', reason: '', search: '', sorting: [] }),
 			securityApiKeys: writable({ entries: [], loaded: true, loading: false, cause: null, message: '', reason: '', search: '', sorting: [], scope: 'all' }),
+			securityRoleMappings: writable({ entries: [], catalogue: {}, loaded: true, loading: false, cause: null, message: '', reason: '', search: '', sorting: [] }),
+			connection: writable({}),
 			securityIdentity: writable({ username: 'admin', roles: ['superuser'] }),
 			securityPrivileges: writable({ cluster: ['monitor'], index: ['read'], remote_cluster: [], loaded: true }),
 		}),
@@ -41,22 +43,26 @@ const UserDialog = (await import('./users/UserDialog.svelte')).default;
 const PasswordDialog = (await import('./users/PasswordDialog.svelte')).default;
 const RoleDialog = (await import('./roles/RoleDialog.svelte')).default;
 const CreateApiKeyDialog = (await import('./api-keys/CreateApiKeyDialog.svelte')).default;
+const RoleMappingDialog = (await import('./role-mappings/RoleMappingDialog.svelte')).default;
 
 const Users = (await import('./users/Users.svelte')).default;
 const Roles = (await import('./roles/Roles.svelte')).default;
 const ApiKeys = (await import('./api-keys/ApiKeys.svelte')).default;
+const RoleMappings = (await import('./role-mappings/RoleMappings.svelte')).default;
 
 const DIALOGS = [
 	['UserDialog', UserDialog, { username: null }],
 	['PasswordDialog', PasswordDialog, { username: 'alice' }],
 	['RoleDialog', RoleDialog, { name: null }],
 	['CreateApiKeyDialog', CreateApiKeyDialog, {}],
+	['RoleMappingDialog', RoleMappingDialog, { name: null }],
 ];
 
 const SURFACES = [
 	['Users', Users],
 	['Roles', Roles],
 	['ApiKeys', ApiKeys],
+	['RoleMappings', RoleMappings],
 ];
 
 beforeEach(() => {
@@ -111,6 +117,7 @@ describe('choosing from a cluster-sourced list', () => {
 		['users/UserDialog.svelte', 'Roles'],
 		['roles/RoleEditor.svelte', 'Cluster Privileges'],
 		['roles/RoleEditor.svelte', 'Privileges'],
+		['role-mappings/RoleMappingEditor.svelte', 'Roles'],
 	])('%s picks %s through the shared dropdown', file => {
 		const source = readFileSync(`src/lib/workspace/security/${file}`, 'utf8');
 

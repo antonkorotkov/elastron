@@ -78,7 +78,7 @@ export const createAssistantTools = ({ connection, windowId }) => {
 						// it is refused here rather than offered for approval.
 						if (isSecurityWriteRequest(request)) {
 							throw new Error(
-								'Changing users, roles, or API keys is not available to the assistant. Make this change in the Security area of the app.'
+								'Changing users, roles, role mappings, or API keys is not available to the assistant. Make this change in the Security area of the app.'
 							)
 						}
 						const result = definition.run

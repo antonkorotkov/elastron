@@ -35,6 +35,10 @@ describe('security API client', () => {
 		['getSecurityApiKeys', [true], '/api/elastic/security/api-keys', { owner: true }],
 		['createSecurityApiKey', [{ name: 'k' }], '/api/elastic/security/api-key/create', { body: { name: 'k' } }],
 		['invalidateSecurityApiKey', ['id-1'], '/api/elastic/security/api-key/invalidate', { id: 'id-1' }],
+		['getSecurityRoleMappings', [], '/api/elastic/security/role-mappings', { names: [] }],
+		['getSecurityRoleMappings', [['m']], '/api/elastic/security/role-mappings', { names: ['m'] }],
+		['putSecurityRoleMapping', ['m', { enabled: true }], '/api/elastic/security/role-mapping/put', { name: 'm', body: { enabled: true } }],
+		['deleteSecurityRoleMapping', ['m'], '/api/elastic/security/role-mapping/delete', { name: 'm' }],
 	])('%s posts to its route with the connection and window id', async (method, args, url, payload) => {
 		await api()[method](...args);
 

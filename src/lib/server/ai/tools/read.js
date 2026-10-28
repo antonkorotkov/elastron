@@ -4,6 +4,7 @@ import { RESULT_ROW_LIMIT, capRows, clampSize, describePage, pageRows } from './
 import { roleGrants } from './roleFilters.js'
 import { lacksQueryEndpoint } from '../../security/queryEndpoint.js'
 import { compareRoleNames, searchAndSortRoles } from '../../../security/roleSearch.js'
+import { describeRules, isReadOnlyMapping } from '../../../security/mappingRules.js'
 import { RESULT_WINDOW, beyondResultWindow } from '../../../ai/catalog.js'
 
 const index = z.string().min(1).describe('Index name, alias, or pattern such as logs-*')
@@ -378,6 +379,43 @@ export const readTools = {
 				invalidated: Boolean(key?.invalidated),
 			}))
 			return describeSearchPage(rows, response?.total ?? rows.length, page, 'Narrow with search.')
+		},
+	},
+	'list-security-role-mappings': {
+		description: `List the cluster's role mappings, ${RESULT_ROW_LIMIT} per page in name order. Each row has the mapping's name, whether it is enabled, the roles it grants or the role templates it renders them from, its rules in full, and whether it is read-only (defined in operator settings). role narrows to mappings granting that role by exact name; mappings that grant through templates cannot be matched by name, so they are kept and marked for you to judge. search matches any part of a mapping's name or of its rules written out, such as a group's distinguished name, ignoring case. Mappings from a realm's role mapping file are not visible to this API. Read-only.`,
+		inputSchema: z.object({
+			role: z.string().min(1).optional().describe('Only mappings granting this role'),
+			search: z.string().min(1).optional().describe("Text to look for in mapping names and rules, such as a group's DN"),
+			page: z.number().int().min(1).optional().describe('Page to return, starting at 1'),
+		}),
+		run: async (input, send, request) => {
+			const mappings = stripCredentialsFromRecords(await readWhole(send, request))
+			const text = input.search?.toLowerCase()
+			const rows = Object.entries(mappings || {})
+				.map(([name, mapping]) => ({
+					name,
+					enabled: mapping?.enabled,
+					...(Array.isArray(mapping?.role_templates)
+						? { role_templates: mapping.role_templates }
+						: { roles: mapping?.roles ?? [] }),
+					rules: mapping?.rules,
+					read_only: isReadOnlyMapping(name, mapping),
+				}))
+				.filter(row => !input.role || row.role_templates || row.roles.includes(input.role))
+				.filter(
+					row =>
+						!text ||
+						row.name.toLowerCase().includes(text) ||
+						describeRules(row.rules).toLowerCase().includes(text)
+				)
+				.sort((a, b) => compareRoleNames(a.name, b.name))
+
+			const result = pageRows(rows, input.page ?? 1)
+			if (input.role && rows.some(row => row.role_templates)) {
+				const note = `Mappings with role_templates are included because templates cannot be matched by role name; judge from each template whether it can produce ${input.role}.`
+				result.note = [result.note, note].filter(Boolean).join(' ')
+			}
+			return result
 		},
 	},
 	'get-security-user': {

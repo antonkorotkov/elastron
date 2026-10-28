@@ -15,6 +15,12 @@ const initial = () => ({
 		username: null,
 		roles: [],
 		reserved: false,
+		// How the account signed in, which decides whether role mappings give it
+		// its roles. The realm is the one whose roles apply: the lookup realm
+		// when authorization is delegated, else the authenticating one.
+		authenticationType: null,
+		realm: null,
+		metadata: {},
 		loading: false,
 		// Set when the cluster would not say who we are, e.g. security is off.
 		cause: null,
@@ -56,6 +62,9 @@ export const securityIdentity = store => {
 				username: me?.username ?? null,
 				roles: Array.isArray(me?.roles) ? me.roles : [],
 				reserved: Boolean(me?.metadata?._reserved),
+				authenticationType: me?.authentication_type ?? null,
+				realm: me?.lookup_realm ?? me?.authentication_realm ?? null,
+				metadata: me?.metadata ?? {},
 				loading: false,
 				cause: null,
 			})
@@ -67,6 +76,9 @@ export const securityIdentity = store => {
 				username: null,
 				roles: [],
 				reserved: false,
+				authenticationType: null,
+				realm: null,
+				metadata: {},
 				loading: false,
 				cause: classifySecurityError(err),
 			})
