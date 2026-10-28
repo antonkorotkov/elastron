@@ -51,6 +51,43 @@ describe('securityIdentity', () => {
 		expect(store.get().securityIdentity).toMatchObject({ username: null, roles: [] });
 	});
 
+	it.each([
+		[
+			'a native account',
+			{ authentication_type: 'realm', authentication_realm: { name: 'native1', type: 'native' }, lookup_realm: { name: 'native1', type: 'native' } },
+			{ authenticationType: 'realm', realm: { name: 'native1', type: 'native' } },
+		],
+		[
+			'an LDAP account authorised through another realm',
+			{
+				authentication_type: 'realm',
+				authentication_realm: { name: 'ldap1', type: 'ldap' },
+				lookup_realm: { name: 'native1', type: 'native' },
+				metadata: { ldap_dn: 'cn=a,dc=example,dc=com', ldap_groups: ['cn=ops,dc=example,dc=com'] },
+			},
+			{
+				authenticationType: 'realm',
+				realm: { name: 'native1', type: 'native' },
+				metadata: { ldap_dn: 'cn=a,dc=example,dc=com', ldap_groups: ['cn=ops,dc=example,dc=com'] },
+			},
+		],
+		[
+			'an API key',
+			{ authentication_type: 'api_key', authentication_realm: { name: '_es_api_key', type: '_es_api_key' } },
+			{ authenticationType: 'api_key', realm: { name: '_es_api_key', type: '_es_api_key' } },
+		],
+	])('records how %s signed in', async (_, answer, expected) => {
+		whoAmI.mockResolvedValue({ username: 'someone', roles: [], ...answer });
+
+		store.dispatch('connected');
+		await flush();
+
+		expect(store.get().securityIdentity).toMatchObject(expected);
+
+		store.dispatch('disconnected');
+		expect(store.get().securityIdentity).toMatchObject({ authenticationType: null, realm: null, metadata: {} });
+	});
+
 	it('records a cause instead of an identity when the cluster will not say', async () => {
 		whoAmI.mockRejectedValue(refused('security-disabled'));
 
