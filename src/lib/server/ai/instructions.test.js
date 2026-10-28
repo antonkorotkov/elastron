@@ -34,6 +34,7 @@ describe('buildInstructions', () => {
 		expect(buildInstructions({ version: '9.1.0' })).toMatch(/list-indices returns one page of 50.*user approves each one/)
 		expect(buildInstructions({ version: '9.1.0' })).toMatch(/fetch the user, then fetch all of their roles in one get-security-role call/)
 		expect(buildInstructions({ version: '9.1.0' })).toMatch(/Narrow them with search, and roles with index and privilege, before asking for later pages/)
+		expect(buildInstructions({ version: '9.1.0' })).toMatch(/call list-security-role-mappings with role set to it/)
 	})
 
 	it('directs the model to make requested changes itself', () => {

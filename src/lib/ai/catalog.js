@@ -31,6 +31,7 @@ export const TOOL_POLICY = {
 	'list-security-users': AUTO,
 	'list-security-roles': AUTO,
 	'list-security-api-keys': AUTO,
+	'list-security-role-mappings': AUTO,
 	'get-security-user': AUTO,
 	'get-security-role': AUTO,
 	'get-security-api-key': AUTO,
@@ -72,6 +73,7 @@ export const PAGED_TOOLS = new Set([
 	'list-security-users',
 	'list-security-roles',
 	'list-security-api-keys',
+	'list-security-role-mappings',
 ])
 
 const pageOf = input => (Number.isInteger(input?.page) && input.page > 0 ? input.page : 1)
@@ -234,6 +236,9 @@ const REQUESTS = {
 			},
 		},
 	}),
+	// The cluster has no query for mappings, and holds tens of them, not
+	// thousands, so filters and paging run over the whole list.
+	'list-security-role-mappings': () => ({ method: 'GET', path: '/_security/role_mapping' }),
 	// Each name is encoded on its own, so a slash stays inside the name.
 	'get-security-user': ({ usernames = [] }) => ({
 		method: 'GET',

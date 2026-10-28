@@ -14,12 +14,13 @@ const SECURITY_READ_TOOLS = [
 	'list-security-users',
 	'list-security-roles',
 	'list-security-api-keys',
+	'list-security-role-mappings',
 	'get-security-user',
 	'get-security-role',
 	'get-security-api-key',
 ];
 
-const LISTINGS = ['list-security-users', 'list-security-roles', 'list-security-api-keys'];
+const LISTINGS = ['list-security-users', 'list-security-roles', 'list-security-api-keys', 'list-security-role-mappings'];
 
 const noQueryEndpoint = () =>
 	Object.assign(new Error('no handler'), {
@@ -238,11 +239,18 @@ describe('the generic request tool refuses security writes', () => {
 		['DELETE', '/_security/role/log_reader', undefined],
 		['POST', '/_security/api_key', { name: 'k' }],
 		['PUT', '/_security/user/alice/_password', { password: 'x' }],
+		['PUT', '/_security/role_mapping/x', { enabled: true, roles: ['superuser'], rules: { field: { username: '*' } } }],
+		['DELETE', '/_security/role_mapping/x', undefined],
 	])('refuses %s %s without sending it', async (method, path, body) => {
 		const { promise, sent } = exec('run-es-request', { method, path, body });
 
 		await expect(promise).rejects.toThrow(/not available to the assistant/);
 		expect(sent()).toHaveLength(0);
+	});
+
+	it('names role mappings among what the assistant may not change', async () => {
+		const { promise } = exec('run-es-request', { method: 'PUT', path: '/_security/role_mapping/x', body: {} });
+		await expect(promise).rejects.toThrow(/role mappings/);
 	});
 
 	it('points the user at the Security area rather than just refusing', async () => {
@@ -621,5 +629,54 @@ describe('the privilege filter keeps cluster and index privileges apart', () => 
 
 	it('does not count a cluster all as write', async () => {
 		expect(await names({ privilege: 'write' })).toEqual(['sandbox_owner', 'writer']);
+	});
+});
+
+describe('role mapping listing', () => {
+	const OPS = 'cn=ops,ou=groups,dc=example,dc=com';
+	const MAPPINGS = {
+		'ldap-ops': {
+			enabled: true,
+			roles: ['viewer'],
+			rules: { all: [{ field: { 'realm.name': 'ldap1' } }, { field: { groups: OPS } }] },
+			metadata: {},
+		},
+		'ldap-admins': { enabled: false, roles: ['superuser', 'viewer'], rules: { field: { groups: 'cn=admins,dc=example,dc=com' } }, metadata: {} },
+		tpl: {
+			enabled: true,
+			role_templates: [{ template: '{"source":"{{#tojson}}groups{{/tojson}}"}', format: 'json' }],
+			rules: { field: { 'realm.name': 'saml1' } },
+			metadata: {},
+		},
+		'ops-read-only-operator-mapping': { enabled: true, roles: ['superuser'], rules: { field: { username: 'x' } }, metadata: { _read_only: true } },
+	};
+
+	beforeEach(() => forgetWholeLists());
+
+	it('lists every mapping with its rules in full, in name order', async () => {
+		const result = await run('list-security-role-mappings', MAPPINGS);
+
+		expect(result.rows.map(r => r.name)).toEqual(['ldap-admins', 'ldap-ops', 'ops-read-only-operator-mapping', 'tpl']);
+		expect(result.rows[1]).toEqual({ name: 'ldap-ops', enabled: true, roles: ['viewer'], rules: MAPPINGS['ldap-ops'].rules, read_only: false });
+		expect(result.rows[2].read_only).toBe(true);
+		expect(result.rows[3]).toMatchObject({ role_templates: MAPPINGS.tpl.role_templates });
+		expect(result.rows[3].roles).toBeUndefined();
+	});
+
+	it('narrows to the mappings granting a role, keeping template mappings and saying why', async () => {
+		const result = await run('list-security-role-mappings', MAPPINGS, { role: 'superuser' });
+
+		expect(result.rows.map(r => r.name)).toEqual(['ldap-admins', 'ops-read-only-operator-mapping', 'tpl']);
+		expect(result.note).toMatch(/templates cannot be matched by role name/);
+	});
+
+	it('finds the mappings that mention a group by part of its DN', async () => {
+		const result = await run('list-security-role-mappings', MAPPINGS, { search: 'OU=GROUPS' });
+
+		expect(result.rows.map(r => r.name)).toEqual(['ldap-ops']);
+	});
+
+	it('reads the whole mapping list', () => {
+		expect(buildToolRequest('list-security-role-mappings', { role: 'x', page: 2 })).toEqual({ method: 'GET', path: '/_security/role_mapping' });
 	});
 });
