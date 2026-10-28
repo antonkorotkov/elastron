@@ -51,10 +51,11 @@ The system SHALL execute assistant-requested actions that only read cluster stat
 
 ### Requirement: Security state is readable but never writable by the assistant
 The system SHALL give the assistant read-only actions for the cluster's
-security state, covering users, roles, and API key metadata, so it can answer
-questions about who may reach the cluster. The system SHALL NOT offer the
-assistant any action that creates, modifies, or deletes a user, a role, or an
-API key, and SHALL NOT make such an action available through user approval.
+security state, covering users, roles, role mappings, and API key metadata, so
+it can answer questions about who may reach the cluster. The system SHALL NOT
+offer the assistant any action that creates, modifies, or deletes a user, a
+role, a role mapping, or an API key, and SHALL NOT make such an action
+available through user approval.
 
 #### Scenario: Assistant answers a question about roles
 - **WHEN** the user asks which roles grant write access to an index
@@ -67,6 +68,10 @@ API key, and SHALL NOT make such an action available through user approval.
 #### Scenario: A security write reaches the generic request action
 - **WHEN** the assistant proposes an arbitrary request that would write to the cluster's security state
 - **THEN** the system SHALL refuse it rather than presenting it for approval
+
+#### Scenario: Assistant is asked to map a group to a role
+- **WHEN** the user asks the assistant to create, change, disable, or delete a role mapping
+- **THEN** no such action SHALL be available to the assistant, the generic request action SHALL refuse it, and the assistant SHALL say the change must be made in the Security workspace
 
 ### Requirement: Credential material is never returned to the assistant
 The system SHALL NOT include password hashes, API key secrets, or any other
@@ -148,6 +153,25 @@ them.
 #### Scenario: A cluster all is not an index privilege
 - **WHEN** the assistant lists roles holding `write`, and a role holds cluster `all` and no index entries
 - **THEN** that role SHALL NOT be listed
+
+### Requirement: Role mappings can be listed by the role they grant
+The system SHALL give the assistant a read-only listing of the cluster's role
+mappings, each with its name, enabled state, the roles or role templates it
+grants, and its rules in full. The listing SHALL be filterable to mappings
+granting a given role and searchable by name and by text in its rules, and
+SHALL run without confirmation.
+
+#### Scenario: Which groups become superuser
+- **WHEN** the user asks which directory groups are given the `superuser` role
+- **THEN** the assistant SHALL list only the mappings granting `superuser`, and answer from their rules without pausing for approval
+
+#### Scenario: What a group is given
+- **WHEN** the user asks what roles members of `cn=ops,ou=groups,dc=example,dc=com` receive
+- **THEN** the assistant SHALL be able to search the listing by that group name and find the mappings that mention it
+
+#### Scenario: Mappings that grant roles through templates
+- **WHEN** the assistant filters by a role and a mapping grants roles only through role templates
+- **THEN** the result SHALL say that template mappings cannot be matched by role and SHALL include them for the assistant to judge
 
 ### Requirement: Mutating actions require explicit confirmation
 The system SHALL NOT execute any assistant-requested action that creates, modifies, or deletes cluster state until the user explicitly approves that specific action. This includes creating, deleting, opening, closing, cloning, or wiping an index, indexing, updating, or deleting a document, changing mappings, settings, or aliases, and any arbitrary request whose effect the system does not classify, which SHALL be treated as mutating regardless of its HTTP method. Each proposed action SHALL be presented with its operation, its target, and the full request it will send.
